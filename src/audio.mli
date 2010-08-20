@@ -22,8 +22,8 @@ module Mono : sig
 
   val duration : buffer -> int
 
-  (** Clear a buffer (fill it with zeroes). *)
-  val clear : buffer -> unit
+  (** Clear a portion of a buffer (fill it with zeroes). *)
+  val clear : buffer -> int -> int -> unit
 
   (** Fill the buffer with random data (ie produce white noise). *)
   val randomize : buffer -> int -> int -> unit
@@ -127,7 +127,7 @@ val create : int -> int -> buffer
 val create_same : buffer -> buffer
 
 (** Clear the buffer (sets all the samples to zero). *)
-val clear : buffer -> unit
+val clear : buffer -> int -> int -> unit
 
 (** Duration of a buffer in samples. *)
 val duration : buffer -> int

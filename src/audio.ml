@@ -26,8 +26,7 @@ module Mono = struct
 
   let duration buf = Array.length buf
 
-  let clear b =
-    Array.fill b 0 (Array.length b) 0.
+  let clear b ofs len = Array.fill b ofs len 0.
 
   (* let blit b1 o1 b2 o2 len = Array.blit b1 o1 b2 o2 len *)
   external blit : float array -> int -> float array -> int -> int -> unit = "caml_float_array_blit"
@@ -316,7 +315,7 @@ let duration buf =
 let create_same buf =
   create (channels buf) (duration buf)
 
-let clear = iter Mono.clear
+let clear = iterp Mono.clear
 
 let clip = iterp Mono.clip
 
