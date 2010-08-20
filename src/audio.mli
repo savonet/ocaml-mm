@@ -1,0 +1,271 @@
+(** Operations on audio data. *)
+
+val lin_of_dB : float -> float
+
+val dB_of_lin : float -> float
+
+(** Operations on samples. *)
+module Sample : sig
+  (** A sample. *)
+  type t = float
+
+  (** Clip a sample (ie ensure that it is between [-1.] and [1.]. *)
+  val clip : t -> t
+end
+
+(** Operations on mono buffers (with only one channel). *)
+module Mono : sig
+  (** A mono buffer. *)
+  type buffer = float array
+
+  val create : int -> buffer
+
+  val duration : buffer -> int
+
+  (** Clear a buffer (fill it with zeroes). *)
+  val clear : buffer -> unit
+
+  (** Fill the buffer with random data (ie produce white noise). *)
+  val randomize : buffer -> int -> int -> unit
+
+  val resample : float -> buffer -> int -> int -> buffer
+
+  val clip : buffer -> int -> int -> unit
+
+  (** [add b1 b2] adds to contents of [b2] to [b1]. *)
+  val add : buffer -> int -> buffer -> int -> int -> unit
+
+  (** Functions for analyzing audio data. *)
+  module Analyze : sig
+    (** Compute the RMS power of a portion of a buffer. *)
+    val rms : buffer -> int -> int -> float
+
+    (** Simple implementation of the FFT algorithm. For fastest implementations
+	optimized libraries such as fftw are recommended. *)
+    module FFT : sig
+      (** Internal data for computing FFT. *)
+      type t
+
+      (** Initialize FFT for an analysis of [2^n] samples. *)
+      val init : int -> t
+
+      (** [complex_create buf ofs len] create a array of complex numbers of size
+	  [len] by copying data from [buf] from ofset [ofs] (the imaginary part
+	  is null). *)
+      val complex_create : buffer -> int -> int -> Complex.t array
+
+      (** Perform an FFT analysis. *)
+      val fft : t -> Complex.t array -> unit
+
+      (** Windowing functions. Thses can be used to on complex buffers in order
+	  to improve the quality of the FFT, see
+	  http://en.wikipedia.org/wiki/Windowing_functions. *)
+      module Window : sig
+	val cosine : Complex.t array -> unit
+
+	val hann : Complex.t array -> unit
+
+	val hamming : Complex.t array -> unit
+
+	val lanczos : Complex.t array -> unit
+
+	val triangular : Complex.t array -> unit
+
+	val bartlett_hann : Complex.t array -> unit
+
+	val blackman : ?alpha:float -> t -> Complex.t array -> unit
+
+	val nuttall : t -> Complex.t array -> unit
+
+	val blackman_harris : t -> Complex.t array -> unit
+
+	val blackman_nuttall : t -> Complex.t array -> unit
+      end
+    end
+  end
+
+  module Effect : sig
+    (** A compander following the µ-law (see
+	http://en.wikipedia.org/wiki/Mu-law).*)
+    val compand_mu_law : float -> buffer -> int -> int -> unit
+  end
+
+  (** Sound generators. *)
+  module Generator : sig
+    (** A sound generator. *)
+    class type t =
+    object
+      method set_volume : float -> unit
+
+      (** Fill a buffer with generated sound. *)
+      method fill : buffer -> int -> int -> unit
+
+      (** Same as [fill] but adds the sound to the buffer. *)
+      method fill_add : buffer -> int -> int -> unit
+    end
+
+    (** Generate a sine waveform. *)
+    val sine : int -> ?volume:float -> ?phase:float -> float -> t
+
+    (** Generate a square waveform. *)
+    val square : int -> ?volume:float -> ?phase:float -> float -> t
+
+    (** Generate a saw wavefor. *)
+    val saw : int -> ?volume:float -> ?phase:float -> float -> t
+  end
+end
+
+(** An audio buffer. *)
+type buffer = Mono.buffer array
+
+(** [create chans len] creates a buffer with [chans] channels and [len] samples
+    as duration. *)
+val create : int -> int -> buffer
+
+(** Create a buffer with the same number of channels and duration as the given
+    buffer. *)
+val create_same : buffer -> buffer
+
+(** Clear the buffer (sets all the samples to zero). *)
+val clear : buffer -> unit
+
+(** Duration of a buffer in samples. *)
+val duration : buffer -> int
+
+(** Convert a buffer to a mono buffer by computing the mean of all channels. *)
+val to_mono : buffer -> Mono.buffer
+
+(** Convert a mono buffer into a buffer. Notice that the original mono buffer is
+    not copied an might thus be modified afterwards. *)
+val of_mono : Mono.buffer -> buffer
+
+val resample : float -> buffer -> int -> int -> buffer
+
+(** Same as [Array.blit] for audio data. *)
+val blit : buffer -> int -> buffer -> int -> int -> unit
+
+val clip : buffer -> int -> int -> unit
+
+(** Amplify a portion of the buffer by a given coefficient. *)
+val amplify : float -> buffer -> int -> int -> unit
+
+(** Pan a stereo buffer from left to right (the buffer should have exactly two
+    channels!). The coefficient should be between [-1.] and [1.]. *)
+val pan : float -> buffer -> int -> int -> unit
+
+val add : buffer -> int -> buffer -> int -> int -> unit
+
+val add_coeff : buffer -> int -> float -> buffer -> int -> int -> unit
+
+(** Circular ringbuffers. *)
+module Ringbuffer : sig
+  (** A ringbuffer. *)
+  type t
+
+  (** Create a ringbuffer of given number of channels and samplerate. *)
+  val create : int -> int -> t
+
+  val read_space : t -> int
+
+  val write_space : t -> int
+
+  val read_advance : t -> int -> unit
+
+  val write_advance : t -> int -> unit
+
+  val peek : t -> buffer -> int -> int -> unit
+
+  val read : t -> buffer -> int -> int -> unit
+
+  val write : t -> buffer -> int -> int -> unit
+
+  val transmit : t -> (buffer -> int -> int -> int) -> int
+end
+
+(** Audio effects. *)
+module Effect : sig
+  (** A possibly stateful audio effect. *)
+  class type t =
+  object
+    (** Apply the effect on a buffer. *)
+    method process : buffer -> int -> int -> unit
+  end
+
+  (** [delay buffer_length chans samplerate d once feedback] creates a delay
+      operator for buffer with [chans] channels at [samplerate] samplerate with
+      [d] as delay in seconds and [feedback] as feedback. If [once] is set to
+      [true] only one echo will be heard (no feedback). *)
+  val delay : buffer_length:int -> int -> int -> float -> ?once:bool -> float -> t
+end
+
+(** Sound generators. *)
+module Generator : sig
+  class type synth =
+  object
+    method set_volume : float -> unit
+
+    method note_on : int -> float -> unit
+
+    method note_off : int -> float -> unit
+
+    method fill : float array array -> int -> int -> unit
+
+    method reset : unit
+  end
+end
+
+(** Operation for reading and writing audio data from files, streams or
+    devices. *)
+module IO : sig
+  (** The file is not valid. *)
+  exception Invalid_file
+
+  (** The operation is not valid on the file/device. *)
+  exception Invalid_operation
+
+  (** Trying to read past the end of the stream. *)
+  exception End_of_stream
+
+  class type reader =
+  object
+    (** Number of channels. *)
+    method channels : int
+
+    (** Sample rate in samples per second. *)
+    method sample_rate : int
+
+    (** Duration in samples. *)
+    method duration : int
+
+    (** Duration in seconds. *)
+    method duration_time : float
+
+    (** Seek to a given sample. *)
+    method seek : int -> unit
+
+    (** Close the file. This method should only be called once. The members of
+	the object should not be accessed anymore after this method has been
+	called. *)
+    method close : unit
+
+    method read : buffer -> int -> int -> int
+  end
+
+  (** Create a reader object from a wav file. *)
+  val reader_of_wav_file : string -> reader
+
+  class type writer =
+  object
+    method write : buffer -> int -> int -> unit
+
+    method close : unit
+  end
+
+  val writer_to_wav_file : int -> int -> string -> writer
+
+  (** Audio input and output using the OSS sound devices. *)
+  module OSS : sig
+    (** Create a writer on an OSS sound device. *)
+    val writer : ?device:string -> int -> int -> writer
+  end
+end

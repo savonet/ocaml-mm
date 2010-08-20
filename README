@@ -1,0 +1,1 @@
+ocaml-mm is a library dedicated to performing operations on multimedia contents. It is designed as a pure ocaml library (ie no dependencies are required).
