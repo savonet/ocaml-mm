@@ -8,6 +8,16 @@ module RGB8 = struct
   end
 end
 
+module YUV420 = struct
+  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+  type t = (data * int) * (data * data * int)
+
+  external create : int -> int -> t = "caml_yuv_create"
+
+  external blank_all : t -> unit = "caml_yuv_blank"
+end
+
 module RGBA8 = struct
   module Color = struct
     type t = int * int * int * int
@@ -65,9 +75,9 @@ module RGBA8 = struct
       | Some w, Some h -> blit_off_scale src dst (x,y) (w,h) blank
       | _, _ -> assert false
 
-  external fill : t -> Color.t -> unit = "caml_rgb_fill"
+  external fill_all : t -> Color.t -> unit = "caml_rgb_fill"
 
-  external blank : t -> unit = "caml_rgb_blank" "noalloc"
+  external blank_all : t -> unit = "caml_rgb_blank" "noalloc"
 
   external of_linear_rgb : t -> string -> unit = "caml_rgb_of_linear_rgb"
 
@@ -77,20 +87,14 @@ module RGBA8 = struct
     of_linear_rgb ans data;
     ans
 
-  type yuv = (data *int ) * (data * data * int)
-
-  external of_YUV420 : yuv -> t -> unit = "caml_rgb_of_YUV420"
+  external of_YUV420 : YUV420.t -> t -> unit = "caml_rgb_of_YUV420"
 
   let of_YUV420_create frame width height =
     let ans = create width height in
     of_YUV420 frame ans;
     ans
 
-  external create_yuv : int -> int -> yuv = "caml_yuv_create"
-
-  external blank_yuv : yuv -> unit = "caml_yuv_blank"
-
-  external to_YUV420 : t -> yuv -> unit = "caml_rgb_to_YUV420"
+  external to_YUV420 : t -> YUV420.t -> unit = "caml_rgb_to_YUV420"
 
   external get_pixel : t -> int -> int -> Color.t = "caml_rgb_get_pixel"
 
