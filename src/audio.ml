@@ -10,6 +10,11 @@ let lin_of_dB x = 10. ** (x /. 20.)
 
 let dB_of_lin x = 20. *. log x /. log 10.
 
+let samples_of_seconds sr t =
+  int_of_float (float sr *. t)
+
+let freq_of_note n = 440. *. (2. ** ((float n -. 69.) /. 12.))
+
 module Sample = struct
   type t = float
 
@@ -69,6 +74,31 @@ module Mono = struct
 	outbuf.(i) <- inbuf.(inidx + offs)
       done;
       outbuf
+
+  (* TODO: refined allocation/deallocation policies *)
+  module Extensible_buffer = struct
+    type t =
+	{
+	  mutable buffer : buffer
+	}
+
+    let prepare buf len =
+      if duration buf.buffer >= len then
+	buf.buffer
+      else
+	(* TODO: optionally blit the old buffer onto the new one. *)
+	(* let oldbuf = buf.buffer in *)
+	let newbuf = create len in
+	buf.buffer <- newbuf;
+	newbuf
+
+    let create len =
+      {
+	buffer = create len
+      }
+
+    let duration buf = duration buf.buffer
+  end
 
   module Analyze = struct
     let rms b ofs len =
@@ -216,6 +246,63 @@ module Mono = struct
         let sign = if bufi < 0. then -1. else 1. in
         buf.(i) <- sign *. log (1. +. mu  *. abs_float bufi) /. log (1. +. mu)
       done
+
+    module ADSR = struct
+      type t = int * int * float * int
+
+      (** Convert adsr in seconds to samples. *)
+      let make sr (a,d,s,r) =
+	samples_of_seconds sr a,
+	samples_of_seconds sr d,
+	s,
+	samples_of_seconds sr r
+
+      (** State in the ADSR enveloppe (A/D/S/R/dead + position in the state). *)
+      type state = int * int
+
+      let init () = 0, 0
+
+      let release (s,p) = (3,p)
+
+      let rec process sr adsr st buf ofs len =
+	let a,(d:int),s,(r:int) = adsr in
+	let state, state_pos = st in
+	match state with
+          | 0 ->
+            let fa = float a in
+            for i = 0 to min len (a - state_pos) - 1 do
+              buf.(ofs + i) <- float (state_pos + i) /. fa *. buf.(ofs + i)
+            done;
+            if len < a - state_pos then
+              0, state_pos + len
+            else
+              process sr adsr (1,0) buf (ofs + a - state_pos) (len - (a - state_pos))
+          | 1 ->
+            let fd = float d in
+            for i = 0 to min len (d - state_pos) - 1 do
+              buf.(ofs + i) <- (1. -. float (state_pos + i) /. fd *. (1. -. s)) *. buf.(ofs + i)
+            done;
+            if len < d - state_pos then
+              1, state_pos + len
+            else
+              process sr adsr (2,0) buf (ofs + d - state_pos) (len - (d - state_pos))
+          | 2 ->
+            amplify s buf ofs len;
+            st
+          | 3 ->
+            let fr = float r in
+            for i = 0 to min len (r - state_pos) - 1 do
+              buf.(ofs + i) <- s *. (1. -. float (state_pos + i) /. fr) *. buf.(ofs + i)
+            done;
+            if len < r - state_pos then
+              3, state_pos + len
+            else
+              process sr adsr (4,0) buf (ofs + r - state_pos) (len - (r - state_pos))
+          | 4 ->
+            clear buf ofs len;
+            st
+          | _ -> assert false
+    end
   end
 
   module Generator = struct
@@ -226,11 +313,23 @@ module Mono = struct
       method fill : buffer -> int -> int -> unit
 
       method fill_add : buffer -> int -> int -> unit
+
+      method release : unit
+
+      method dead : bool
     end
 
     class virtual base sample_rate volume =
     object (self)
       val mutable vol = volume
+
+      val mutable dead = false
+
+      method dead = dead
+
+      method release =
+	vol <- 0.;
+	dead <- true
 
       method sample_rate : int = sample_rate
 
@@ -268,6 +367,7 @@ module Mono = struct
 	inherit simple f phase freq
        end:>t)
 
+    (* TODO: ensure that these functions get inlined!!! *)
     let sine = simple (fun t -> sin (2. *. pi *. t))
 
     let square = simple (fun t -> let t = fst (modf t) in if t < 0.5 then 1. else -1.)
@@ -542,20 +642,101 @@ module Effect = struct
   let delay ~buffer_length channels sample_rate d ?(once=false) feedback =
     let d = int_of_float (float sample_rate *. d) in
     ((new delay channels buffer_length d once feedback):>t)
+
+  module ADSR = struct
+    type t = Mono.Effect.ADSR.t
+
+    type state = Mono.Effect.ADSR.state
+  end
 end
 
 module Generator = struct
-  class type synth =
+  class type t =
   object
     method set_volume : float -> unit
 
-    method note_on : int -> float -> unit
+    method release : unit
 
-    method note_off : int -> float -> unit
+    method dead : bool
 
-    method fill : float array array -> int -> int -> unit
+    method fill : buffer -> int -> int -> unit
 
-    method reset : unit
+    method fill_add : buffer -> int -> int -> unit
+  end
+
+  let of_mono g =
+  object
+    method set_volume = g#set_volume
+
+    method fill buf ofs len =
+      g#fill buf.(0) ofs len;
+      for i = 1 to channels buf - 1 do
+	Mono.blit buf.(i) ofs buf.(0) ofs len
+      done
+
+    method fill_add buf ofs len =
+      (* TODO: use an extensible buffer *)
+      assert false
+
+    method release = g#release
+
+    method dead = g#dead
+  end
+
+  class type generator = t
+
+  module Synth = struct
+    class type t =
+    object
+      method set_volume : float -> unit
+
+      method note_on : int -> float -> unit
+
+      method note_off : int -> float -> unit
+
+      method fill_add : buffer -> int -> int -> unit
+
+      method reset : unit
+    end
+
+    type note =
+	{
+	  note : int;
+	  volume : float;
+	  generator : generator
+	}
+
+    class virtual base volume =
+    object (self)
+      method virtual generator : generator
+
+      val mutable vol : float = volume
+
+      method set_volume v = vol <- v
+
+      val mutable notes : note list = []
+
+      method note_on n v =
+	let note =
+	  {
+	    note = n;
+	    volume = v;
+	    generator = self#generator;
+	  }
+	in
+	notes <- note :: notes
+
+      method note_off n (v:float) =
+	(* TODO: remove only one note *)
+	notes <- List.filter (fun note -> note.note <> n) notes
+
+      method fill_add buf ofs len =
+	List.iter (fun note -> note.generator#fill buf ofs len) notes
+
+      method fill buf ofs len =
+	clear buf ofs len;
+	self#fill_add buf ofs len
+    end
   end
 end
 
@@ -629,6 +810,7 @@ module IO = struct
       Unix.lseek fd 0 Unix.SEEK_CUR
   end
 
+  (* TODO: handle more formats... *)
   class virtual wav_reader =
   object (self)
     method virtual stream_read : string -> int -> int -> int

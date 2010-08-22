@@ -24,3 +24,6 @@ type event =
   | Time_signature of int * int * int * int
   | Key_signature of int * bool
   | Custom of string
+
+module IO = struct
+end

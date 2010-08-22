@@ -1,5 +1,7 @@
 (** Operations on audio data. *)
 
+val samples_of_seconds : int -> float -> int
+
 val lin_of_dB : float -> float
 
 val dB_of_lin : float -> float
@@ -34,6 +36,18 @@ module Mono : sig
 
   (** [add b1 b2] adds to contents of [b2] to [b1]. *)
   val add : buffer -> int -> buffer -> int -> int -> unit
+
+  (** Buffers of variable size. These are particularly useful for temporary
+      buffers. *)
+  module Extensible_buffer : sig
+    type t
+
+    val create : int -> t
+
+    val duration : t -> int
+
+    val prepare : t -> int -> buffer
+  end
 
   (** Functions for analyzing audio data. *)
   module Analyze : sig
@@ -88,6 +102,24 @@ module Mono : sig
     (** A compander following the µ-law (see
 	http://en.wikipedia.org/wiki/Mu-law).*)
     val compand_mu_law : float -> buffer -> int -> int -> unit
+
+    (** ADSR (Attack/Decay/Sustain/Release) envelopes. *)
+    module ADSR : sig
+      (** Attack/Decay/Sustain/Release times. *)
+      type t
+
+      val make : int -> float * float * float * float -> t
+
+      (** Current state in the ADSR envelope. *)
+      type state
+
+      (** Initial state for processing. *)
+      val init : unit -> state
+
+      val release : state -> state
+
+      val process : int -> t -> state -> buffer -> int -> int -> state
+    end
   end
 
   (** Sound generators. *)
@@ -102,6 +134,13 @@ module Mono : sig
 
       (** Same as [fill] but adds the sound to the buffer. *)
       method fill_add : buffer -> int -> int -> unit
+
+      (** Release the generator (used for generator with envelopes). *)
+      method release : unit
+
+      (** Is the generator still producing sound? This should become false soon
+	  after release has been triggered. *)
+      method dead : bool
     end
 
     (** Generate a sine waveform. *)
@@ -200,17 +239,39 @@ end
 
 (** Sound generators. *)
 module Generator : sig
-  class type synth =
+  class type t =
   object
     method set_volume : float -> unit
 
-    method note_on : int -> float -> unit
+    method fill : buffer -> int -> int -> unit
 
-    method note_off : int -> float -> unit
+    method fill_add : buffer -> int -> int -> unit
 
-    method fill : float array array -> int -> int -> unit
+    method release : unit
 
-    method reset : unit
+    method dead : bool
+  end
+
+  val of_mono : Mono.Generator.t -> t
+
+  (** Synthesizers. *)
+  module Synth : sig
+    (** A synthesizer. *)
+    class type t =
+    object
+      (** Set the global volume of the synth. *)
+      method set_volume : float -> unit
+
+      (** Play a note. *)
+      method note_on : int -> float -> unit
+
+      (** Stop playing a note. *)
+      method note_off : int -> float -> unit
+
+      method fill_add : buffer -> int -> int -> unit
+
+      method reset : unit
+    end
   end
 end
 

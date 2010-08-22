@@ -1,3 +1,5 @@
+(** Operations on images. Mostly only the RGBA8 format is supported for now. *)
+
 module RGB8 : sig
   module Color : sig
     type t = int * int * int
