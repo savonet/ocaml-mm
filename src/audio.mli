@@ -118,7 +118,9 @@ module Mono : sig
 
       val release : state -> state
 
-      val process : int -> t -> state -> buffer -> int -> int -> state
+      val dead : state -> bool
+
+      val process : t -> state -> buffer -> int -> int -> state
     end
   end
 
@@ -151,6 +153,9 @@ module Mono : sig
 
     (** Generate a saw wavefor. *)
     val saw : int -> ?volume:float -> ?phase:float -> float -> t
+
+    (** Apply an ADSR envlope on a generator. *)
+    val adsr : Effect.ADSR.t -> t -> t
   end
 end
 

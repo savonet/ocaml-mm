@@ -262,9 +262,11 @@ module Mono = struct
 
       let init () = 0, 0
 
-      let release (s,p) = (3,p)
+      let release (_,p) = (3,p)
 
-      let rec process sr adsr st buf ofs len =
+      let dead (s,_) = s = 4
+
+      let rec process adsr st buf ofs len =
 	let a,(d:int),s,(r:int) = adsr in
 	let state, state_pos = st in
 	match state with
@@ -276,7 +278,7 @@ module Mono = struct
             if len < a - state_pos then
               0, state_pos + len
             else
-              process sr adsr (1,0) buf (ofs + a - state_pos) (len - (a - state_pos))
+              process adsr (1,0) buf (ofs + a - state_pos) (len - (a - state_pos))
           | 1 ->
             let fd = float d in
             for i = 0 to min len (d - state_pos) - 1 do
@@ -285,7 +287,7 @@ module Mono = struct
             if len < d - state_pos then
               1, state_pos + len
             else
-              process sr adsr (2,0) buf (ofs + d - state_pos) (len - (d - state_pos))
+              process adsr (2,0) buf (ofs + d - state_pos) (len - (d - state_pos))
           | 2 ->
             amplify s buf ofs len;
             st
@@ -297,7 +299,7 @@ module Mono = struct
             if len < r - state_pos then
               3, state_pos + len
             else
-              process sr adsr (4,0) buf (ofs + r - state_pos) (len - (r - state_pos))
+              process adsr (4,0) buf (ofs + r - state_pos) (len - (r - state_pos))
           | 4 ->
             clear buf ofs len;
             st
@@ -381,6 +383,28 @@ module Mono = struct
           else
             4. *. (1. -. t) -. 1.
 	)
+
+    let adsr (adsr:Effect.ADSR.t) (g:t) =
+    object
+      val mutable adsr_st = Effect.ADSR.init ()
+
+      method set_volume = g#set_volume
+
+      method fill buf ofs len =
+	g#fill buf ofs len;
+	adsr_st <- Effect.ADSR.process adsr adsr_st buf ofs len
+
+      method fill_add =
+	(* TODO *)
+	assert false
+
+      method release =
+	adsr_st <- Effect.ADSR.release adsr_st;
+	g#release
+
+      method dead =
+	Effect.ADSR.dead adsr_st || g#dead
+    end
   end
 end
 
@@ -643,11 +667,13 @@ module Effect = struct
     let d = int_of_float (float sample_rate *. d) in
     ((new delay channels buffer_length d once feedback):>t)
 
+  (*
   module ADSR = struct
     type t = Mono.Effect.ADSR.t
 
     type state = Mono.Effect.ADSR.state
   end
+  *)
 end
 
 module Generator = struct
@@ -728,7 +754,9 @@ module Generator = struct
 
       method note_off n (v:float) =
 	(* TODO: remove only one note *)
-	notes <- List.filter (fun note -> note.note <> n) notes
+	(* TODO: merge the two iterations on the list *)
+	List.iter (fun note -> if note.note = n then note.generator#release) notes;
+	notes <- List.filter (fun note -> not note.generator#dead) notes
 
       method fill_add buf ofs len =
 	List.iter (fun note -> note.generator#fill buf ofs len) notes
