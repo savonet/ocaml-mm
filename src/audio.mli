@@ -201,6 +201,18 @@ val add : buffer -> int -> buffer -> int -> int -> unit
 
 val add_coeff : buffer -> int -> float -> buffer -> int -> int -> unit
 
+(** Buffers of variable size. These are particularly useful for temporary
+    buffers. *)
+module Extensible_buffer : sig
+  type t
+
+  val create : int -> int -> t
+
+  val duration : t -> int
+
+  val prepare : t -> int -> buffer
+end
+
 (** Circular ringbuffers. *)
 module Ringbuffer : sig
   (** A ringbuffer. *)

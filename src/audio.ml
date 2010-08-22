@@ -385,8 +385,10 @@ module Mono = struct
 	)
 
     let adsr (adsr:Effect.ADSR.t) (g:t) =
-    object
+    object (self)
       val mutable adsr_st = Effect.ADSR.init ()
+
+      val tmpbuf = Extensible_buffer.create 0
 
       method set_volume = g#set_volume
 
@@ -394,9 +396,10 @@ module Mono = struct
 	g#fill buf ofs len;
 	adsr_st <- Effect.ADSR.process adsr adsr_st buf ofs len
 
-      method fill_add =
-	(* TODO *)
-	assert false
+      method fill_add buf ofs len =
+	let tmpbuf = Extensible_buffer.prepare tmpbuf len in
+	self#fill tmpbuf 0 len;
+	blit tmpbuf 0 buf ofs len
 
       method release =
 	adsr_st <- Effect.ADSR.release adsr_st;
@@ -676,6 +679,31 @@ module Effect = struct
   *)
 end
 
+(* TODO: we cannot share this with mono, right? *)
+module Extensible_buffer = struct
+  type t =
+      {
+        mutable buffer : buffer
+      }
+
+  let prepare buf len =
+    if duration buf.buffer >= len then
+      buf.buffer
+    else
+      (* TODO: optionally blit the old buffer onto the new one. *)
+      let oldbuf = buf.buffer in
+      let newbuf = create (channels oldbuf) len in
+      buf.buffer <- newbuf;
+      newbuf
+
+  let create chans len =
+    {
+      buffer = create chans len
+    }
+
+  let duration buf = duration buf.buffer
+end
+
 module Generator = struct
   class type t =
   object
@@ -692,17 +720,22 @@ module Generator = struct
 
   let of_mono g =
   object
+    val tmpbuf = Mono.Extensible_buffer.create 0
+
     method set_volume = g#set_volume
 
     method fill buf ofs len =
       g#fill buf.(0) ofs len;
-      for i = 1 to channels buf - 1 do
-	Mono.blit buf.(i) ofs buf.(0) ofs len
+      for c = 1 to channels buf - 1 do
+	Mono.blit buf.(c) ofs buf.(0) ofs len
       done
 
     method fill_add buf ofs len =
-      (* TODO: use an extensible buffer *)
-      assert false
+      let tmpbuf = Mono.Extensible_buffer.prepare tmpbuf len in
+      g#fill tmpbuf 0 len;
+      for c = 0 to Array.length buf - 1 do
+	Mono.add buf.(c) ofs tmpbuf 0 len
+      done
 
     method release = g#release
 
