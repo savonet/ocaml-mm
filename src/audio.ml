@@ -10,8 +10,20 @@ let lin_of_dB x = 10. ** (x /. 20.)
 
 let dB_of_lin x = 20. *. log x /. log 10.
 
+(** Fractional part of a float. *)
+let fracf x =
+  if x < 1. then
+    x
+  else if x < 2. then
+    x -. 1.
+  else
+    fst (modf x)
+
 let samples_of_seconds sr t =
   int_of_float (float sr *. t)
+
+let seconds_of_samples sr n =
+  float n /. float sr
 
 let freq_of_note n = 440. *. (2. ** ((float n -. 69.) /. 12.))
 
@@ -312,6 +324,8 @@ module Mono = struct
     object
       method set_volume : float -> unit
 
+      method set_frequency : float -> unit
+
       method fill : buffer -> int -> int -> unit
 
       method fill_add : buffer -> int -> int -> unit
@@ -321,9 +335,11 @@ module Mono = struct
       method dead : bool
     end
 
-    class virtual base sample_rate volume =
+    class virtual base sample_rate volume freq =
     object (self)
       val mutable vol = volume
+
+      val mutable freq : float = freq
 
       val mutable dead = false
 
@@ -339,6 +355,8 @@ module Mono = struct
 
       method set_volume v = vol <- v
 
+      method set_frequency f = freq <- f
+
       method virtual fill : buffer -> int -> int -> unit
 
       (* TODO: might be optimized by various synths *)
@@ -350,7 +368,7 @@ module Mono = struct
 
     let sine sr ?(volume=1.) ?(phase=0.) freq =
     (object (self)
-      inherit base sr volume
+      inherit base sr volume freq
 
       val mutable phase = phase
 
@@ -365,7 +383,7 @@ module Mono = struct
 
     let square sr ?(volume=1.) ?(phase=0.) freq =
     (object (self)
-      inherit base sr volume
+      inherit base sr volume freq
 
       val mutable phase = phase
 
@@ -373,7 +391,7 @@ module Mono = struct
 	let sr = float self#sample_rate in
 	let omega = freq /. sr in
 	for i = 0 to len - 1 do
-	  let t = fst (modf (float i *. omega +. phase)) in
+	  let t = fracf (float i *. omega +. phase) in
 	  buf.(ofs + i) <- if t < 0.5 then volume else (-.volume)
 	done;
 	phase <- mod_float (phase +. float len *. omega) 1.
@@ -381,7 +399,7 @@ module Mono = struct
 
     let saw sr ?(volume=1.) ?(phase=0.) freq =
     (object (self)
-      inherit base sr volume
+      inherit base sr volume freq
 
       val mutable phase = phase
 
@@ -389,11 +407,39 @@ module Mono = struct
 	let sr = float self#sample_rate in
 	let omega = freq /. sr in
 	for i = 0 to len - 1 do
-	  let t = fst (modf (float i *. omega +. phase)) in
+	  let t = fracf (float i *. omega +. phase) in
+	  buf.(ofs + i) <- volume *. (2. *. t -. 1.)
+	done;
+	phase <- mod_float (phase +. float len *. omega) 1.
+     end :> t)
+
+    let triangle sr ?(volume=1.) ?(phase=0.) freq =
+    (object (self)
+      inherit base sr volume freq
+
+      val mutable phase = phase
+
+      method fill buf ofs len =
+	let sr = float self#sample_rate in
+	let omega = freq /. sr in
+	for i = 0 to len - 1 do
+	  let t = fracf (float i *. omega +. phase) +. 0.25 in
 	  buf.(ofs + i) <- volume *. (if t < 0.5 then 4. *. t -. 1. else 4. *. (1. -. t) -. 1.)
 	done;
 	phase <- mod_float (phase +. float len *. omega) 1.
      end :> t)
+
+    let tb303 sr =
+    object (self)
+      (* Freq of 0. means no slide for next note. *)
+      inherit base sr 0. 0.
+
+      (* Real frequency: during slides, this is the frequency that gets heard. *)
+      val mutable real_freq = 0.
+
+      method fill buf ofs len =
+	assert false
+    end
 
     let adsr (adsr:Effect.ADSR.t) (g:t) =
     object (self)
@@ -402,6 +448,8 @@ module Mono = struct
       val tmpbuf = Extensible_buffer.create 0
 
       method set_volume = g#set_volume
+
+      method set_frequency = g#set_frequency
 
       method fill buf ofs len =
 	g#fill buf ofs len;
@@ -462,16 +510,19 @@ let blit b1 o1 b2 o2 len =
 
 let to_mono b =
   let channels = channels b in
-  let len = duration b in
-  let chans = float channels in
-  let ans = Mono.create len in
-  for i = 0 to len - 1 do
-    for c = 0 to channels - 1 do
-      ans.(i) <- ans.(i) +. b.(c).(i)
+  if channels = 1 then
+    b.(0)
+  else
+    let len = duration b in
+    let chans = float channels in
+    let ans = Mono.create len in
+    for i = 0 to len - 1 do
+      for c = 0 to channels - 1 do
+	ans.(i) <- ans.(i) +. b.(c).(i)
+      done;
+      ans.(i) <- ans.(i) /. chans
     done;
-    ans.(i) <- ans.(i) /. chans
-  done;
-  ans
+    ans
 
 let of_mono b = [|b|]
 
@@ -526,7 +577,8 @@ let add b1 o1 b2 o2 len = iter2 (fun b1 b2 -> Mono.add b1 o1 b2 o2 len) b1 b2
 let add_coeff b1 o1 k b2 o2 len = iter2 (fun b1 b2 -> Mono.add_coeff b1 o1 k b2 o2 len) b1 b2
 
 let amplify k buf ofs len =
-  iter (fun buf -> Mono.amplify k buf ofs len) buf
+  if k <> 1. then
+    iter (fun buf -> Mono.amplify k buf ofs len) buf
 
 (* x between -1 and 1 *)
 let pan x buf ofs len =
@@ -629,7 +681,7 @@ module Effect = struct
 
   class virtual base sample_rate =
   object
-    method sample_rate : int = sample_rate
+    val sample_rate : int = sample_rate
   end
 
   class virtual bufferized chans len =
@@ -681,13 +733,84 @@ module Effect = struct
     let d = int_of_float (float sample_rate *. d) in
     ((new delay channels buffer_length d once feedback):>t)
 
-  (*
-  module ADSR = struct
-    type t = Mono.Effect.ADSR.t
+  class auto_gain_control channels samplerate
+    rmst (* target RMS *)
+    rms_len (* duration of the RMS collection in seconds *)
+    kup (* speed when volume is going up in coeff per sec *)
+    kdown (* speed when volume is going down *)
+    rms_threshold (* RMS threshold under which the volume should not be changed *)
+    vol_min (* minimal gain *)
+    vol_max (* maximal gain *)
+    =
+    let rms_len = samples_of_seconds samplerate rms_len in
+    let rms_lenf = float rms_len in
+    (* TODO: is this the right conversion? *)
+    let kup = kup ** (seconds_of_samples samplerate rms_len) in
+    let kdown = kdown ** (seconds_of_samples samplerate rms_len) in
+  object (self)
+    inherit base samplerate
 
-    type state = Mono.Effect.ADSR.state
+    (** Square of the currently computed rms. *)
+    val mutable rms = Array.make channels 0.
+
+    (** Number of samples collected so far. *)
+    val mutable rms_collected = 0
+
+    (** Current volume. *)
+    val mutable vol = 1.
+
+    (** Previous value of volume. *)
+    val mutable vol_old = 1.
+
+    (** Is it enabled? (disabled if below the threshold) *)
+    val mutable enabled = true
+
+    method process buf ofs len =
+      for c = 0 to channels - 1 do
+	let bufc = buf.(c) in
+	for i = ofs to ofs + len - 1 do
+	  let bufci = bufc.(i) in
+	  if rms_collected >= rms_len then
+	    (
+	      let rms_cur =
+		let ans = ref 0. in
+		for c = 0 to channels - 1 do
+		  ans := !ans +. rms.(c)
+		done;
+		sqrt (!ans /. float channels)
+	      in
+	      rms <- Array.make channels 0.;
+	      rms_collected <- 0;
+	      enabled <- rms_cur >= rms_threshold;
+	      if enabled then
+		let vol_opt = rmst /. rms_cur in
+		vol_old <- vol;
+		if rms_cur < rmst then
+		  vol <- vol +. kup *. (vol_opt -. vol)
+		else
+		  vol <- vol +. kdown *. (vol_opt -. vol);
+		vol <- max vol_min vol;
+		vol <- min vol_max vol
+	    );
+	  rms.(c) <- rms.(c) +. bufci *. bufci;
+	  rms_collected <- rms_collected + 1;
+	  (* Affine transition between vol_old and vol. *)
+	  bufc.(i) <- (vol_old +. (float rms_collected /. rms_lenf) *. (vol -. vol_old)) *. bufci
+	done
+      done
   end
-  *)
+
+  (* TODO: check default parameters. *)
+  let auto_gain_control channels samplerate ?(rms_target=1.) ?(rms_window=0.2) ?(kup=0.6) ?(kdown=0.8) ?(rms_threshold=0.01) ?(volume_min=0.1) ?(volume_max=2.) () =
+    new auto_gain_control channels samplerate rms_target rms_window kup kdown rms_threshold volume_min volume_max
+
+(*
+  module ADSR = struct
+  type t = Mono.Effect.ADSR.t
+
+  type state = Mono.Effect.ADSR.state
+  end
+*)
 end
 
 (* TODO: we cannot share this with mono, right? *)
@@ -720,6 +843,8 @@ module Generator = struct
   object
     method set_volume : float -> unit
 
+    method set_frequency : float -> unit
+
     method release : unit
 
     method dead : bool
@@ -735,10 +860,12 @@ module Generator = struct
 
     method set_volume = g#set_volume
 
+    method set_frequency = g#set_frequency
+
     method fill buf ofs len =
       g#fill buf.(0) ofs len;
       for c = 1 to channels buf - 1 do
-	Mono.blit buf.(c) ofs buf.(0) ofs len
+	Mono.blit buf.(0) ofs buf.(c) ofs len
       done
 
     method fill_add buf ofs len =
@@ -839,6 +966,23 @@ module Generator = struct
     let square ?adsr sr = of_generator (fun f v -> square ?adsr sr ~volume:v f)
 
     let saw ?adsr sr = of_generator (fun f v -> saw ?adsr sr ~volume:v f)
+
+    let monophonic (g:generator) =
+    object (self)
+      method set_volume v = g#set_volume v
+
+      method note_on n v =
+	g#set_frequency (freq_of_note n);
+	g#set_volume v
+
+      method note_off (_:int) (_:float) =
+	(* TODO: check for the last note? *)
+	g#release
+
+      method fill_add buf ofs len = g#fill_add buf ofs len
+
+      method reset = g#set_volume 0.
+    end
   end
 end
 

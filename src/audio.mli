@@ -2,6 +2,8 @@
 
 val samples_of_seconds : int -> float -> int
 
+val seconds_of_samples : int -> int -> float
+
 val lin_of_dB : float -> float
 
 val dB_of_lin : float -> float
@@ -131,6 +133,8 @@ module Mono : sig
     object
       method set_volume : float -> unit
 
+      method set_frequency : float -> unit
+
       (** Fill a buffer with generated sound. *)
       method fill : buffer -> int -> int -> unit
 
@@ -252,6 +256,8 @@ module Effect : sig
       [d] as delay in seconds and [feedback] as feedback. If [once] is set to
       [true] only one echo will be heard (no feedback). *)
   val delay : buffer_length:int -> int -> int -> float -> ?once:bool -> float -> t
+
+  val auto_gain_control : int -> int -> ?rms_target:float -> ?rms_window:float -> ?kup:float -> ?kdown:float -> ?rms_threshold:float -> ?volume_min:float -> ?volume_max:float -> unit -> t
 end
 
 (** Sound generators. *)
@@ -259,6 +265,8 @@ module Generator : sig
   class type t =
   object
     method set_volume : float -> unit
+
+    method set_frequency : float -> unit
 
     method fill : buffer -> int -> int -> unit
 
@@ -269,7 +277,15 @@ module Generator : sig
     method dead : bool
   end
 
+  type generator = t
+
   val of_mono : Mono.Generator.t -> t
+
+  val sine : ?adsr:Mono.Effect.ADSR.t -> int -> ?volume:float -> ?phase:float -> float -> t
+
+  val square : ?adsr:Mono.Effect.ADSR.t -> int -> ?volume:float -> ?phase:float -> float -> t
+
+  val saw : ?adsr:Mono.Effect.ADSR.t -> int -> ?volume:float -> ?phase:float -> float -> t
 
   (** Synthesizers. *)
   module Synth : sig
@@ -295,6 +311,9 @@ module Generator : sig
     val square : ?adsr:Mono.Effect.ADSR.t -> int -> t
 
     val saw : ?adsr:Mono.Effect.ADSR.t -> int -> t
+
+    (** Synths with only one note at a time. *)
+    val monophonic : generator -> t
   end
 end
 

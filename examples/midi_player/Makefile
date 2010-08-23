@@ -3,7 +3,7 @@ RESULT = player
 INCDIRS = ../../src
 LIBS = unix mm
 
-all: dnc
+all: pnc
 
 test: all
 	OCAMLRUNPARAM=b ./player ../test.mid
