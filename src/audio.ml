@@ -738,6 +738,9 @@ module Generator = struct
     method dead = g#dead
   end
 
+  let sine sr ?(volume=1.) ?(phase=0.) f =
+    of_mono (Mono.Generator.sine sr ~volume ~phase f)
+
   class type generator = t
 
   module Synth = struct
@@ -761,11 +764,11 @@ module Generator = struct
 	  generator : generator
 	}
 
-    class virtual base volume =
+    class virtual base =
     object (self)
-      method virtual generator : generator
+      method virtual generator : float -> float -> generator
 
-      val mutable vol : float = volume
+      val mutable vol : float = 1.
 
       method set_volume v = vol <- v
 
@@ -776,7 +779,7 @@ module Generator = struct
 	  {
 	    note = n;
 	    volume = v;
-	    generator = self#generator;
+	    generator = self#generator (freq_of_note n) v;
 	  }
 	in
 	notes <- note :: notes
@@ -793,7 +796,18 @@ module Generator = struct
       method fill buf ofs len =
 	clear buf ofs len;
 	self#fill_add buf ofs len
+
+      method reset = notes <- []
     end
+
+    let of_generator g =
+    (object
+      inherit base
+
+      method generator f v = g f v
+     end :> t)
+
+    let sine sr = of_generator (fun f v -> sine sr ~volume:v f)
   end
 end
 

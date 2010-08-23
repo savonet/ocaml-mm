@@ -41,8 +41,22 @@ let samples_of_delta samplerate division tempo delta =
       let ( / ) = Int64.div in
       Int64.to_int ((((delta * tempo) / tpq) * tps) / ten)
     | SMPTE (fps,res) ->
-      assert false (* TODO *)
-      (* (delta * Lazy.force Frame.size) / (fps * res) *)
+      (samplerate * delta) / (fps * res)
+
+let delta_of_samples samplerate division tempo samples =
+  match division with
+    | Ticks_per_quarter tpq ->
+      let tpq = Int64.of_int tpq in
+      let tempo = Int64.of_int tempo in
+      let samplerate = Int64.of_int samplerate in
+      let ten = Int64.of_int 1000000 in
+      let samples = Int64.of_int samples in
+      let ( * ) = Int64.mul in
+      let ( / ) = Int64.div in
+      Int64.to_int (samples * samplerate * ten * tpq / tempo)
+    | SMPTE (fps,res) ->
+      (* TODO: could this overflow? *)
+      (fps * res * samples) / samplerate
 
 module Track = struct
   type t = (delta * event) list
@@ -86,11 +100,25 @@ module IO = struct
 
   exception Invalid_data
 
+  exception End_of_stream
+
+  class type reader =
+  object
+    method read_samples : int -> Track.t array -> int -> unit
+
+    method close : unit
+  end
+
   class virtual base =
   object (self)
     inherit IO.helper
 
+    val mutable tracks = 0
+    val mutable division = Ticks_per_quarter 0
+
     method input_id = self#really_input 4
+    method input_int = self#input_int_be
+    method input_short = self#input_short_be
 
     (** Read midi header. *)
     method read_header =
@@ -98,20 +126,21 @@ module IO = struct
       let id = self#input_id in
       let len = self#input_int in
       let fmt = self#input_short in
-      let tracks = self#input_short in
-      let division = self#input_short in
-      let division =
-	if division land 0x8000 = 0 then
+      let track_nb = self#input_short in
+      let div = self#input_short in
+      let div =
+	if div land 0x8000 = 0 then
             (* Delta-time ticks per quarter *)
-          Ticks_per_quarter division
+          Ticks_per_quarter div
 	else
-	  let frames = (division lsr 8) land 0x7f in
-	  let ticks = division land 0xff in
+	  let frames = (div lsr 8) land 0x7f in
+	  let ticks = div land 0xff in
           SMPTE (frames, ticks)
       in
       if id <> "MThd" || len <> 6 || (fmt <> 0 && fmt <> 1 && fmt <> 2) then
         raise Invalid_header;
-      tracks, division
+      tracks <- track_nb;
+      division <- div
 
     (** Read a midi track. *)
     method decode_track_data data =
@@ -289,4 +318,96 @@ module IO = struct
       let data = self#really_input len in
       self#decode_track_data data
   end
+
+  class file_reader fname =
+  object (self)
+    inherit IO.Unix.rw ~read:true fname
+    inherit IO.helper
+    inherit base
+
+    val mutable track = []
+    val mutable tempo = 500000
+
+    initializer
+      (* Read header. *)
+      self#read_header;
+      (* Read all tracks. *)
+      let tracks = Array.init tracks (fun _ -> self#read_track) in
+      (* Merge all tracks. *)
+      let trk =
+	let find_min () =
+          let ans = ref None in
+          for c = 0 to Array.length tracks - 1 do
+            match tracks.(c) with
+              | [] -> ()
+              | (d,_)::_ ->
+                match !ans with
+                  | None ->
+                    ans := Some (d, c)
+                  | Some (d',_) ->
+                    if d < d' then ans := Some (d, c)
+          done;
+          match !ans with
+            | Some (d, c) -> d,c
+            | None -> raise Not_found
+	in
+	let ans = ref [] in
+        try
+          while true do
+            let d,c = find_min () in
+            ans := (List.hd tracks.(c)) :: !ans;
+            tracks.(c) <- List.tl tracks.(c);
+            Array.iteri
+              (fun n t ->
+                if n <> c && t <> [] then
+                  let d',e = List.hd t in
+                  tracks.(n) <- (d'-d,e)::(List.tl t)
+              ) tracks
+          done;
+          assert false
+        with
+          | Not_found -> List.rev !ans
+      in
+      track <- trk
+
+    method read_samples sr buf len =
+      let offset_in_buf = ref 0 in
+      for c = 0 to Array.length buf - 1 do
+	buf.(c) <- []
+      done;
+      if track = [] then raise End_of_stream;
+      while track <> [] && !offset_in_buf < len do
+        let d,(c,e) = List.hd track in
+	let d = samples_of_delta sr division tempo d in
+        offset_in_buf := !offset_in_buf + d;
+	(
+          match e with
+            | Tempo t -> tempo <- t
+            | _ -> ()
+        );
+        if !offset_in_buf < len then
+	  (
+            track <- List.tl track;
+            match c with
+	      | Some c ->
+                (* Filter out relevant events. *)
+		(
+                  match e with
+                    | Note_on _
+                    | Note_off _
+                    | Control_change _ ->
+		      if c < Array.length buf then
+			buf.(c) <- (buf.(c))@[!offset_in_buf, e]
+                    | _ -> () (* TODO *)
+                )
+	      | None -> () (* TODO *)
+          )
+	else
+          track <- (delta_of_samples sr division tempo (!offset_in_buf - len),(c,e))::(List.tl track)
+      done
+
+    method close = self#stream_close
+  end
+
+  let reader_of_file fname = (new file_reader fname :> reader)
 end

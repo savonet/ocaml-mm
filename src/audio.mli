@@ -290,6 +290,8 @@ module Generator : sig
 
       method reset : unit
     end
+
+    val sine : int -> t
   end
 end
 

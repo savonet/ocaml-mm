@@ -31,7 +31,7 @@ type event =
 type delta = int
 
 module Track : sig
-  type t
+  type t = (delta * event) list
 
   val create : unit -> t
 
@@ -49,4 +49,15 @@ module Synth : sig
   end
 
   val create : Audio.Generator.Synth.t -> t
+end
+
+module IO : sig
+  class type reader =
+  object
+    method read_samples : int -> Track.t array -> int -> unit
+
+    method close : unit
+  end
+
+  val reader_of_file : string -> reader
 end

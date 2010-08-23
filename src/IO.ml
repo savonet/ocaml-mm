@@ -74,6 +74,18 @@ object (self)
 
   method input_short = self#input_int_num_bytes 2
 
+  method input_int_num_bytes_be n =
+    let ans = ref 0 in
+    let buf = self#really_input n in
+    for i = 0 to n - 1 do
+      ans := 256 * !ans + int_of_char buf.[i]
+    done;
+    !ans
+
+  method input_int_be = self#input_int_num_bytes_be 4
+
+  method input_short_be = self#input_int_num_bytes_be 2
+
   method virtual stream_write : string -> int -> int -> int
 
   method output s =
