@@ -26,3 +26,27 @@ type event =
   | Time_signature of int * int * int * int
   | Key_signature of int * bool
   | Custom of string
+
+(** Delta-time (difference of time with the preceding event). *)
+type delta = int
+
+module Track : sig
+  type t
+
+  val create : unit -> t
+
+  val append : t -> t -> t
+end
+
+module Synth : sig
+  class type t =
+  object
+    method feed : Track.t -> unit
+
+    method fill : Audio.buffer -> int -> int -> unit
+
+    method fill_add : Audio.buffer -> int -> int -> unit
+  end
+
+  val create : Audio.Generator.Synth.t -> t
+end

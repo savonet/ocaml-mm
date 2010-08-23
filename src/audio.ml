@@ -348,27 +348,22 @@ module Mono = struct
 	add buf ofs tmp 0 len
     end
 
-    class virtual simple f phase freq =
-    object (self)
+    let sine sr ?(volume=1.) ?(phase=0.) freq =
+    (object (self)
+      inherit base sr volume
+
       val mutable phase = phase
 
-      method virtual sample_rate : int
-
-      method fill (buf:buffer) ofs len =
+      method fill buf ofs len =
 	let sr = float self#sample_rate in
-	let omega = freq /. sr in
+	let omega = 2. *. pi *. freq /. sr in
 	for i = 0 to len - 1 do
-	  buf.(ofs + i) <- f (float i *. omega +. phase)
+	  buf.(ofs + i) <- sin (float i *. omega +. phase)
 	done;
-	phase <- mod_float (phase +. float len *. omega) 1.
-    end
+	phase <- mod_float (phase +. float len *. omega) (2. *. pi)
+     end :> t)
 
-    let simple f sr ?(volume=1.) ?(phase=0.) freq =
-      (object
-	inherit base sr volume
-	inherit simple f phase freq
-       end:>t)
-
+    (*
     (* TODO: ensure that these functions get inlined!!! *)
     let sine = simple (fun t -> sin (2. *. pi *. t))
 
@@ -383,6 +378,7 @@ module Mono = struct
           else
             4. *. (1. -. t) -. 1.
 	)
+    *)
 
     let adsr (adsr:Effect.ADSR.t) (g:t) =
     object (self)
@@ -845,35 +841,11 @@ module IO = struct
 *)
   end
 
-  (** To be inherited to read from files. *)
-  class virtual rw_unix ?(read=false) ?(write=false) fname =
-  object (self)
-    val fd =
-      let flag, perms =
-	match read, write with
-	  | false, false -> assert false
-	  | true, false -> [Unix.O_RDONLY], 0o644
-	  | false, true -> [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC], 0o644
-	  | true, true -> [Unix.O_RDWR; Unix.O_CREAT; Unix.O_TRUNC], 0o644
-      in
-      Unix.openfile fname flag perms
-
-    method stream_read buf ofs len = Unix.read fd buf ofs len
-
-    method stream_write buf ofs len = Unix.write fd buf ofs len
-
-    method stream_close = Unix.close fd
-
-    method stream_seek n =
-      ignore (Unix.lseek fd n Unix.SEEK_SET)
-
-    method stream_cur_pos =
-      Unix.lseek fd 0 Unix.SEEK_CUR
-  end
-
   (* TODO: handle more formats... *)
   class virtual wav_reader =
   object (self)
+    inherit IO.helper
+
     method virtual stream_read : string -> int -> int -> int
     method virtual stream_close : unit
     method virtual stream_seek : int -> unit
@@ -892,59 +864,23 @@ module IO = struct
     method channels = channels
     method duration = duration
 
-    method input n =
-      let buf = String.create n in
-      let n = self#stream_read buf 0 n in
-      buf, n
-
-    method loop_input len =
-      let s, i = self#input len in
-      if i = len || i = 0 then
-	s, i
-      else
-	(* if i = 0 then s raise End_of_stream else *)
-	let s', i' = self#loop_input (len - i) in
-        String.sub s 0 i ^ s', (i + i')
-
-    method really_input len = fst (self#loop_input len)
-
-    method input_byte =
-      let s, i = self#input 1 in
-      if i = 0 then raise End_of_stream;
-      int_of_char s.[0]
-
-    method read_int_num_bytes n =
-      let rec aux = function
-	| 0 -> 0
-	| n ->
-          let b = self#input_byte in
-          b + 256 * (aux (n-1))
-      in
-      aux n
-
-    method read_int = self#read_int_num_bytes 4
-
-    method read_short = self#read_int_num_bytes 2
-
-    method read_byte = self#read_int_num_bytes 1
-
     initializer
-      if self#really_input 4 <> "RIFF" then
+      if self#input 4 <> "RIFF" then
 	(* failwith "Bad header: \"RIFF\" not found"; *)
 	raise Invalid_file;
       (* Ignore the file size *)
-      ignore (self#really_input 4) ;
-      if self#really_input 8 <> "WAVEfmt " then
+      ignore (self#input 4) ;
+      if self#input 8 <> "WAVEfmt " then
 	(* failwith "Bad header: \"WAVEfmt \" not found"; *)
 	raise Invalid_file;
       (* Now we always have the following uninteresting bytes:
        * 0x10 0x00 0x00 0x00 0x01 0x00 *)
       ignore (self#really_input 6);
-      channels <- self#read_short;
-      sample_rate <- self#read_int;
-      (* byt_per_sec *) ignore (self#read_int);
-      (* byt_per_samp *) ignore (self#read_short);
-      sample_size <- self#read_short;
+      channels <- self#input_short;
+      sample_rate <- self#input_int;
+      (* byt_per_sec *) ignore (self#input_int);
+      (* byt_per_samp *) ignore (self#input_short);
+      sample_size <- self#input_short;
 
       (* TODO: handle this *)
       (* signed *) assert (sample_size <> 8);
@@ -959,23 +895,15 @@ module IO = struct
 	  raise Invalid_file
 	);
 
-      let len_dat = self#read_int in
+      let len_dat = self#input_int in
       data_offset <- self#stream_cur_pos;
       bytes_per_sample <- sample_size / 8 * channels;
       duration <- len_dat / bytes_per_sample
 
-    method read_sample =
-      if sample_size = 8 then
-	(* TODO! *)
-	float (self#read_byte) /. 128.
-      else
-	let s = self#read_short in
-	let s = if s >= 32768 then - (s lxor 65535) else s in
-	float s /. 32768.
-
     method read buf ofs len =
       let sbuflen = len * channels * 2 in
-      let sbuf, sbuflen = self#loop_input sbuflen in
+      let sbuf = self#input sbuflen in
+      let sbuflen = String.length sbuf in
       let len = sbuflen / (channels * 2) in
       of_16le sbuf 0 buf ofs len;
       len
@@ -989,7 +917,7 @@ module IO = struct
 
   let reader_of_wav_file fname =
   (object
-    inherit rw_unix ~read:true fname
+    inherit IO.Unix.rw ~read:true fname
     inherit reader_base
     inherit wav_reader
   end :> reader)
@@ -1010,24 +938,13 @@ module IO = struct
 
   class virtual wav_writer =
   object (self)
+    inherit IO.helper
+
     method virtual stream_write : string -> int -> int -> int
     method virtual stream_seek : int -> unit
     method virtual stream_close : unit
     method virtual channels : int
     method virtual sample_rate : int
-
-    method output s =
-      let len = String.length s in
-      assert (self#stream_write s 0 len = len)
-
-    method output_num b n =
-      let s = String.create b in
-      for i = 0 to b - 1 do
-	s.[i] <- char_of_int ((n lsr (8 * i)) land 0xff)
-      done;
-      self#output s
-    method output_short n = self#output_num 2 n
-    method output_int n = self#output_num 4 n
 
     initializer
     let bits_per_sample = 16 in
@@ -1066,7 +983,7 @@ module IO = struct
   let writer_to_wav_file chans sr fname =
     (object
       inherit writer_base chans sr
-      inherit rw_unix ~write:true fname
+      inherit IO.Unix.rw ~write:true fname
       inherit wav_writer
      end :> writer)
 
@@ -1080,7 +997,7 @@ module IO = struct
     (* TODO: other formats than 16 bits? *)
     let writer ?(device="/dev/dsp") channels sample_rate =
       (object (self)
-	inherit rw_unix ~write:true device
+	inherit IO.Unix.rw ~write:true device
 
 	initializer
 	  assert (set_format fd 16 = 16);
