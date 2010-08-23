@@ -290,11 +290,11 @@ module Generator : sig
       method reset : unit
     end
 
-    val sine : int -> t
+    val sine : ?adsr:Mono.Effect.ADSR.t -> int -> t
 
-    val square : int -> t
+    val square : ?adsr:Mono.Effect.ADSR.t -> int -> t
 
-    val saw : int -> t
+    val saw : ?adsr:Mono.Effect.ADSR.t -> int -> t
   end
 end
 

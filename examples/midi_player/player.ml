@@ -9,7 +9,8 @@ let () =
   let buf = Audio.create channels blen in
   let mchannels = 16 in
   let mbuf = Array.create mchannels [] in
-  let synth = MIDI.Synth.Multichan.init mchannels (fun _ -> Audio.Generator.Synth.saw sample_rate) in
+  let adsr = Audio.Mono.Effect.ADSR.make sample_rate (0.02,0.01,0.9,0.05) in
+  let synth = MIDI.Synth.Multichan.init mchannels (fun _ -> Audio.Generator.Synth.saw ~adsr sample_rate) in
   try
     while true do
       f#read_samples sample_rate mbuf blen;

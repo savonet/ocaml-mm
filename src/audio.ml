@@ -753,14 +753,20 @@ module Generator = struct
     method dead = g#dead
   end
 
-  let sine sr ?(volume=1.) ?(phase=0.) f =
-    of_mono (Mono.Generator.sine sr ~volume ~phase f)
+  let simple g ?adsr sr ?(volume=1.) ?(phase=0.) f =
+    let g = g sr ?volume:(Some volume) ?phase:(Some phase) f in
+    let g =
+      match adsr with
+	| None -> g
+	| Some a -> Mono.Generator.adsr a g
+    in
+    of_mono g
 
-  let square sr ?(volume=1.) ?(phase=0.) f =
-    of_mono (Mono.Generator.square sr ~volume ~phase f)
+  let sine = simple Mono.Generator.sine
 
-  let saw sr ?(volume=1.) ?(phase=0.) f =
-    of_mono (Mono.Generator.saw sr ~volume ~phase f)
+  let square = simple Mono.Generator.square
+
+  let saw = simple Mono.Generator.saw
 
   class type generator = t
 
@@ -828,11 +834,11 @@ module Generator = struct
       method generator f v = g f v
      end :> t)
 
-    let sine sr = of_generator (fun f v -> sine sr ~volume:v f)
+    let sine ?adsr sr = of_generator (fun f v -> sine ?adsr sr ~volume:v f)
 
-    let square sr = of_generator (fun f v -> square sr ~volume:v f)
+    let square ?adsr sr = of_generator (fun f v -> square ?adsr sr ~volume:v f)
 
-    let saw sr = of_generator (fun f v -> saw sr ~volume:v f)
+    let saw ?adsr sr = of_generator (fun f v -> saw ?adsr sr ~volume:v f)
   end
 end
 
