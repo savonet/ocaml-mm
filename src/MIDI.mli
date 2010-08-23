@@ -38,20 +38,27 @@ module Track : sig
   val append : t -> t -> t
 end
 
+type buffer = Track.t array
+
 module Synth : sig
-  class type t =
-  object
-    method feed : Track.t -> unit
+  val fill :  Audio.Generator.Synth.t -> Track.t -> Audio.buffer -> int -> int -> unit
 
-    method fill : Audio.buffer -> int -> int -> unit
+  val fill_add :  Audio.Generator.Synth.t -> Track.t -> Audio.buffer -> int -> int -> unit
 
-    method fill_add : Audio.buffer -> int -> int -> unit
+  module Multichan : sig
+    type t = Audio.Generator.Synth.t array
+
+    val init : int -> (int -> Audio.Generator.Synth.t) -> t
+
+    val fill : t -> buffer -> Audio.buffer -> int -> int -> unit
+
+    val fill_add : t -> buffer -> Audio.buffer -> int -> int -> unit
   end
-
-  val create : Audio.Generator.Synth.t -> t
 end
 
 module IO : sig
+  exception End_of_stream
+
   class type reader =
   object
     method read_samples : int -> Track.t array -> int -> unit

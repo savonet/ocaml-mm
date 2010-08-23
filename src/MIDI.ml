@@ -43,6 +43,7 @@ let samples_of_delta samplerate division tempo delta =
     | SMPTE (fps,res) ->
       (samplerate * delta) / (fps * res)
 
+(*
 let delta_of_samples samplerate division tempo samples =
   match division with
     | Ticks_per_quarter tpq ->
@@ -57,6 +58,7 @@ let delta_of_samples samplerate division tempo samples =
     | SMPTE (fps,res) ->
       (* TODO: could this overflow? *)
       (fps * res * samples) / samplerate
+*)
 
 module Track = struct
   type t = (delta * event) list
@@ -66,33 +68,46 @@ module Track = struct
   let append t1 t2 : t = List.append t1 t2
 end
 
+type buffer = Track.t array
+
 module Synth = struct
-  class type t =
-  object
-    method feed : Track.t -> unit
+  let rec fill_add synth evs buf ofs len =
+    match evs with
+      | (t,e)::tl ->
+	assert (t < len);
+	synth#fill_add buf ofs t;
+	(
+	  match e with
+	    | Note_on (n,v) ->
+	      synth#note_on n v
+	    | Note_off (n,v) ->
+	      synth#note_off n v
+	    | Control_change (0x7,v) ->
+              synth#set_volume (float v /. 127.)
+	    | _ -> ()
+	);
+	fill_add synth tl buf (ofs+t) (len-t)
+      | [] ->
+	synth#fill_add buf ofs len
 
-    method fill : Audio.buffer -> int -> int -> unit
+  let fill synth evs buf ofs len =
+    Audio.clear buf ofs len;
+    fill_add synth evs buf ofs len
 
-    method fill_add : Audio.buffer -> int -> int -> unit
-  end
+  module Multichan = struct
+    type t = Audio.Generator.Synth.t array
 
-  class base (synth:Audio.Generator.Synth.t) =
-  object (self)
-    val mutable midi = Track.create ()
+    let init n f = Array.init n f
 
-    method feed tr =
-      midi <- Track.append midi tr
+    let fill_add synth evs buf ofs len =
+      for c = 0 to Array.length synth - 1 do
+	fill_add synth.(c) evs.(c) buf ofs len
+      done
 
-    method fill_add buf ofs len =
-      (* TODO!!! *)
-      synth#fill_add buf ofs len
-
-    method fill buf ofs len =
+    let fill synth evs buf ofs len =
       Audio.clear buf ofs len;
-      self#fill_add buf ofs len
+      fill_add synth evs buf ofs len
   end
-
-  let create s = (new base s :> t)
 end
 
 module IO = struct
@@ -370,15 +385,39 @@ module IO = struct
       in
       track <- trk
 
+    (* We store here the track with delta-times in samples. TODO: this way of
+       doing things is messy but simpler to implement *)
+    val mutable track_samples = []
+    val mutable track_samples_computed = false
+
     method read_samples sr buf len =
+      (* Compute track_samples if this has not been done yet. *)
+      if not track_samples_computed then
+	(
+	  let t = tempo in
+	  track_samples <-
+	    List.map
+	    (fun (d,(c,e)) ->
+	      let d = samples_of_delta sr division tempo d in
+	      (
+		match e with
+		  | Tempo t -> tempo <- t
+		  | _ -> ()
+	      );
+	      (d,(c,e))
+	    )
+	    track;
+	  tempo <- t;
+	  track_samples_computed <- true
+	);
       let offset_in_buf = ref 0 in
+      (* Clear the input buffer. *)
       for c = 0 to Array.length buf - 1 do
 	buf.(c) <- []
       done;
-      if track = [] then raise End_of_stream;
-      while track <> [] && !offset_in_buf < len do
-        let d,(c,e) = List.hd track in
-	let d = samples_of_delta sr division tempo d in
+      if track_samples = [] then raise End_of_stream;
+      while track_samples <> [] && !offset_in_buf < len do
+        let d,(c,e) = List.hd track_samples in
         offset_in_buf := !offset_in_buf + d;
 	(
           match e with
@@ -387,7 +426,7 @@ module IO = struct
         );
         if !offset_in_buf < len then
 	  (
-            track <- List.tl track;
+            track_samples <- List.tl track_samples;
             match c with
 	      | Some c ->
                 (* Filter out relevant events. *)
@@ -397,13 +436,13 @@ module IO = struct
                     | Note_off _
                     | Control_change _ ->
 		      if c < Array.length buf then
-			buf.(c) <- (buf.(c))@[!offset_in_buf, e]
+			buf.(c) <- (buf.(c))@[d, e]
                     | _ -> () (* TODO *)
                 )
 	      | None -> () (* TODO *)
           )
 	else
-          track <- (delta_of_samples sr division tempo (!offset_in_buf - len),(c,e))::(List.tl track)
+          track_samples <- (!offset_in_buf - len,(c,e))::(List.tl track_samples)
       done
 
     method close = self#stream_close

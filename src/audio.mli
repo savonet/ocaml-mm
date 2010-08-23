@@ -148,13 +148,12 @@ module Mono : sig
     (** Generate a sine waveform. *)
     val sine : int -> ?volume:float -> ?phase:float -> float -> t
 
-(*
     (** Generate a square waveform. *)
     val square : int -> ?volume:float -> ?phase:float -> float -> t
 
     (** Generate a saw waveform. *)
     val saw : int -> ?volume:float -> ?phase:float -> float -> t
-*)
+
     (** Apply an ADSR envlope on a generator. *)
     val adsr : Effect.ADSR.t -> t -> t
   end
@@ -292,6 +291,10 @@ module Generator : sig
     end
 
     val sine : int -> t
+
+    val square : int -> t
+
+    val saw : int -> t
   end
 end
 

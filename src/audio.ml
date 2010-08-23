@@ -358,27 +358,42 @@ module Mono = struct
 	let sr = float self#sample_rate in
 	let omega = 2. *. pi *. freq /. sr in
 	for i = 0 to len - 1 do
-	  buf.(ofs + i) <- sin (float i *. omega +. phase)
+	  buf.(ofs + i) <- volume *. sin (float i *. omega +. phase)
 	done;
 	phase <- mod_float (phase +. float len *. omega) (2. *. pi)
      end :> t)
 
-    (*
-    (* TODO: ensure that these functions get inlined!!! *)
-    let sine = simple (fun t -> sin (2. *. pi *. t))
+    let square sr ?(volume=1.) ?(phase=0.) freq =
+    (object (self)
+      inherit base sr volume
 
-    let square = simple (fun t -> let t = fst (modf t) in if t < 0.5 then 1. else -1.)
+      val mutable phase = phase
 
-    let saw =
-      simple
-	(fun t ->
-	  let t = fst (modf t) in
-          if t < 0.5 then
-            4. *. t -. 1.
-          else
-            4. *. (1. -. t) -. 1.
-	)
-    *)
+      method fill buf ofs len =
+	let sr = float self#sample_rate in
+	let omega = freq /. sr in
+	for i = 0 to len - 1 do
+	  let t = fst (modf (float i *. omega +. phase)) in
+	  buf.(ofs + i) <- if t < 0.5 then volume else (-.volume)
+	done;
+	phase <- mod_float (phase +. float len *. omega) 1.
+     end :> t)
+
+    let saw sr ?(volume=1.) ?(phase=0.) freq =
+    (object (self)
+      inherit base sr volume
+
+      val mutable phase = phase
+
+      method fill buf ofs len =
+	let sr = float self#sample_rate in
+	let omega = freq /. sr in
+	for i = 0 to len - 1 do
+	  let t = fst (modf (float i *. omega +. phase)) in
+	  buf.(ofs + i) <- volume *. (if t < 0.5 then 4. *. t -. 1. else 4. *. (1. -. t) -. 1.)
+	done;
+	phase <- mod_float (phase +. float len *. omega) 1.
+     end :> t)
 
     let adsr (adsr:Effect.ADSR.t) (g:t) =
     object (self)
@@ -741,6 +756,12 @@ module Generator = struct
   let sine sr ?(volume=1.) ?(phase=0.) f =
     of_mono (Mono.Generator.sine sr ~volume ~phase f)
 
+  let square sr ?(volume=1.) ?(phase=0.) f =
+    of_mono (Mono.Generator.square sr ~volume ~phase f)
+
+  let saw sr ?(volume=1.) ?(phase=0.) f =
+    of_mono (Mono.Generator.saw sr ~volume ~phase f)
+
   class type generator = t
 
   module Synth = struct
@@ -791,7 +812,7 @@ module Generator = struct
 	notes <- List.filter (fun note -> not note.generator#dead) notes
 
       method fill_add buf ofs len =
-	List.iter (fun note -> note.generator#fill buf ofs len) notes
+	List.iter (fun note -> note.generator#fill_add buf ofs len) notes;
 
       method fill buf ofs len =
 	clear buf ofs len;
@@ -808,6 +829,10 @@ module Generator = struct
      end :> t)
 
     let sine sr = of_generator (fun f v -> sine sr ~volume:v f)
+
+    let square sr = of_generator (fun f v -> square sr ~volume:v f)
+
+    let saw sr = of_generator (fun f v -> saw sr ~volume:v f)
   end
 end
 
