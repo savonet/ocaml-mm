@@ -115,11 +115,9 @@ module IO = struct
 
   exception Invalid_data
 
-  exception End_of_stream
-
   class type reader =
   object
-    method read_samples : int -> Track.t array -> int -> unit
+    method read_samples : int -> Track.t array -> int -> int
 
     method close : unit
   end
@@ -415,7 +413,6 @@ module IO = struct
       for c = 0 to Array.length buf - 1 do
 	buf.(c) <- []
       done;
-      if track_samples = [] then raise End_of_stream;
       while track_samples <> [] && !offset_in_buf < len do
         let d,(c,e) = List.hd track_samples in
         offset_in_buf := !offset_in_buf + d;
@@ -443,7 +440,8 @@ module IO = struct
           )
 	else
           track_samples <- (!offset_in_buf - len,(c,e))::(List.tl track_samples)
-      done
+      done;
+      if track_samples <> [] then len else !offset_in_buf
 
     method close = self#stream_close
   end

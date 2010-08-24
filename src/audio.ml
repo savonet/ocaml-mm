@@ -596,6 +596,31 @@ let pan x buf ofs len =
     buf.(1).(i) <- buf.(1).(i) *. gain_right
   done
 
+(* TODO: we cannot share this with mono, right? *)
+module Extensible_buffer = struct
+  type t =
+      {
+        mutable buffer : buffer
+      }
+
+  let prepare buf len =
+    if duration buf.buffer >= len then
+      buf.buffer
+    else
+      (* TODO: optionally blit the old buffer onto the new one. *)
+      let oldbuf = buf.buffer in
+      let newbuf = create (channels oldbuf) len in
+      buf.buffer <- newbuf;
+      newbuf
+
+  let create chans len =
+    {
+      buffer = create chans len
+    }
+
+  let duration buf = duration buf.buffer
+end
+
 module Ringbuffer = struct
   type t = {
     size : int;
@@ -613,6 +638,9 @@ module Ringbuffer = struct
       rpos = 0;
       wpos = 0
     }
+
+  let channels t =
+    channels t.buffer
 
   let read_space t =
     if t.wpos >= t.rpos then (t.wpos - t.rpos)
@@ -671,6 +699,50 @@ module Ringbuffer = struct
       assert (len <= len0);
       read_advance t len;
       len
+
+  module Extensible = struct
+    type ringbuffer = t
+
+    type t = {
+      mutable ringbuffer : ringbuffer
+    }
+
+    let prepare buf len =
+      if write_space buf.ringbuffer >= len then
+	buf.ringbuffer
+      else
+	let rb = create (channels buf.ringbuffer) (read_space buf.ringbuffer + len) in
+	while read_space buf.ringbuffer <> 0 do
+	  ignore (transmit buf.ringbuffer (fun buf ofs len -> write rb buf ofs len; len));
+	done;
+	buf.ringbuffer <- rb;
+	rb
+
+    let channels rb = channels rb.ringbuffer
+
+    let peek rb = peek rb.ringbuffer
+
+    let read rb = read rb.ringbuffer
+
+    let write rb buf ofs len =
+      let rb = prepare rb len in
+      write rb buf ofs len
+
+    let transmit rb = transmit rb.ringbuffer
+
+    let read_space rb = read_space rb.ringbuffer
+
+    let write_space rb = write_space rb.ringbuffer
+
+    let read_advance rb = read_advance rb.ringbuffer
+
+    let write_advance rb = write_advance rb.ringbuffer
+
+    let create chans len =
+      {
+	ringbuffer = create chans len;
+      }
+  end
 end
 
 module Effect = struct
@@ -679,38 +751,51 @@ module Effect = struct
     method process : buffer -> int -> int -> unit
   end
 
+  let chain e1 e2 =
+  object
+    method process buf ofs len =
+      e1#process buf ofs len;
+      e2#process buf ofs len
+  end
+
   class virtual base sample_rate =
   object
     val sample_rate : int = sample_rate
   end
 
-  class virtual bufferized chans len =
+  class virtual bufferized chans =
   object
-    val rb = Ringbuffer.create chans len
+    val rb = Ringbuffer.Extensible.create chans 0
 
-    val tmpbuf = create chans len
+    method read_space = Ringbuffer.Extensible.read_space rb
 
-    method read_space = Ringbuffer.read_space rb
+    method read_advance = Ringbuffer.Extensible.read_advance rb
 
-    method read_advance = Ringbuffer.read_advance rb
+    method peek = Ringbuffer.Extensible.peek rb
 
-    method peek len =
-      Ringbuffer.peek rb tmpbuf 0 len;
-      tmpbuf
+    method read = Ringbuffer.Extensible.read rb
 
-    method read len =
-      Ringbuffer.read rb tmpbuf 0 len;
-      tmpbuf
+    method write = Ringbuffer.Extensible.write rb
+  end
 
-    method write buf ofs len =
-      Ringbuffer.write rb buf ofs len
+  class delay_only chans d =
+  object (self)
+    inherit bufferized chans
+
+    initializer
+      self#write (create chans d) 0 d
+
+    method process buf ofs len =
+      self#write buf ofs len;
+      self#read buf ofs len
   end
 
   (* delay d in samples *)
-  (* TODO: adaptative buflen *)
-  class delay chans buflen d once feedback =
+  class delay chans d once feedback =
   object (self)
-    inherit bufferized chans (d + buflen)
+    inherit bufferized chans
+
+    val tmpbuf = Extensible_buffer.create chans 0
 
     method process buf ofs len =
       if once then
@@ -722,16 +807,32 @@ module Effect = struct
 	self#read_advance (self#read_space - d);
       if len > d then
 	add_coeff buf (ofs + d) feedback buf ofs (len - d);
-      let tmp = self#read (min d len) in
-      add_coeff buf ofs feedback tmp 0 (min d len);
+      let rlen = min d len in
+      let tmpbuf = Extensible_buffer.prepare tmpbuf rlen in
+      self#read tmpbuf 0 rlen;
+      add_coeff buf ofs feedback tmpbuf 0 rlen;
       if not once then
 	self#write buf ofs len
   end
 
   (* delay in seconds *)
-  let delay ~buffer_length channels sample_rate d ?(once=false) feedback =
+  let delay chans sample_rate d ?(once=false) ?(ping_pong=false) feedback =
     let d = int_of_float (float sample_rate *. d) in
-    ((new delay channels buffer_length d once feedback):>t)
+    if ping_pong then
+      (
+	let r1 = new delay_only 1 d in
+	let d1 = new delay 1 (2*d) once feedback in
+	let d1 = chain r1 d1 in
+	let d2 = new delay 1 (2*d) once feedback in
+        object
+	  method process buf ofs len =
+	    assert (channels buf = 2);
+	    d1#process [|buf.(0)|] ofs len;
+	    d2#process [|buf.(1)|] ofs len
+	end
+      )
+    else
+      ((new delay chans d once feedback):>t)
 
   class auto_gain_control channels samplerate
     rmst (* target RMS *)
@@ -739,6 +840,7 @@ module Effect = struct
     kup (* speed when volume is going up in coeff per sec *)
     kdown (* speed when volume is going down *)
     rms_threshold (* RMS threshold under which the volume should not be changed *)
+    vol_init (* initial volume *)
     vol_min (* minimal gain *)
     vol_max (* maximal gain *)
     =
@@ -757,10 +859,10 @@ module Effect = struct
     val mutable rms_collected = 0
 
     (** Current volume. *)
-    val mutable vol = 1.
+    val mutable vol = vol_init
 
     (** Previous value of volume. *)
-    val mutable vol_old = 1.
+    val mutable vol_old = vol_init
 
     (** Is it enabled? (disabled if below the threshold) *)
     val mutable enabled = true
@@ -801,8 +903,8 @@ module Effect = struct
   end
 
   (* TODO: check default parameters. *)
-  let auto_gain_control channels samplerate ?(rms_target=1.) ?(rms_window=0.2) ?(kup=0.6) ?(kdown=0.8) ?(rms_threshold=0.01) ?(volume_min=0.1) ?(volume_max=2.) () =
-    new auto_gain_control channels samplerate rms_target rms_window kup kdown rms_threshold volume_min volume_max
+  let auto_gain_control channels samplerate ?(rms_target=1.) ?(rms_window=0.2) ?(kup=0.6) ?(kdown=0.8) ?(rms_threshold=0.01) ?(volume_init=1.) ?(volume_min=0.1) ?(volume_max=10.) () =
+    new auto_gain_control channels samplerate rms_target rms_window kup kdown rms_threshold volume_init volume_min volume_max
 
 (*
   module ADSR = struct
@@ -811,31 +913,6 @@ module Effect = struct
   type state = Mono.Effect.ADSR.state
   end
 *)
-end
-
-(* TODO: we cannot share this with mono, right? *)
-module Extensible_buffer = struct
-  type t =
-      {
-        mutable buffer : buffer
-      }
-
-  let prepare buf len =
-    if duration buf.buffer >= len then
-      buf.buffer
-    else
-      (* TODO: optionally blit the old buffer onto the new one. *)
-      let oldbuf = buf.buffer in
-      let newbuf = create (channels oldbuf) len in
-      buf.buffer <- newbuf;
-      newbuf
-
-  let create chans len =
-    {
-      buffer = create chans len
-    }
-
-  let duration buf = duration buf.buffer
 end
 
 module Generator = struct
@@ -880,13 +957,14 @@ module Generator = struct
     method dead = g#dead
   end
 
+  let might_adsr adsr g =
+    match adsr with
+      | None -> g
+      | Some a -> Mono.Generator.adsr a g
+
   let simple g ?adsr sr ?(volume=1.) ?(phase=0.) f =
     let g = g sr ?volume:(Some volume) ?phase:(Some phase) f in
-    let g =
-      match adsr with
-	| None -> g
-	| Some a -> Mono.Generator.adsr a g
-    in
+    let g = might_adsr adsr g in
     of_mono g
 
   let sine = simple Mono.Generator.sine
@@ -954,18 +1032,20 @@ module Generator = struct
       method reset = notes <- []
     end
 
-    let of_generator g =
+    let create g =
     (object
       inherit base
 
       method generator f v = g f v
      end :> t)
 
-    let sine ?adsr sr = of_generator (fun f v -> sine ?adsr sr ~volume:v f)
+    let create_mono g = create (fun f v -> of_mono (g f v))
 
-    let square ?adsr sr = of_generator (fun f v -> square ?adsr sr ~volume:v f)
+    let sine ?adsr sr = create (fun f v -> sine ?adsr sr ~volume:v f)
 
-    let saw ?adsr sr = of_generator (fun f v -> saw ?adsr sr ~volume:v f)
+    let square ?adsr sr = create (fun f v -> square ?adsr sr ~volume:v f)
+
+    let saw ?adsr sr = create (fun f v -> saw ?adsr sr ~volume:v f)
 
     let monophonic (g:generator) =
     object (self)

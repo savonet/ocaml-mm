@@ -8,4 +8,7 @@ all: pnc
 test: all
 	OCAMLRUNPARAM=b ./player ../test.mid
 
+prof: test
+	gprof ./player > prof
+
 include OCamlMakefile

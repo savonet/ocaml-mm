@@ -225,6 +225,8 @@ module Ringbuffer : sig
   (** Create a ringbuffer of given number of channels and samplerate. *)
   val create : int -> int -> t
 
+  val channels : t -> int
+
   val read_space : t -> int
 
   val write_space : t -> int
@@ -240,6 +242,30 @@ module Ringbuffer : sig
   val write : t -> buffer -> int -> int -> unit
 
   val transmit : t -> (buffer -> int -> int -> int) -> int
+
+  module Extensible : sig
+    type t
+
+    val create : int -> int -> t
+
+    val channels : t -> int
+
+    val read_space : t -> int
+
+    val write_space : t -> int
+
+    val read_advance : t -> int -> unit
+
+    val write_advance : t -> int -> unit
+
+    val peek : t -> buffer -> int -> int -> unit
+
+    val read : t -> buffer -> int -> int -> unit
+
+    val write : t -> buffer -> int -> int -> unit
+
+    val transmit : t -> (buffer -> int -> int -> int) -> int
+  end
 end
 
 (** Audio effects. *)
@@ -251,13 +277,15 @@ module Effect : sig
     method process : buffer -> int -> int -> unit
   end
 
-  (** [delay buffer_length chans samplerate d once feedback] creates a delay
-      operator for buffer with [chans] channels at [samplerate] samplerate with
-      [d] as delay in seconds and [feedback] as feedback. If [once] is set to
-      [true] only one echo will be heard (no feedback). *)
-  val delay : buffer_length:int -> int -> int -> float -> ?once:bool -> float -> t
+  val chain : t -> t -> t
 
-  val auto_gain_control : int -> int -> ?rms_target:float -> ?rms_window:float -> ?kup:float -> ?kdown:float -> ?rms_threshold:float -> ?volume_min:float -> ?volume_max:float -> unit -> t
+  (** [delay chans samplerate d once feedback] creates a delay operator for
+      buffer with [chans] channels at [samplerate] samplerate with [d] as delay
+      in seconds and [feedback] as feedback. If [once] is set to [true] only one
+      echo will be heard (no feedback). *)
+  val delay : int -> int -> float -> ?once:bool -> ?ping_pong:bool -> float -> t
+
+  val auto_gain_control : int -> int -> ?rms_target:float -> ?rms_window:float -> ?kup:float -> ?kdown:float -> ?rms_threshold:float -> ?volume_init:float -> ?volume_min:float -> ?volume_max:float -> unit -> t
 end
 
 (** Sound generators. *)
@@ -281,12 +309,6 @@ module Generator : sig
 
   val of_mono : Mono.Generator.t -> t
 
-  val sine : ?adsr:Mono.Effect.ADSR.t -> int -> ?volume:float -> ?phase:float -> float -> t
-
-  val square : ?adsr:Mono.Effect.ADSR.t -> int -> ?volume:float -> ?phase:float -> float -> t
-
-  val saw : ?adsr:Mono.Effect.ADSR.t -> int -> ?volume:float -> ?phase:float -> float -> t
-
   (** Synthesizers. *)
   module Synth : sig
     (** A synthesizer. *)
@@ -305,6 +327,10 @@ module Generator : sig
 
       method reset : unit
     end
+
+    val create : (float -> float -> generator) -> t
+
+    val create_mono : (float -> float -> Mono.Generator.t) -> t
 
     val sine : ?adsr:Mono.Effect.ADSR.t -> int -> t
 

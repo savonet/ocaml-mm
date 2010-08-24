@@ -57,11 +57,9 @@ module Synth : sig
 end
 
 module IO : sig
-  exception End_of_stream
-
   class type reader =
   object
-    method read_samples : int -> Track.t array -> int -> unit
+    method read_samples : int -> Track.t array -> int -> int
 
     method close : unit
   end

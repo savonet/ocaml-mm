@@ -11,7 +11,7 @@ let () =
   let read = ref 0 in
   Printf.printf "Opened WAV file with %d channels at %dHz.\n%!" f#channels f#sample_rate;
   (* for delay effect *)
-  let delay = Audio.Effect.delay ~buffer_length:blen f#channels f#sample_rate 0.5 1. in
+  let delay = Audio.Effect.delay f#channels f#sample_rate 0.2 ~ping_pong:true 0.5 in
   while !read <> flen do
     let n = min blen (flen - !read) in
     ignore (f#read buf 0 n);
