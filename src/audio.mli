@@ -105,6 +105,13 @@ module Mono : sig
 	http://en.wikipedia.org/wiki/Mu-law).*)
     val compand_mu_law : float -> buffer -> int -> int -> unit
 
+    class type t =
+    object
+      method process : buffer -> int -> int -> unit
+    end
+
+    val biquad_filter : int -> [ `Band_pass | `High_pass | `Low_pass ] -> float -> float -> t
+
     (** ADSR (Attack/Decay/Sustain/Release) envelopes. *)
     module ADSR : sig
       (** Attack/Decay/Sustain/Release times. *)
@@ -279,11 +286,15 @@ module Effect : sig
 
   val chain : t -> t -> t
 
+  val of_mono : int -> (unit -> Mono.Effect.t) -> t
+
   (** [delay chans samplerate d once feedback] creates a delay operator for
       buffer with [chans] channels at [samplerate] samplerate with [d] as delay
       in seconds and [feedback] as feedback. If [once] is set to [true] only one
       echo will be heard (no feedback). *)
   val delay : int -> int -> float -> ?once:bool -> ?ping_pong:bool -> float -> t
+
+  val biquad_filter : int -> int -> [ `Band_pass | `High_pass | `Low_pass ] -> float -> float -> t
 
   val auto_gain_control : int -> int -> ?rms_target:float -> ?rms_window:float -> ?kup:float -> ?kdown:float -> ?rms_threshold:float -> ?volume_init:float -> ?volume_min:float -> ?volume_max:float -> unit -> t
 end
