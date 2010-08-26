@@ -20,7 +20,7 @@ let () =
     (* Audio.amplify 0.5 buf 0 blen; *)
     agc#process buf 0 blen;
     wav#write buf 0 blen;
-    (* oss#write buf 0 blen *)
+    oss#write buf 0 blen
   done;
   wav#close;
   oss#close;

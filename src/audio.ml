@@ -25,7 +25,44 @@ let samples_of_seconds sr t =
 let seconds_of_samples sr n =
   float n /. float sr
 
-let freq_of_note n = 440. *. (2. ** ((float n -. 69.) /. 12.))
+module Note = struct
+  (* A4 = 69 *)
+  type t = int
+
+  let freq n = 440. *. (2. ** ((float n -. 69.) /. 12.))
+
+  let of_freq f =
+    (*
+    let x = log (f /. 440.) /. log 2. +. 1. in
+    let x = if x < 0. then 100. +. x else x in
+    let x, _ = modf x in
+    int_of_float (x *. 12.) mod 12
+    *)
+    (* TODO: round *)
+    int_of_float (12. *. log (f /. 440.) /. log 2. +. 69.)
+
+  let modulo n = (n mod 12, n/12-1)
+
+  let to_string n =
+    let n, o = modulo n in
+    (
+    match n with
+      | 0 -> "A"
+      | 1 -> "A#"
+      | 2 -> "B"
+      | 3 -> "C"
+      | 4 -> "C#"
+      | 5 -> "D"
+      | 6 -> "D#"
+      | 7 -> "E"
+      | 8 -> "F"
+      | 9 -> "F#"
+      | 10 -> "G"
+      | 11 -> "G#"
+      | _ -> assert false
+    ) ^ " " ^ string_of_int o
+
+end
 
 module Sample = struct
   type t = float
@@ -57,6 +94,14 @@ module Mono = struct
     for i = 0 to len - 1 do
       b1.(o1 + i) <- b1.(o1 + i) +. k *. b2.(o2 + i)
     done
+
+  let add_coeff b1 o1 k b2 o2 len =
+    if k = 0. then
+      ()
+    else if k = 1. then
+      add_coeff b1 o1 k b2 o2 len
+    else
+      add b1 o1 b2 o2 len
 
   let amplify k b ofs len =
     for i = ofs to ofs + len - 1 do
@@ -124,13 +169,15 @@ module Mono = struct
     module FFT = struct
       type t =
 	  {
-	    n : int; (* number of samples *)
+	    b : int; (* number of bits *)
+            n : int; (* number of samples *)
 	    circle : Complex.t array;
 	    temp : Complex.t array;
 	  }
 
-      let init n =
-	let h = (1 lsl n) / 2 in
+      let init b =
+        let n = 1 lsl b in
+	let h = n / 2 in
 	let fh = float h in
 	let circle = Array.make h Complex.zero in
 	for i = 0 to h - 1 do
@@ -138,10 +185,13 @@ module Mono = struct
 	  circle.(i) <- {Complex.re = cos theta; Complex.im = sin theta}
     	done;
 	{
-	  n = n;
+	  b = b;
+          n = n;
 	  circle = circle;
-	  temp = Array.make (1 lsl n) Complex.zero;
+	  temp = Array.make n Complex.zero;
 	}
+
+      let duration f = f.n
 
       let complex_create buf ofs len =
 	Array.init len (fun i -> {Complex.re = buf.(ofs + i); Complex.im = 0.})
@@ -151,27 +201,32 @@ module Mono = struct
 
       let fft f d =
 	(* TODO: greater should be ok too? *)
-	assert (Array.length d = 1 lsl f.n);
+	assert (Array.length d = f.n);
 	let ( +~ ) = Complex.add in
 	let ( -~ ) = Complex.sub in
 	let ( *~ ) = Complex.mul in
-	let rec fft d s n =
+	let rec fft
+            t (* temporary buffer *)
+            d (* data *)
+            s (* stride in the data array *)
+            n (* number of samples *)
+            =
 	  if (n > 1) then
             let h = n / 2 in
             for i = 0 to h - 1 do
-              f.temp.(s + i) <- d.(s + 2 * i);          (* even *)
-              f.temp.(s + h + i) <- d.(s + 2 * i + 1)   (* odd  *)
+              t.(s + i) <- d.(s + 2 * i);          (* even *)
+              t.(s + h + i) <- d.(s + 2 * i + 1)   (* odd  *)
 	    done;
-            fft d s h;
-            fft d (s + h) h;
-            let a = (1 lsl f.n) / n in
+            fft d t s h;
+            fft d t (s + h) h;
+            let a = f.n / n in
             for i = 0 to h - 1 do
-              let wkt = f.circle.(i * a) *~ f.temp.(s + h + i) in
-              d.(s + i) <- f.temp.(s + i) +~ wkt ;
-              d.(s + h + i) <- f.temp.(s + i) -~ wkt
+              let wkt = f.circle.(i * a) *~ t.(s + h + i) in
+              d.(s + i) <- t.(s + i) +~ wkt ;
+              d.(s + h + i) <- t.(s + i) -~ wkt
             done
 	in
-	fft d 0 (1 lsl f.n)
+	fft f.temp d 0 f.n
 
       let ifft f d =
 	let n = float f.n in
@@ -1085,7 +1140,7 @@ module Generator = struct
 	  {
 	    note = n;
 	    volume = v;
-	    generator = self#generator (freq_of_note n) v;
+	    generator = self#generator (Note.freq n) v;
 	  }
 	in
 	notes <- note :: notes
@@ -1126,7 +1181,7 @@ module Generator = struct
       method set_volume v = g#set_volume v
 
       method note_on n v =
-	g#set_frequency (freq_of_note n);
+	g#set_frequency (Note.freq n);
 	g#set_volume v
 
       method note_off (_:int) (_:float) =

@@ -17,6 +17,20 @@ module Sample : sig
   val clip : t -> t
 end
 
+(** Operations on notes. *)
+module Note : sig
+  type t = int
+
+  val freq : t -> float
+
+  val of_freq : float -> t
+
+  (** Returns note number and octave. *)
+  val modulo : t -> int * int
+
+  val to_string : t -> string
+end
+
 (** Operations on mono buffers (with only one channel). *)
 module Mono : sig
   (** A mono buffer. *)
@@ -64,6 +78,9 @@ module Mono : sig
 
       (** Initialize FFT for an analysis of [2^n] samples. *)
       val init : int -> t
+
+      (** Duration of the FFT buffer analysis in samples. *)
+      val duration : t -> int
 
       (** [complex_create buf ofs len] create a array of complex numbers of size
 	  [len] by copying data from [buf] from ofset [ofs] (the imaginary part

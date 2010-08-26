@@ -22,7 +22,7 @@ let () =
       FFT.Window.cosine c;
       FFT.fft fft c;
       for j = 0 to Graphics.size_y () - 1 do
-	let v = Complex.norm c.(j * blen / (Graphics.size_y ())) in
+	let v = Complex.norm c.(j * blen / (2 * Graphics.size_y ())) in
 	let v = int_of_float (v *. 255.) in
 	let color = v lsl 16 in
 	Graphics.set_color color;
