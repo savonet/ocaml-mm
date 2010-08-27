@@ -21,9 +21,17 @@ end
 module Note : sig
   type t = int
 
+  val a4 : int
+  val c5 : int
+  val c0 : int
+
+  val create : int -> int -> t
+
   val freq : t -> float
 
   val of_freq : float -> t
+
+  val octave : t -> int
 
   (** Returns note number and octave. *)
   val modulo : t -> int * int
@@ -90,6 +98,9 @@ module Mono : sig
       (** Perform an FFT analysis. *)
       val fft : t -> Complex.t array -> unit
 
+      (** Frequency associated to the [k]-th coefficient of an FFT. *)
+      val band_freq : int -> t -> int -> float
+
       (** Windowing functions. Thses can be used to on complex buffers in order
 	  to improve the quality of the FFT, see
 	  http://en.wikipedia.org/wiki/Windowing_functions. *)
@@ -114,6 +125,9 @@ module Mono : sig
 
 	val blackman_nuttall : t -> Complex.t array -> unit
       end
+
+      val note : int -> t -> ?window:(Complex.t array -> unit) -> ?note_min:int -> ?note_max:int -> float array -> int -> int -> int * float
+
     end
   end
 

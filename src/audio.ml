@@ -29,19 +29,20 @@ module Note = struct
   (* A4 = 69 *)
   type t = int
 
+  let a4 = 69
+  let c5 = 72
+  let c0 = 12
+
+  let create name oct = name + 12 * (oct + 1)
+
   let freq n = 440. *. (2. ** ((float n -. 69.) /. 12.))
 
   let of_freq f =
-    (*
-    let x = log (f /. 440.) /. log 2. +. 1. in
-    let x = if x < 0. then 100. +. x else x in
-    let x, _ = modf x in
-    int_of_float (x *. 12.) mod 12
-    *)
-    (* TODO: round *)
-    int_of_float (12. *. log (f /. 440.) /. log 2. +. 69.)
+    int_of_float (0.5 +. (12. *. log (f /. 440.) /. log 2. +. 69.))
 
-  let modulo n = (n mod 12, n/12-1)
+  let octave n = n / 12 - 1
+
+  let modulo n = (n mod 12, octave n)
 
   let to_string n =
     let n, o = modulo n in
@@ -303,6 +304,38 @@ module Mono = struct
 
 	let blackman_nuttall f d = low_res 0.3635819 0.4891775 0.1365995 0.0106411 f d
       end
+
+      let band_freq sr f k = float k *. float sr /. float f.n
+
+      (* TODO: use note_min/max *)
+      let note sr f ?(window=Window.cosine) ?(note_min=Note.c0) ?(note_max=128) buf ofs len =
+        assert (len = duration f);
+        let bdur = float len /. float sr in
+        let c = complex_create buf ofs len in
+        fft f c;
+        let kmax = ref 0. in
+        let vmax = ref 0. in
+        let kstart = max 0 (int_of_float (Note.freq note_min *. bdur)) in
+        let kend = min (len / 2) (int_of_float (Note.freq note_max *. bdur)) in
+        for k = kstart + 1 to kend - 2 do
+          (* Quadratic interpolation. *)
+          let v' = Complex.norm c.(k-1) in
+          let v = Complex.norm c.(k) in
+          let v'' = Complex.norm c.(k-1) in
+          let p = (v'' -. v') /. (2. *. v' -. 2. *. v +. v'') in
+          let v = v -. (v' -. v'') *. p /. 4. in
+          let p = p +. float k in
+          if v > !vmax then
+	    (
+	      kmax := p;
+	      vmax := v
+	    );
+        done;
+        let freq = !kmax /. bdur in
+        let note = Note.of_freq freq in
+        let vmax = !vmax /. float (duration f) in
+        Printf.printf "Note: %s (%d, %.02fHz) at %.02f\n%!" (Note.to_string (Note.of_freq freq)) note freq vmax;
+        note, vmax
     end
   end
 
@@ -520,6 +553,7 @@ module Mono = struct
       val mutable phase = phase
 
       method fill buf ofs len =
+        let volume = self#volume in
 	let sr = float self#sample_rate in
 	let omega = freq /. sr in
 	for i = 0 to len - 1 do
@@ -1139,8 +1173,8 @@ module Generator = struct
 	let note =
 	  {
 	    note = n;
-	    volume = v;
-	    generator = self#generator (Note.freq n) v;
+	    volume = v; (* TODO: we could want to change the volume after a not has begun to be played *)
+	    generator = self#generator (Note.freq n) (v *. vol);
 	  }
 	in
 	notes <- note :: notes
