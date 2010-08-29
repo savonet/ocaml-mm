@@ -3,8 +3,8 @@ type division =
   | SMPTE of int * int
 
 type event =
-  | Note_on of Audio.Note.t * float (* Note on: note number (A4 = 69), velocity (between 0 and 1). *)
   | Note_off of Audio.Note.t * float
+  | Note_on of Audio.Note.t * float (* Note on: note number (A4 = 69), velocity (between 0 and 1). *)
   | Aftertouch of int * float
   | Control_change of int * int
   | Patch of int
@@ -59,6 +59,27 @@ let delta_of_samples samplerate division tempo samples =
       (* TODO: could this overflow? *)
       (fps * res * samples) / samplerate
 *)
+
+let encode_event chan e =
+  let s = String.create 3 in
+  let coi = char_of_int in
+  let clip_byte x = max 0 (min 255 x) in
+  let cf x = char_of_int (clip_byte (int_of_float x)) in
+  (
+    match e with
+      | Note_off (n,v) ->
+        s.[0] <- coi (0x8 lsl 4 + chan);
+        s.[1] <- coi n;
+        s.[2] <- cf (v *. 255.)
+      | Note_on (n,v) ->
+        s.[0] <- coi (0x9 lsl 4 + chan);
+        s.[1] <- coi n;
+        s.[2] <- cf (v *. 255.)
+      | _ ->
+      (* TODO *)
+        assert false
+  );
+  s
 
 module Track = struct
   type t = (delta * event) list
@@ -447,4 +468,83 @@ module IO = struct
   end
 
   let reader_of_file fname = (new file_reader fname :> reader)
+
+  class type writer_samples =
+  object
+    method put : int -> event -> unit
+
+    method note_off : int -> int -> float -> unit
+    method note_on : int -> int -> float -> unit
+
+    method advance : int -> unit
+
+    method close : unit
+  end
+
+  class file_writer_samples samplerate tracks fname =
+    (* frames per second *)
+    let fps = 25 in
+    (* ticks per frame *)
+    let tpf = 40 in
+    (* delta of samples *)
+    let rec delta d =
+      if d = 0 then
+        ""
+      else
+        delta (d lsr 7) ^ String.make 1 (char_of_int (128 + (d land 127)))
+    in
+    let delta d =
+      delta (d lsr 7) ^ String.make 1 (char_of_int (d land 127))
+    in
+    let delta d = delta (d * fps * tpf / samplerate) in
+  object (self)
+    inherit IO.Unix.rw ~write:true fname
+    inherit IO.helper
+
+    val mutable curdelta = 0
+    val mutable datalen = 0
+
+    method output_int = self#output_int_be
+    method output_short = self#output_short_be
+
+    initializer
+      self#output "MThd";
+      self#output_int 6;
+      (* format *)
+      self#output_short 0;
+      (* tracks *)
+      self#output_short 1;
+      (* time division *)
+      self#output_short ((((fps-1) lxor 0xff) lsl 8) + tpf);
+      (* Printf.printf "%dx%d: %x\n%!" fps tpf ((((fps-1) lxor 0xff) lsl 8) + tpf); *)
+      (*
+      self#output_byte (128 + fps);
+      self#output_byte tpf;
+      *)
+      (* fist track *)
+      self#output "MTrk";
+      (* track length *)
+      self#output_int 0;
+
+    method put chan e =
+      let d = delta curdelta in
+      let e = encode_event chan e in
+      self#output d;
+      self#output e;
+      datalen <- datalen + String.length d + String.length e;
+      curdelta <- 0
+
+    method note_off chan n v = self#put chan (Note_off (n,v))
+    method note_on chan n v = self#put chan (Note_on (n,v))
+
+    method advance n =
+      curdelta <- curdelta + n
+
+    method close =
+      self#stream_seek 18;
+      self#output_int datalen;
+      self#stream_close
+  end
+
+  let writer_samples_to_file samplerate ?(tracks=16) fname = (new file_writer_samples samplerate tracks fname :> writer_samples)
 end

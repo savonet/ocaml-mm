@@ -31,6 +31,8 @@ module Note : sig
 
   val of_freq : float -> t
 
+  val name : t -> int
+
   val octave : t -> int
 
   (** Returns note number and octave. *)
@@ -126,7 +128,9 @@ module Mono : sig
 	val blackman_nuttall : t -> Complex.t array -> unit
       end
 
-      val note : int -> t -> ?window:(Complex.t array -> unit) -> ?note_min:int -> ?note_max:int -> float array -> int -> int -> int * float
+      val notes : int -> t -> ?window:(Complex.t array -> unit) -> ?note_min:int -> ?note_max:int -> ?volume_min:float -> ?filter_harmonics:bool -> float array -> int -> int -> (Note.t * float) list
+
+      val loudest_note : (Note.t * float) list -> (Note.t * float) option
 
     end
   end
@@ -438,5 +442,7 @@ module IO : sig
   module OSS : sig
     (** Create a writer on an OSS sound device. *)
     val writer : ?device:string -> int -> int -> writer
+
+    val reader : ?device:string -> int -> int -> reader
   end
 end

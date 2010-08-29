@@ -5,8 +5,8 @@ type division =
   | SMPTE of int * int
 
 type event =
-  | Note_on of Audio.Note.t * float (* Note on: note number (A4 = 69), velocity (between 0 and 1). *)
   | Note_off of Audio.Note.t * float
+  | Note_on of Audio.Note.t * float
   | Aftertouch of int * float
   | Control_change of int * int
   | Patch of int
@@ -65,4 +65,18 @@ module IO : sig
   end
 
   val reader_of_file : string -> reader
+
+  class type writer_samples =
+  object
+    method put : int -> event -> unit
+
+    method note_off : int -> int -> float -> unit
+    method note_on : int -> int -> float -> unit
+
+    method advance : int -> unit
+
+    method close : unit
+  end
+
+  val writer_samples_to_file : int -> ?tracks:int -> string -> writer_samples
 end

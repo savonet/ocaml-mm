@@ -4,6 +4,17 @@
    arguments?
    - do we want to pass samplerate as an argument or to store it in buffers? *)
 
+let list_filter_ctxt f l =
+  let rec aux b = function
+    | [] -> []
+    | h::t ->
+      if f b h t then
+        h::(aux (b@[h]) t)
+      else
+        aux (b@[h]) t
+  in
+  aux [] l
+
 let pi = 3.14159265358979323846
 
 let lin_of_dB x = 10. ** (x /. 20.)
@@ -40,9 +51,11 @@ module Note = struct
   let of_freq f =
     int_of_float (0.5 +. (12. *. log (f /. 440.) /. log 2. +. 69.))
 
+  let name n = n mod 12
+
   let octave n = n / 12 - 1
 
-  let modulo n = (n mod 12, octave n)
+  let modulo n = (name n, octave n)
 
   let to_string n =
     let n, o = modulo n in
@@ -307,14 +320,13 @@ module Mono = struct
 
       let band_freq sr f k = float k *. float sr /. float f.n
 
-      (* TODO: use note_min/max *)
-      let note sr f ?(window=Window.cosine) ?(note_min=Note.c0) ?(note_max=128) buf ofs len =
+      let notes sr f ?(window=Window.cosine) ?(note_min=Note.c0) ?(note_max=128) ?(volume_min=0.01) ?(filter_harmonics=true) buf ofs len =
         assert (len = duration f);
         let bdur = float len /. float sr in
+        let fdf = float (duration f) in
         let c = complex_create buf ofs len in
         fft f c;
-        let kmax = ref 0. in
-        let vmax = ref 0. in
+        let ans = ref [] in
         let kstart = max 0 (int_of_float (Note.freq note_min *. bdur)) in
         let kend = min (len / 2) (int_of_float (Note.freq note_max *. bdur)) in
         for k = kstart + 1 to kend - 2 do
@@ -322,20 +334,37 @@ module Mono = struct
           let v' = Complex.norm c.(k-1) in
           let v = Complex.norm c.(k) in
           let v'' = Complex.norm c.(k-1) in
-          let p = (v'' -. v') /. (2. *. v' -. 2. *. v +. v'') in
-          let v = v -. (v' -. v'') *. p /. 4. in
-          let p = p +. float k in
-          if v > !vmax then
-	    (
-	      kmax := p;
-	      vmax := v
-	    );
+          (* Do we have a maximum here? *)
+          if v' +. v'' < 2. *. v then
+            (
+              let p = (v'' -. v') /. (2. *. v' -. 2. *. v +. v'') in
+              let v = v -. (v' -. v'') *. p /. 4. in
+              let v = v /. fdf in
+              let p = p +. float k in
+              if v >= volume_min then
+                ans := (p,v) :: !ans
+            )
         done;
-        let freq = !kmax /. bdur in
-        let note = Note.of_freq freq in
-        let vmax = !vmax /. float (duration f) in
-        Printf.printf "Note: %s (%d, %.02fHz) at %.02f\n%!" (Note.to_string (Note.of_freq freq)) note freq vmax;
-        note, vmax
+        let ans = List.map (fun (k,v) -> Note.of_freq (k /. bdur), v) !ans in
+        (* TODO: improve this filtering... *)
+        let ans =
+          if filter_harmonics then
+            list_filter_ctxt
+              (fun b (n,_) t ->
+                let o = Note.octave n in
+                let n = Note.name n in
+                List.for_all (fun (n',_) -> (Note.name n' <> n) || (Note.octave n' >= o)) (b@t)
+              ) ans
+          else
+            ans
+        in
+        ans
+
+      let loudest_note l =
+        match l with
+          | [] -> None
+          | h::t ->
+            Some (List.fold_left (fun (nmax,vmax) (n,v) -> if v > vmax then n,v else nmax,vmax) h t)
     end
   end
 
@@ -700,8 +729,11 @@ let to_16le buf ofs sbuf sofs len =
 *)
 external to_16le : float array array -> int -> int -> string -> int -> int = "caml_float_pcm_to_16le"
 
+let length_16le channels samples = channels * samples * 2
+let duration_16le channels len = len / (2 * channels)
+
 let to_16le_create buf ofs len =
-  let slen = channels buf * len * 2 in
+  let slen = length_16le (channels buf) len in
   let sbuf = String.create slen in
   ignore (to_16le buf ofs len sbuf 0);
   sbuf
@@ -1449,5 +1481,34 @@ module IO = struct
 	method close =
 	  self#stream_close
        end :> writer)
+
+    let reader ?(device="/dev/dsp") channels sample_rate =
+      (object (self)
+        inherit IO.Unix.rw ~read:true device
+
+        initializer
+          assert (set_format fd 16 = 16);
+	  assert (set_channels fd channels = channels);
+	  assert (set_rate fd sample_rate = sample_rate)
+
+        method channels = channels
+        method sample_rate = sample_rate
+
+        method duration : int = assert false
+        method duration_time : float = assert false
+
+        method read buf ofs len =
+          let slen = length_16le channels len in
+          let s = String.create slen in
+          let r = self#stream_read s 0 slen in
+          let len = duration_16le channels r in
+          of_16le s 0 buf ofs len;
+          len
+
+        method seek (n:int) : unit = assert false
+
+        method close =
+          self#stream_close
+       end :> reader)
   end
 end

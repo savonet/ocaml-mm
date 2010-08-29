@@ -99,7 +99,20 @@ object (self)
     done;
     self#output s
 
-    method output_short n = self#output_num 2 n
+  method output_byte n = self#output_num 1 n
 
-    method output_int n = self#output_num 4 n
+  method output_short n = self#output_num 2 n
+
+  method output_int n = self#output_num 4 n
+
+  method output_num_be b n =
+    let s = String.create b in
+    for i = 0 to b - 1 do
+      s.[i] <- char_of_int ((n lsr (8 * (b - i - 1))) land 0xff)
+    done;
+    self#output s
+
+  method output_short_be n = self#output_num_be 2 n
+
+  method output_int_be n = self#output_num_be 4 n
 end
