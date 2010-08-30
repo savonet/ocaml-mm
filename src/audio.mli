@@ -351,42 +351,7 @@ module Generator : sig
     method dead : bool
   end
 
-  type generator = t
-
   val of_mono : Mono.Generator.t -> t
-
-  (** Synthesizers. *)
-  module Synth : sig
-    (** A synthesizer. *)
-    class type t =
-    object
-      (** Set the global volume of the synth. *)
-      method set_volume : float -> unit
-
-      (** Play a note. *)
-      method note_on : int -> float -> unit
-
-      (** Stop playing a note. *)
-      method note_off : int -> float -> unit
-
-      method fill_add : buffer -> int -> int -> unit
-
-      method reset : unit
-    end
-
-    val create : (float -> float -> generator) -> t
-
-    val create_mono : (float -> float -> Mono.Generator.t) -> t
-
-    val sine : ?adsr:Mono.Effect.ADSR.t -> int -> t
-
-    val square : ?adsr:Mono.Effect.ADSR.t -> int -> t
-
-    val saw : ?adsr:Mono.Effect.ADSR.t -> int -> t
-
-    (** Synths with only one note at a time. *)
-    val monophonic : generator -> t
-  end
 end
 
 (** Operation for reading and writing audio data from files, streams or

@@ -6,7 +6,7 @@ type event =
   | Note_off of Audio.Note.t * float
   | Note_on of Audio.Note.t * float (* Note on: note number (A4 = 69), velocity (between 0 and 1). *)
   | Aftertouch of int * float
-  | Control_change of int * int
+  | Control_change of int * int (* TODO: specific type for common control changes *)
   | Patch of int
   | Channel_aftertouch of int
   | Pitch of int
@@ -60,21 +60,24 @@ let delta_of_samples samplerate division tempo samples =
       (fps * res * samples) / samplerate
 *)
 
+let byte_of_float x =
+  let clip x = max 0 (min 127 x) in
+  char_of_int (clip (int_of_float (x *. 127.)))
+
 let encode_event chan e =
   let s = String.create 3 in
   let coi = char_of_int in
-  let clip_byte x = max 0 (min 255 x) in
-  let cf x = char_of_int (clip_byte (int_of_float x)) in
+  let bof = byte_of_float in
   (
     match e with
       | Note_off (n,v) ->
         s.[0] <- coi (0x8 lsl 4 + chan);
         s.[1] <- coi n;
-        s.[2] <- cf (v *. 255.)
+        s.[2] <- bof v
       | Note_on (n,v) ->
         s.[0] <- coi (0x9 lsl 4 + chan);
         s.[1] <- coi n;
-        s.[2] <- cf (v *. 255.)
+        s.[2] <- bof v
       | _ ->
       (* TODO *)
         assert false
@@ -90,46 +93,6 @@ module Track = struct
 end
 
 type buffer = Track.t array
-
-module Synth = struct
-  let rec fill_add synth evs buf ofs len =
-    match evs with
-      | (t,e)::tl ->
-	assert (t < len);
-	synth#fill_add buf ofs t;
-	(
-	  match e with
-	    | Note_on (n,v) ->
-	      synth#note_on n v
-	    | Note_off (n,v) ->
-	      synth#note_off n v
-	    | Control_change (0x7,v) ->
-              synth#set_volume (float v /. 127.)
-	    | _ -> ()
-	);
-	fill_add synth tl buf (ofs+t) (len-t)
-      | [] ->
-	synth#fill_add buf ofs len
-
-  let fill synth evs buf ofs len =
-    Audio.clear buf ofs len;
-    fill_add synth evs buf ofs len
-
-  module Multichan = struct
-    type t = Audio.Generator.Synth.t array
-
-    let init n f = Array.init n f
-
-    let fill_add synth evs buf ofs len =
-      for c = 0 to Array.length synth - 1 do
-	fill_add synth.(c) evs.(c) buf ofs len
-      done
-
-    let fill synth evs buf ofs len =
-      Audio.clear buf ofs len;
-      fill_add synth evs buf ofs len
-  end
-end
 
 module IO = struct
   exception Invalid_header
@@ -496,6 +459,7 @@ module IO = struct
     let delta d =
       delta (d lsr 7) ^ String.make 1 (char_of_int (d land 127))
     in
+    (* TODO: keep integer remainder in curdelta *)
     let delta d = delta (d * fps * tpf / samplerate) in
   object (self)
     inherit IO.Unix.rw ~write:true fname

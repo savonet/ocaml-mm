@@ -40,22 +40,6 @@ end
 
 type buffer = Track.t array
 
-module Synth : sig
-  val fill :  Audio.Generator.Synth.t -> Track.t -> Audio.buffer -> int -> int -> unit
-
-  val fill_add :  Audio.Generator.Synth.t -> Track.t -> Audio.buffer -> int -> int -> unit
-
-  module Multichan : sig
-    type t = Audio.Generator.Synth.t array
-
-    val init : int -> (int -> Audio.Generator.Synth.t) -> t
-
-    val fill : t -> buffer -> Audio.buffer -> int -> int -> unit
-
-    val fill_add : t -> buffer -> Audio.buffer -> int -> int -> unit
-  end
-end
-
 module IO : sig
   class type reader =
   object

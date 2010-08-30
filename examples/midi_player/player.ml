@@ -10,13 +10,13 @@ let () =
   let mchannels = 16 in
   let mbuf = Array.create mchannels [] in
   let adsr = Audio.Mono.Effect.ADSR.make sample_rate (0.02,0.01,0.9,0.05) in
-  let synth = MIDI.Synth.Multichan.init mchannels (fun _ -> Audio.Generator.Synth.saw ~adsr sample_rate) in
+  let synth = Synth.Multichan.create mchannels (fun _ -> Synth.saw ~adsr sample_rate) in
   let agc = Audio.Effect.auto_gain_control channels sample_rate ~volume_init:0.5 () in
   let r = ref (-1) in
   while !r <> 0 do
     r := f#read_samples sample_rate mbuf blen;
     mbuf.(9) <- [];
-    MIDI.Synth.Multichan.fill synth mbuf buf 0 blen;
+    synth#play mbuf buf 0 blen;
     (* Audio.amplify 0.5 buf 0 blen; *)
     agc#process buf 0 blen;
     wav#write buf 0 blen;

@@ -1,7 +1,7 @@
 module FFT = Audio.Mono.Analyze.FFT
 let polyphony = 1
 let mchan = 0
-let oss_out = false
+let oss_out = true
 
 let list_diff cmp l1 l2 =
   List.fold_left
@@ -22,7 +22,7 @@ let rec list_head_n n l =
 
 let () =
   let fname = Sys.argv.(1) in
-  let f = MMExt.Audio.IO.Mad.reader_of_file fname in
+  let f = MMMad.Audio.IO.Mad.reader_of_file fname in
   let oss = Audio.IO.OSS.writer f#channels f#sample_rate in
   let wav = Audio.IO.writer_to_wav_file f#channels f#sample_rate "out.wav" in
   let mid = MIDI.IO.writer_samples_to_file f#sample_rate "out.mid" in
@@ -32,7 +32,7 @@ let () =
   let buf = Audio.create f#channels blen in
   let agc = Audio.Effect.auto_gain_control f#channels f#sample_rate ~kup:0.9 ~kdown:0.7 ~rms_target:2. () in
   let adsr = Audio.Mono.Effect.ADSR.make f#sample_rate (0.02,0.01,0.9,0.05) in
-  let synth = Audio.Generator.Synth.saw ~adsr f#sample_rate in
+  let synth = Synth.saw ~adsr f#sample_rate in
   let loop = ref true in
   let prevnotes = ref [] in
   synth#set_volume 0.1;

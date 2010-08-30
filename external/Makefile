@@ -1,8 +1,6 @@
-SOURCES = MMExt.mli MMExt.ml
-RESULT = mm-ext
-INCDIRS = ../src +mad
-OCAMLCFLAGS = -g
+LIBS = $(shell find . -maxdepth 1 -type d | sed "s/^\.\///" | grep -v "\.")
 
-all: ncl
+all clean doc:
+	for d in $(LIBS); do $(MAKE) -C $$d $@; done
 
-include OCamlMakefile
+.PHONY: all

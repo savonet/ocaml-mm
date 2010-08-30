@@ -1,7 +1,7 @@
 SOURCES = dictee.ml
 RESULT = dictee
-INCDIRS = ../../src ../../external +mad
-LIBS = unix mad mm mm-ext
+INCDIRS = ../../src ../../external/mad +mad
+LIBS = unix mad mm mm.mad
 OCAMLFLAGS = -g
 
 test: all
