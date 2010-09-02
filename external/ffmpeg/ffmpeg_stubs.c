@@ -1,0 +1,137 @@
+/* Inspired of
+ * http://dranger.com/ffmpeg/tutorial01.html
+ * and
+
+ */
+
+#include <caml/alloc.h>
+#include <caml/callback.h>
+#include <caml/custom.h>
+#include <caml/fail.h>
+#include <caml/memory.h>
+#include <caml/mlvalues.h>
+#include <caml/signals.h>
+
+#include <assert.h>
+
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+
+typedef struct {
+  AVFormatContext *av_format_ctx;
+  AVCodecContext *av_codec_ctx;
+  AVCodec *av_codec;
+  struct SwsContext *convert_ctx;
+  int video_stream;
+  AVFrame* av_frame;
+  AVFrame* av_frame_rgb;
+  uint8_t* buffer;
+} ffmpeg_t;
+
+#define FF_of_val(v) ((ffmpeg_t*)v)
+
+CAMLprim value caml_ffmpeg_init(value unit)
+{
+  CAMLparam0();
+  av_register_all();
+  CAMLreturn(Val_unit);
+}
+
+/* TODO: add a finalizer!!!! */
+CAMLprim value caml_ffmpeg_openfile(value fname)
+{
+  CAMLparam1(fname);
+  ffmpeg_t *ffm = malloc(sizeof(ffmpeg_t));
+  int i;
+  int buflen;
+  int width, height;
+
+  /* Open the file */
+  assert(av_open_input_file(&ffm->av_format_ctx, String_val(fname), NULL, 0, NULL) == 0);
+  /* Retrieve stream information */
+  assert(av_find_stream_info(ffm->av_format_ctx) >= 0);
+  /* Dump info about the file on stderr */
+  dump_format(ffm->av_format_ctx, 0, String_val(fname), 0);
+
+  ffm->video_stream = -1;
+  /* Find a video stream */
+  for(i=0; i<ffm->av_format_ctx->nb_streams; i++)
+    if(ffm->av_format_ctx->streams[i]->codec->codec_type==CODEC_TYPE_VIDEO) {
+      ffm->video_stream = i;
+      break;
+    }
+  assert(ffm->video_stream != -1);
+
+  ffm->av_codec_ctx = ffm->av_format_ctx->streams[ffm->video_stream]->codec;
+  /* Find a decoder */
+  ffm->av_codec = avcodec_find_decoder(ffm->av_codec_ctx->codec_id);
+  /* Is the codec supported? */
+  assert(ffm->av_codec);
+  /* Open the codec */
+  assert(avcodec_open(ffm->av_codec_ctx, ffm->av_codec) >= 0);
+
+  width = ffm->av_codec_ctx->width;
+  height = ffm->av_codec_ctx->height;
+
+  ffm->av_frame = avcodec_alloc_frame();
+  ffm->av_frame_rgb = avcodec_alloc_frame();
+  /* Allocate a suitable buffer */
+  buflen = avpicture_get_size(PIX_FMT_RGB24, width, height);
+  ffm->buffer = (uint8_t*)av_malloc(buflen * sizeof(uint8_t));
+  /* Assign appropriate parts of buffer to image planes in av_frame_rgb */
+  avpicture_fill((AVPicture*)ffm->av_frame_rgb, ffm->buffer, PIX_FMT_RGB24, width, height);
+  /* Init conversion context */
+  ffm->convert_ctx = sws_getContext(width, height, ffm->av_codec_ctx->pix_fmt, width, height, PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
+  assert(ffm->convert_ctx);
+
+  CAMLreturn((value)ffm);
+}
+
+CAMLprim value caml_ffmpeg_width(value ffm)
+{
+  CAMLparam1(ffm);
+  CAMLreturn(Val_int(FF_of_val(ffm)->av_codec_ctx->width));
+}
+
+CAMLprim value caml_ffmpeg_height(value ffm)
+{
+  CAMLparam1(ffm);
+  CAMLreturn(Val_int(FF_of_val(ffm)->av_codec_ctx->height));
+}
+
+CAMLprim value caml_ffmpeg_read_frame(value _ffm)
+{
+  CAMLparam1(_ffm);
+  CAMLlocal1(ans);
+  ffmpeg_t* ffm = FF_of_val(_ffm);
+  AVPacket packet;
+  int frame_finished;
+  int width, height;
+  int j;
+
+  while (av_read_frame(ffm->av_format_ctx, &packet) >= 0)
+    {
+      if(packet.stream_index == ffm->video_stream)
+        {
+          avcodec_decode_video(ffm->av_codec_ctx, ffm->av_frame, &frame_finished, packet.data, packet.size);
+          if (frame_finished)
+            {
+              width = ffm->av_codec_ctx->width;
+              height = ffm->av_codec_ctx->height;
+              /* Deprecated */
+              /* img_convert((AVPicture*)ffm->av_frame_rgb, PIX_FMT_RGB24, (AVPicture*)ffm->av_frame, ffm->av_codec_ctx->pix_fmt, width, height); */
+              sws_scale(ffm->convert_ctx, (const uint8_t * const*)ffm->av_frame->data, ffm->av_frame->linesize, 0, height, ffm->av_frame_rgb->data, ffm->av_frame_rgb->linesize);
+              ans = caml_alloc_string(width*height*3);
+              for (j = 0; j < height; j++)
+                memcpy(String_val(ans)+j*width*3, ffm->av_frame_rgb->data[0]+j*ffm->av_frame_rgb->linesize[0], width*3);
+              //memcpy(String_val(ans), ffm->av_frame_rgb->data, width * height * 3);
+              CAMLreturn(ans);
+            }
+        }
+      /* Free the packet allocated by av_read_frame */
+      av_free_packet(&packet);
+    }
+
+  caml_raise_constant(*caml_named_value("ffmpeg_exn_end_of_stream"));
+}

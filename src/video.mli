@@ -21,6 +21,10 @@ module IO : sig
 
   class type reader =
   object
+    method width : int
+
+    method height : int
+
     (** Number of frames per second. *)
     method frame_rate : float
 

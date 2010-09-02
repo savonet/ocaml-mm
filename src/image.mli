@@ -50,13 +50,17 @@ module RGBA8 : sig
 
   val blank_all : t -> unit
 
-  val of_linear_rgb : string -> int -> t
+  val of_RGB8_string : string -> int -> t
 
   val to_bmp : t -> string
 
-  val to_rgb8 : t -> string
+  val to_RGB8_string : t -> string
 
   val of_YUV420 : YUV420.t -> t
+
+  val to_int_image : t -> int array array
+
+  val scale_to : t -> t -> unit
 
   module Effect : sig
     val greyscale : t -> unit

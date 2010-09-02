@@ -495,9 +495,9 @@ CAMLprim value caml_rgb_of_linear_rgb(value _rgb, value _data)
   for (j = 0; j < rgb.height; j++)
     for (i = 0; i < rgb.width; i++)
     {
-      Red(&rgb,i,j) = data[3 * j * rgb.width + i + 0];
-      Green(&rgb,i,j) = data[3 * j * rgb.width + i + 1];
-      Blue(&rgb,i,j) = data[3 * j * rgb.width + i + 2];
+      Red(&rgb,i,j) = data[3 * (j * rgb.width + i) + 0];
+      Green(&rgb,i,j) = data[3 * (j * rgb.width + i) + 1];
+      Blue(&rgb,i,j) = data[3 * (j * rgb.width + i) + 2];
       Alpha(&rgb,i,j) = 0xff;
     }
 
@@ -778,9 +778,9 @@ CAMLprim value caml_image_to_rgb8(value _rgb)
     for(i = 0; i < rgb.width; i++)
     {
       a = Alpha(&rgb, i, j);
-      bmp[3 * ((rgb.height - j - 1) * rgb.width + i) + 0] = Blue(&rgb, i, j) * a / 0xff;
+      bmp[3 * ((rgb.height - j - 1) * rgb.width + i) + 0] = Red(&rgb, i, j) * a / 0xff;
       bmp[3 * ((rgb.height - j - 1) * rgb.width + i) + 1] = Green(&rgb, i, j) * a / 0xff;
-      bmp[3 * ((rgb.height - j - 1) * rgb.width + i) + 2] = Red(&rgb, i, j) * a / 0xff;
+      bmp[3 * ((rgb.height - j - 1) * rgb.width + i) + 2] = Blue(&rgb, i, j) * a / 0xff;
     }
   caml_leave_blocking_section();
 

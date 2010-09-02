@@ -1,16 +1,5 @@
 class reader_of_file fname =
-  let fd = Unix.openfile fname [Unix.O_RDONLY] 0o400 in
-  let x = ref 0 in
-  let read n =
-    let s = String.create n in
-    let r = Unix.read fd s 0 n in
-    x := !x + r;
-    Printf.printf "Read %d -> %d\n%!" n !x;
-    assert (r > 0);
-    s,r
-  in
-  let sync = Ogg.Sync.create read in
-  (* let sync,fd = Ogg.Sync.create_from_file fname in *)
+  let sync,fd = Ogg.Sync.create_from_file fname in
   let rec fill os =
     let page = Ogg.Sync.read sync in
     try
@@ -57,10 +46,7 @@ class reader_of_file fname =
   (** Now find a theora stream *)
   let rec init () =
     try
-      Printf.printf "Testing... %!";
-      let ans = test_theora () in
-      Printf.printf "ok!\n%!";
-      ans
+      test_theora ()
     with
       | Not_found ->
         Printf.printf "This stream was not theora..\n";

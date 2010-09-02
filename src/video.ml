@@ -26,6 +26,10 @@ module IO = struct
 
   class type reader =
   object
+    method width : int
+
+    method height : int
+
     method frame_rate : float
 
     method read : buffer -> int -> int -> int

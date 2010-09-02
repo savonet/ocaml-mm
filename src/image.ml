@@ -91,12 +91,12 @@ module RGBA8 = struct
 
   external blank_all : t -> unit = "caml_rgb_blank" "noalloc"
 
-  external of_linear_rgb : t -> string -> unit = "caml_rgb_of_linear_rgb"
+  external of_RGB8_string : t -> string -> unit = "caml_rgb_of_linear_rgb"
 
-  let of_linear_rgb data width =
+  let of_RGB8_string data width =
     let height = (String.length data / 3) / width in
     let ans = create width height in
-    of_linear_rgb ans data;
+    of_RGB8_string ans data;
     ans
 
   external of_YUV420 : YUV420.t -> t -> unit = "caml_rgb_of_YUV420"
@@ -118,7 +118,7 @@ module RGBA8 = struct
 
   external bilinear_scale_coef : t -> t -> float -> float -> unit = "caml_rgb_bilinear_scale"
 
-  let scale src dst =
+  let scale_to src dst =
     let sw, sh = src.width,src.height in
     let dw, dh = dst.width,dst.height in
     scale_coef dst src (dw, sw) (dh, sh)
@@ -129,7 +129,7 @@ module RGBA8 = struct
     scale_coef dst src (w, sw) (h, sh);
     dst
 
-  let proportional_scale ?(bilinear=false) dst src =
+  let proportional_scale_to ?(bilinear=false) dst src =
     let sw, sh = src.width,src.height in
     let dw, dh = dst.width,dst.height in
     let n, d =
@@ -144,15 +144,34 @@ module RGBA8 = struct
     else
       scale_coef dst src (n, d) (n, d)
 
-  let proportional_scale_to ?(bilinear=false) src w h =
+  let proportional_scale_create ?(bilinear=false) src w h =
     let dst = create w h in
-    proportional_scale ~bilinear dst src;
+    proportional_scale_to ~bilinear dst src;
     dst
 
   external to_bmp : t -> string = "caml_rgb_to_bmp"
 
-  external to_rgb8 : t -> string = "caml_image_to_rgb8"
+  external to_RGB8_string : t -> string = "caml_image_to_rgb8"
 
+  (* cf to_int_image *)
+  (*
+  let to_graphics_image buf =
+    let w = buf.width in
+    let h = buf.height in
+    let buf = to_RGB8_string buf in
+    Array.init
+      h
+      (fun j ->
+        Array.init
+          w
+          (fun i ->
+            let r = int_of_char buf.[3*(j*w+i)+0] in
+            let g = int_of_char buf.[3*(j*w+i)+1] in
+            let b = int_of_char buf.[3*(j*w+i)+2] in
+            (r lsl 16) + (g lsl 8) + b
+          )
+      )
+  *)
 (*
   let save_bmp f fname =
   let oc = open_out_bin fname in
