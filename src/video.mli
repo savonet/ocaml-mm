@@ -28,6 +28,8 @@ module IO : sig
     (** Number of frames per second. *)
     method frame_rate : float
 
+    method set_target_size : int -> int -> unit
+
     (** Read a given number of frames. *)
     method read : buffer -> int -> int -> int
 

@@ -1,7 +1,8 @@
 SOURCES = ffmpeg_stubs.c MMFFmpeg.mli MMFFmpeg.ml
 RESULT = mm.ffmpeg
 INCDIRS = ../../src
-OCAMLCFLAGS = -g
+OCAMLFLAGS = -g
+OCAMLLDFLAGS = -g
 CFLAGS = -g
 CLIBS = avutil avformat avcodec swscale
 

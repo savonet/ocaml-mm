@@ -32,6 +32,8 @@ module IO = struct
 
     method frame_rate : float
 
+    method set_target_size : int -> int -> unit
+
     method read : buffer -> int -> int -> int
 
     (* method read_audio : Audio.buffer -> int -> int -> int *)

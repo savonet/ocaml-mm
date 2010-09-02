@@ -88,6 +88,21 @@ CAMLprim value caml_ffmpeg_openfile(value fname)
   CAMLreturn((value)ffm);
 }
 
+CAMLprim value caml_ffmpeg_set_target_size(value _ffm, value _w, value _h)
+{
+  CAMLparam1(_ffm);
+  ffmpeg_t* ffm = FF_of_val(_ffm);
+  int w = Int_val(_w);
+  int h = Int_val(_h);
+  int width = ffm->av_codec_ctx->width;
+  int height = ffm->av_codec_ctx->height;
+
+  sws_freeContext(ffm->convert_ctx);
+  ffm->convert_ctx = sws_getContext(width, height, ffm->av_codec_ctx->pix_fmt, w, h, PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
+
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value caml_ffmpeg_width(value ffm)
 {
   CAMLparam1(ffm);
@@ -107,9 +122,13 @@ CAMLprim value caml_ffmpeg_read_frame(value _ffm)
   ffmpeg_t* ffm = FF_of_val(_ffm);
   AVPacket packet;
   int frame_finished;
-  int width, height;
+  int width = ffm->av_codec_ctx->width;
+  int height = ffm->av_codec_ctx->height;
+  int ansbuflen = width*height*3;
+  uint8_t *ansbuf = NULL;
   int j;
 
+  caml_enter_blocking_section();
   while (av_read_frame(ffm->av_format_ctx, &packet) >= 0)
     {
       if(packet.stream_index == ffm->video_stream)
@@ -117,21 +136,36 @@ CAMLprim value caml_ffmpeg_read_frame(value _ffm)
           avcodec_decode_video(ffm->av_codec_ctx, ffm->av_frame, &frame_finished, packet.data, packet.size);
           if (frame_finished)
             {
-              width = ffm->av_codec_ctx->width;
-              height = ffm->av_codec_ctx->height;
-              /* Deprecated */
-              /* img_convert((AVPicture*)ffm->av_frame_rgb, PIX_FMT_RGB24, (AVPicture*)ffm->av_frame, ffm->av_codec_ctx->pix_fmt, width, height); */
               sws_scale(ffm->convert_ctx, (const uint8_t * const*)ffm->av_frame->data, ffm->av_frame->linesize, 0, height, ffm->av_frame_rgb->data, ffm->av_frame_rgb->linesize);
-              ans = caml_alloc_string(width*height*3);
+              ansbuf = malloc(ansbuflen);
               for (j = 0; j < height; j++)
-                memcpy(String_val(ans)+j*width*3, ffm->av_frame_rgb->data[0]+j*ffm->av_frame_rgb->linesize[0], width*3);
-              //memcpy(String_val(ans), ffm->av_frame_rgb->data, width * height * 3);
+                memcpy(ansbuf+j*width*3, ffm->av_frame_rgb->data[0]+j*ffm->av_frame_rgb->linesize[0], width*3);
+              caml_leave_blocking_section();
+              ans = caml_alloc_string(width*height*3);
+              memcpy(String_val(ans), ansbuf, ansbuflen);
+              free(ansbuf);
               CAMLreturn(ans);
             }
         }
       /* Free the packet allocated by av_read_frame */
       av_free_packet(&packet);
     }
+  caml_leave_blocking_section();
 
   caml_raise_constant(*caml_named_value("ffmpeg_exn_end_of_stream"));
+}
+
+/* TODO: finalizer!!!! */
+CAMLprim value caml_ffmpeg_close(value _ffm)
+{
+  CAMLparam1(_ffm);
+  ffmpeg_t* ffm = FF_of_val(_ffm);
+
+  sws_freeContext(ffm->convert_ctx);
+  av_free(ffm->buffer);
+  av_free(ffm->av_frame_rgb);
+  av_free(ffm->av_frame);
+  free(ffm);
+
+  CAMLreturn(Val_unit);
 }

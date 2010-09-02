@@ -9,7 +9,8 @@ module FFmpeg = struct
   let () = Callback.register_exception "ffmpeg_exn_end_of_stream" End_of_stream
   external read_frame : t -> string = "caml_ffmpeg_read_frame"
   (* TODO *)
-  let close _ = ()
+  external close : t -> unit = "caml_ffmpeg_close"
+  external set_target_size : t -> int -> int -> unit = "caml_ffmpeg_set_target_size"
 end
 
 class reader_of_file fname =
@@ -24,6 +25,11 @@ object (self)
   method width = width
 
   method height = height
+
+  method set_target_size (w:int) (h:int) : unit =
+    (* Not working yet *)
+    assert false
+    (* FFmpeg.set_target_size ff w h *)
 
   method read_frame =
     let buf = FFmpeg.read_frame ff in
