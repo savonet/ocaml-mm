@@ -63,6 +63,8 @@ module Mono : sig
   (** [add b1 b2] adds to contents of [b2] to [b1]. *)
   val add : buffer -> int -> buffer -> int -> int -> unit
 
+  module Ringbuffer : Ringbuffer.R with type elt = float
+
   (** Buffers of variable size. These are particularly useful for temporary
       buffers. *)
   module Extensible_buffer : sig
@@ -149,9 +151,13 @@ module Mono : sig
 
     (** ADSR (Attack/Decay/Sustain/Release) envelopes. *)
     module ADSR : sig
-      (** Attack/Decay/Sustain/Release times. *)
+      (** An ADSR enveloppe. *)
       type t
 
+      (** Create an envelope with specified Attack/Decay/Sustain/Release times
+          in seconds (excepting sustain which is an amplification coefficient
+          between [0.] and [1.]). Negative sustain means that that notes should
+          be released just after decay. *)
       val make : int -> float * float * float * float -> t
 
       (** Current state in the ADSR envelope. *)
@@ -229,6 +235,8 @@ val to_mono : buffer -> Mono.buffer
     not copied an might thus be modified afterwards. *)
 val of_mono : Mono.buffer -> buffer
 
+val to_16le_create : buffer -> int -> int -> string
+
 val resample : float -> buffer -> int -> int -> buffer
 
 (** Same as [Array.blit] for audio data. *)
@@ -264,7 +272,7 @@ module Ringbuffer : sig
   (** A ringbuffer. *)
   type t
 
-  (** Create a ringbuffer of given number of channels and samplerate. *)
+  (** Create a ringbuffer of given number of channels and size (in samples). *)
   val create : int -> int -> t
 
   val channels : t -> int
@@ -409,5 +417,25 @@ module IO : sig
     val writer : ?device:string -> int -> int -> writer
 
     val reader : ?device:string -> int -> int -> reader
+  end
+
+  class type rw =
+  object
+    method read : buffer -> int -> int -> unit
+
+    method write : buffer -> int -> int -> unit
+
+    method close : unit
+  end
+
+  class virtual rw_bufferized : int -> min_duration:int -> fill_duration:int -> max_duration:int -> drop_duration:int ->
+  object
+    method virtual io_read : buffer -> int -> int -> unit
+
+    method virtual io_write : buffer -> int -> int -> unit
+
+    method read : buffer -> int -> int -> unit
+
+    method write : buffer -> int -> int -> unit
   end
 end

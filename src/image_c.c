@@ -761,6 +761,36 @@ CAMLprim value caml_rgb_to_bmp(value _rgb)
   CAMLreturn(ans);
 }
 
+/* TODO: share code with to_bmp */
+CAMLprim value caml_image_to_rgb8(value _rgb)
+{
+  CAMLparam1(_rgb);
+  CAMLlocal1(ans);
+  frame rgb;
+  frame_of_value(_rgb,&rgb);
+  int len = Rgb_num_pix(&rgb);
+  char *bmp = malloc(3 * len);
+  int i, j;
+  unsigned char a;
+
+  caml_enter_blocking_section();
+  for(j = 0; j < rgb.height; j++)
+    for(i = 0; i < rgb.width; i++)
+    {
+      a = Alpha(&rgb, i, j);
+      bmp[3 * ((rgb.height - j - 1) * rgb.width + i) + 0] = Blue(&rgb, i, j) * a / 0xff;
+      bmp[3 * ((rgb.height - j - 1) * rgb.width + i) + 1] = Green(&rgb, i, j) * a / 0xff;
+      bmp[3 * ((rgb.height - j - 1) * rgb.width + i) + 2] = Red(&rgb, i, j) * a / 0xff;
+    }
+  caml_leave_blocking_section();
+
+  ans = caml_alloc_string(3 * len);
+  memcpy(String_val(ans), bmp, 3 * len);
+  free(bmp);
+
+  CAMLreturn(ans);
+}
+
 CAMLprim value caml_rgb_to_color_array(value _rgb)
 {
   CAMLparam1(_rgb);

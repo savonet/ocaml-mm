@@ -2,36 +2,33 @@ module FFT = Audio.Mono.Analyze.FFT
 
 let channels = 2
 let sample_rate = 44100
+let periods = 4
 
 let () =
-  let oss_out = Audio.IO.OSS.writer channels sample_rate in
-  let oss_in = Audio.IO.OSS.reader channels sample_rate in
   let fft = FFT.init 11 in
   let blen = FFT.duration fft in
+  let alsa_in = MMAlsa.rw channels sample_rate ~capture:true ~buffer_size:(periods*blen) ~periods () in
+  let alsa_out = MMAlsa.rw channels sample_rate ~playback:true ~blocking:false ~buffer_size:(periods*blen) ~periods () in
   let buf = Audio.create channels blen in
-  let agc = Audio.Effect.auto_gain_control channels sample_rate ~rms_target:2. () in
-  let adsr = Audio.Mono.Effect.ADSR.make sample_rate (0.02,0.01,0.9,0.05) in
-  let synth = Audio.Generator.Synth.saw ~adsr sample_rate in
+  (* let agc = Audio.Effect.auto_gain_control channels sample_rate ~rms_target:2. () in *)
+  let gen = Audio.Generator.of_mono (Audio.Mono.Generator.saw sample_rate 440.) in
   let loop = ref true in
-  let prevnote = ref (-1) in
-  synth#set_volume 0.1;
+  Printf.printf "Using Alsa %s (delay: %d samples).\n" alsa_out#version alsa_out#delay;
+  (* alsa#prepare; *)
   while !loop do
-    let r = oss_in#read buf 0 blen in
-    assert (r = blen);
-    agc#process buf 0 blen;
-    Printf.printf "RMS: %.05f\n%!" (Audio.Mono.Analyze.rms (Audio.to_mono buf) 0 blen);
-    let note, vnote = FFT.note sample_rate fft ~note_min:(Audio.Note.create 0 4) (Audio.to_mono buf) 0 blen in
-    let note = if vnote > 0.01 then note else -1 in
-    if note <> !prevnote then
-      (
-	if !prevnote <> (-1) then
-	  synth#note_off !prevnote 1.;
-	if note <> (-1) then
-	  synth#note_on note 1.
-      );
-    prevnote := note;
-    (* synth#fill_add buf 0 blen; *)
-    oss_out#write buf 0 blen
+    (* gen#fill buf 0 blen; *)
+    (
+      try
+        assert (alsa_out#wait 1000);
+        let w = alsa_out#write buf 0 blen in
+        Printf.printf "Wrote: %d\n%!" w
+      with
+        | Alsa.Buffer_xrun as e ->
+          alsa_out#recover e;
+          ignore (alsa_out#write buf 0 blen)
+    );
+    let r = alsa_in#read buf 0 blen in
+    (* Printf.printf "Read: %d\n%!" r *) ()
   done;
-  oss_in#close;
-  oss_out#close
+  alsa_in#close;
+  alsa_out#close

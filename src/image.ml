@@ -9,9 +9,17 @@ module RGB8 = struct
 end
 
 module YUV420 = struct
+  (* TODO: also store width and height? *)
   type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
+  (** (Y, Y stride), (U, V, UV stride) *)
   type t = (data * int) * (data * data * int)
+
+  let width ((_,w),_) = w
+
+  let height ((y,w),_) = Bigarray.Array1.dim y / w
+
+  let make y ys u v uvs = (y, ys), (u, v, uvs)
 
   external create : int -> int -> t = "caml_yuv_create"
 
@@ -33,6 +41,10 @@ module RGBA8 = struct
 	height : int;
 	stride : int
       }
+
+  let width buf = buf.width
+
+  let height buf = buf.height
 
   let create ?stride width height =
     let stride =
@@ -89,8 +101,8 @@ module RGBA8 = struct
 
   external of_YUV420 : YUV420.t -> t -> unit = "caml_rgb_of_YUV420"
 
-  let of_YUV420_create frame width height =
-    let ans = create width height in
+  let of_YUV420 frame =
+    let ans = create (YUV420.width frame) (YUV420.height frame) in
     of_YUV420 frame ans;
     ans
 
@@ -139,6 +151,8 @@ module RGBA8 = struct
 
   external to_bmp : t -> string = "caml_rgb_to_bmp"
 
+  external to_rgb8 : t -> string = "caml_image_to_rgb8"
+
 (*
   let save_bmp f fname =
   let oc = open_out_bin fname in
@@ -148,6 +162,7 @@ module RGBA8 = struct
 
   exception Invalid_format of string
 
+  (* TODO: avoid using Str *)
   let ppm_header =
     Str.regexp "P6\n\\(#.*\n\\)?\\([0-9]+\\) \\([0-9]+\\)\n\\([0-9]+\\)\n"
 
@@ -209,7 +224,11 @@ module RGBA8 = struct
 
   let add ?(x=0) ?(y=0) ?w ?h src dst =
     match (w,h) with
-      | None, None -> add_off src dst x y
+      | None, None ->
+        if x = 0 && y = 0 && src.width = dst.width then
+          add_fast src dst
+        else
+          add_off src dst x y
       | Some w, Some h -> add_off_scale src dst (x,y) (w,h)
       | _, _ -> assert false
 

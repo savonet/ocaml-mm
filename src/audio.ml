@@ -146,6 +146,16 @@ module Mono = struct
       done;
       outbuf
 
+  module Ringbuffer =
+    Ringbuffer.Make
+      (
+        struct
+          type t = float
+
+          let create () = 0.
+        end
+      )
+
   (* TODO: refined allocation/deallocation policies *)
   module Extensible_buffer = struct
     type t =
@@ -477,7 +487,13 @@ module Mono = struct
             if len < d - state_pos then
               1, state_pos + len
             else
-              process adsr (2,0) buf (ofs + d - state_pos) (len - (d - state_pos))
+              (
+                (* Negative sustain means release immediately. *)
+                if s >= 0. then
+                  process adsr (2,0) buf (ofs + d - state_pos) (len - (d - state_pos))
+                else
+                  process adsr (3,0) buf (ofs + d - state_pos) (len - (d - state_pos))
+              )
           | 2 ->
             amplify s buf ofs len;
             st
@@ -803,6 +819,7 @@ module Extensible_buffer = struct
   let duration buf = duration buf.buffer
 end
 
+(* TODO: share code with ringbuffer module! *)
 module Ringbuffer = struct
   type t = {
     size : int;
@@ -1151,22 +1168,6 @@ module Generator = struct
 
     method dead = g#dead
   end
-
-  let might_adsr adsr g =
-    match adsr with
-      | None -> g
-      | Some a -> Mono.Generator.adsr a g
-
-  let simple g ?adsr sr ?(volume=1.) ?(phase=0.) f =
-    let g = g sr ?volume:(Some volume) ?phase:(Some phase) f in
-    let g = might_adsr adsr g in
-    of_mono g
-
-  let sine = simple Mono.Generator.sine
-
-  let square = simple Mono.Generator.square
-
-  let saw = simple Mono.Generator.saw
 end
 
 module IO = struct
@@ -1418,5 +1419,41 @@ module IO = struct
         method close =
           self#stream_close
        end :> reader)
+  end
+
+  class type rw =
+  object
+    method read : buffer -> int -> int -> unit
+
+    method write : buffer -> int -> int -> unit
+
+    method close : unit
+  end
+
+  class virtual rw_bufferized channels ~min_duration ~fill_duration ~max_duration ~drop_duration =
+  object
+    method virtual io_read : buffer -> int -> int -> unit
+    method virtual io_write : buffer -> int -> int -> unit
+
+    initializer
+      assert (fill_duration <= max_duration);
+      assert (drop_duration <= max_duration)
+
+    val rb = Ringbuffer.create channels max_duration
+
+    method read buf ofs len =
+      let rs = Ringbuffer.read_space rb in
+      if rs < min_duration + len then
+        (
+          let ps = min_duration + len - rs in
+          Ringbuffer.write rb (create channels ps) 0 ps
+        );
+      Ringbuffer.read rb buf ofs len
+
+    method write buf ofs len =
+      let ws = Ringbuffer.write_space rb in
+      if ws + len > max_duration then
+        Ringbuffer.read_advance rb (ws - drop_duration);
+      Ringbuffer.write rb buf ofs len
   end
 end

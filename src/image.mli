@@ -9,9 +9,17 @@ module RGB8 : sig
 end
 
 module YUV420 : sig
+  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
   type t
 
+  val width : t -> int
+
+  val height : t -> int
+
   val create : int -> int -> t
+
+  val make : data -> int -> data -> data -> int -> t
 
   val blank_all : t -> unit
 end
@@ -26,6 +34,10 @@ module RGBA8 : sig
   (** An image. *)
   type t
 
+  val width : t -> int
+
+  val height : t -> int
+
   val create : int -> int -> t
 
   val copy : t -> t
@@ -39,6 +51,12 @@ module RGBA8 : sig
   val blank_all : t -> unit
 
   val of_linear_rgb : string -> int -> t
+
+  val to_bmp : t -> string
+
+  val to_rgb8 : t -> string
+
+  val of_YUV420 : YUV420.t -> t
 
   module Effect : sig
     val greyscale : t -> unit
