@@ -1,4 +1,4 @@
-let vidbuflen = 10
+let vidbuflen = 5
 (*
 let width = 1024/2
 let height = 600/2
@@ -13,7 +13,6 @@ let () =
   let vid = Video.create vidbuflen in
   let loop = ref true in
   let tot = ref 0 in
-  Printf.printf "FPS: %.02f\n%!" f#frame_rate;
   (* f#set_target_size width height; *)
   Graphics.open_graph "";
   Graphics.resize_window width height;

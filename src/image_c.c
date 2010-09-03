@@ -450,14 +450,17 @@ CAMLprim value caml_rgb_to_YUV420(value f, value yuv)
   return Val_unit;
 }
 
-CAMLprim value caml_rgb_of_linear_rgb(value _rgb, value _data)
+CAMLprim value caml_rgb_of_rgb8_string(value _rgb, value _data)
 {
+  CAMLparam2(_rgb, _data);
   frame rgb;
   frame_of_value(_rgb, &rgb);
-  char *data = String_val(_data);
+  int datalen = rgb.height * rgb.width * 3;
+  char *data = (char*)malloc(datalen);
+
   int i, j;
 
-  /* TODO: blocking section */
+  caml_enter_blocking_section();
   for (j = 0; j < rgb.height; j++)
     for (i = 0; i < rgb.width; i++)
     {
@@ -466,8 +469,11 @@ CAMLprim value caml_rgb_of_linear_rgb(value _rgb, value _data)
       Blue(&rgb,i,j) = data[3 * (j * rgb.width + i) + 2];
       Alpha(&rgb,i,j) = 0xff;
     }
+  caml_leave_blocking_section();
 
-  return Val_unit;
+  memcpy(String_val(_data), data, datalen);
+
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_rgb_get_pixel(value f, value _x, value _y)
@@ -528,6 +534,7 @@ CAMLprim value caml_rgb_randomize(value f)
 
 CAMLprim value caml_rgb_scale(value _dst, value _src, value xscale, value yscale)
 {
+  CAMLparam4(_dst, _src, xscale, yscale);
   frame src,dst;
   frame_of_value(_src, &src);
   frame_of_value(_dst, &dst);
@@ -541,20 +548,17 @@ CAMLprim value caml_rgb_scale(value _dst, value _src, value xscale, value yscale
 
   assert(ox >= 0 && oy >= 0);
 
-  caml_register_global_root(&_dst);
-  caml_register_global_root(&_src);
   caml_enter_blocking_section();
   if (ox != 0 || oy != 0)
     rgb_blank(&dst);
   for (j = oy; j < dst.height - oy; j++)
     for (i = ox; i < dst.width - ox; i++)
-      for (c = 0; c < Rgb_elems_per_pixel; c++)
-        Color(&dst, c, i, j) = Color(&src, c, (i - ox) * xd / xn, (j - oy) * yd / yn);
+      //for (c = 0; c < Rgb_elems_per_pixel; c++)
+      //Color(&dst, c, i, j) = Color(&src, c, (i - ox) * xd / xn, (j - oy) * yd / yn);
+      *Int_pixel(dst,i,j) = *Int_pixel(src,(i - ox) * xd / xn, (j - oy) * yd / yn);
   caml_leave_blocking_section();
-  caml_remove_global_root(&_dst);
-  caml_remove_global_root(&_src);
 
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_rgb_bilinear_scale(value _dst, value _src, value xscale, value yscale)

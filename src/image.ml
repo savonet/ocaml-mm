@@ -91,7 +91,7 @@ module RGBA8 = struct
 
   external blank_all : t -> unit = "caml_rgb_blank" "noalloc"
 
-  external of_RGB8_string : t -> string -> unit = "caml_rgb_of_linear_rgb"
+  external of_RGB8_string : t -> string -> unit = "caml_rgb_of_rgb8_string"
 
   let of_RGB8_string data width =
     let height = (String.length data / 3) / width in

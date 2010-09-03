@@ -22,6 +22,8 @@ typedef struct
 #define Pixel(rgb,i,j)      {Red(rgb,i,j),Blue(rgb,i,j),Green(rgb,i,j),Alpha(rgb,i,j)}
 #define Is_outside(rgb,i,j) (i<0||j<0||i>=(rgb)->width||j>=(rgb)->height)
 #define Space_clip_color(rgb,c,i,j) (Is_outside(rgb,i,j))?0:Color(rgb,c,i,j)
+//For copying pixel by pixel
+#define Int_pixel(rgb,i,j)  (((uint32*)rgb.data)+i+j*rgb.width)
 
 #define assert_same_dim(src, dst) { assert((dst)->width == (src)->width); assert((dst)->height == (src)->height); }
 

@@ -1,4 +1,6 @@
-type frame = Image.RGBA8.t
+module Frame = Image.RGBA8
+
+type frame = Frame.t
 
 type buffer = frame array
 

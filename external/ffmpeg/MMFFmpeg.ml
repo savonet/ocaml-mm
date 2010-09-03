@@ -18,7 +18,7 @@ module FFmpeg = struct
 
     external height : t -> int = "caml_ffmpeg_dec_height"
 
-    external read_frame : t -> string = "caml_ffmpeg_dec_read_frame"
+    external read_frame : t -> Video.frame -> unit = "caml_ffmpeg_dec_read_frame"
 
     external close : t -> unit = "caml_ffmpeg_dec_close"
 
@@ -38,6 +38,16 @@ module FFmpeg = struct
 
     external close : t -> unit = "caml_ffmpeg_enc_close"
   end
+
+  (*
+  module Scale = struct
+    type t
+
+    external create : int * int -> int * int -> t = "caml_sws_create"
+
+    external scale_to : t -> Video.frame -> Video.frame -> unit = "caml_sws_scale_to"
+  end
+  *)
 end
 
 module D = FFmpeg.Decoder
@@ -63,8 +73,9 @@ object (self)
     (* FFmpeg.set_target_size ff w h *)
 
   method read_frame =
-    let buf = D.read_frame ff in
-    Image.RGBA8.of_RGB8_string buf width
+    let img = Image.RGBA8.create width height in
+    D.read_frame ff img;
+    img
 
   method read buf ofs len =
     let n = ref 0 in

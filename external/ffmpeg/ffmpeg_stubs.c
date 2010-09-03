@@ -41,7 +41,6 @@ CAMLprim value caml_ffmpeg_init(value unit)
 }
 
 /* TODO: add a finalizer!!!! */
-/* TODO: decode directly to RGBA */
 CAMLprim value caml_ffmpeg_dec_openfile(value fname)
 {
   CAMLparam1(fname);
@@ -78,12 +77,12 @@ CAMLprim value caml_ffmpeg_dec_openfile(value fname)
   ffd->av_frame = avcodec_alloc_frame();
   ffd->av_frame_rgb = avcodec_alloc_frame();
   /* Allocate a suitable buffer */
-  buflen = avpicture_get_size(PIX_FMT_RGB24, width, height);
+  buflen = avpicture_get_size(PIX_FMT_RGBA, width, height);
   ffd->buffer = (uint8_t*)av_malloc(buflen * sizeof(uint8_t));
   /* Assign appropriate parts of buffer to image planes in av_frame_rgb */
-  avpicture_fill((AVPicture*)ffd->av_frame_rgb, ffd->buffer, PIX_FMT_RGB24, width, height);
+  avpicture_fill((AVPicture*)ffd->av_frame_rgb, ffd->buffer, PIX_FMT_RGBA, width, height);
   /* Init conversion context */
-  ffd->convert_ctx = sws_getContext(width, height, ffd->av_codec_ctx->pix_fmt, width, height, PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
+  ffd->convert_ctx = sws_getContext(width, height, ffd->av_codec_ctx->pix_fmt, width, height, PIX_FMT_RGBA, SWS_BICUBIC, NULL, NULL, NULL);
   assert(ffd->convert_ctx);
 
   CAMLreturn((value)ffd);
@@ -110,7 +109,7 @@ CAMLprim value caml_ffmpeg_dec_set_target_size(value _ffd, value _w, value _h)
   int height = ffd->av_codec_ctx->height;
 
   sws_freeContext(ffd->convert_ctx);
-  ffd->convert_ctx = sws_getContext(width, height, ffd->av_codec_ctx->pix_fmt, w, h, PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
+  ffd->convert_ctx = sws_getContext(width, height, ffd->av_codec_ctx->pix_fmt, w, h, PIX_FMT_RGBA, SWS_BICUBIC, NULL, NULL, NULL);
 
   CAMLreturn(Val_unit);
 }
@@ -136,18 +135,21 @@ CAMLprim value caml_ffmpeg_dec_fps(value _ffd)
   CAMLreturn(caml_copy_double(d/n));
 }
 
-CAMLprim value caml_ffmpeg_dec_read_frame(value _ffd)
+CAMLprim value caml_ffmpeg_dec_read_frame(value _ffd, value _rgb)
 {
-  CAMLparam1(_ffd);
+  CAMLparam2(_ffd, _rgb);
   CAMLlocal1(ans);
+  frame rgb;
   ffmpeg_dec_t* ffd = Dec_val(_ffd);
   AVPacket packet;
   int frame_finished;
   int width = ffd->av_codec_ctx->width;
   int height = ffd->av_codec_ctx->height;
   int ansbuflen = width*height*3;
-  uint8_t *ansbuf = NULL;
   int j;
+
+  frame_of_value(_rgb, &rgb);
+  assert(rgb.width == width && rgb.height == height);
 
   caml_enter_blocking_section();
   while (av_read_frame(ffd->av_format_ctx, &packet) >= 0)
@@ -158,14 +160,10 @@ CAMLprim value caml_ffmpeg_dec_read_frame(value _ffd)
           if (frame_finished)
             {
               sws_scale(ffd->convert_ctx, (const uint8_t * const*)ffd->av_frame->data, ffd->av_frame->linesize, 0, height, ffd->av_frame_rgb->data, ffd->av_frame_rgb->linesize);
-              ansbuf = malloc(ansbuflen);
               for (j = 0; j < height; j++)
-                memcpy(ansbuf+j*width*3, ffd->av_frame_rgb->data[0]+j*ffd->av_frame_rgb->linesize[0], width*3);
+                memcpy(rgb.data+j*width*4, ffd->av_frame_rgb->data[0]+j*ffd->av_frame_rgb->linesize[0], width*4);
               caml_leave_blocking_section();
-              ans = caml_alloc_string(width*height*3);
-              memcpy(String_val(ans), ansbuf, ansbuflen);
-              free(ansbuf);
-              CAMLreturn(ans);
+              CAMLreturn(Val_unit);
             }
         }
       /* Free the packet allocated by av_read_frame */
@@ -440,3 +438,35 @@ CAMLprim value caml_ffmpeg_enc_close(value _ffe)
 
   CAMLreturn(Val_unit);
 }
+
+/* TODO: finalizer with sws_freeContext */
+/* TODO: handle pixel coding conversions too */
+/*
+CAMLprim caml_sws_create(value src, value tgt, value th)
+{
+  CAMLparam0();
+  struct SwsContext *swsc;
+
+  swsc = sws_getContext(Int_val(Field(src,0)), Int_val(Field(src,1)), PIX_FMT_RGBA, Int_val(Field(src,0)), Int_val(Field(src,1)), PIX_FMT_RGBA, SWS_BICUBIC, NULL, NULL, NULL);
+
+  CAMLreturn((value)swsc);
+}
+
+CAMLprim caml_sws_scale_to(value _swsc, value _src, value _dst)
+{
+  CAMLparam2(_src, _tgt);
+  frame src;
+  frame dst;
+  struct SwsContext *swsc = (struct SwsContext*)_swsc;
+
+  frame_of_val(_src, &src);
+  frame_of_val(_tgt, &tgt);
+
+  caml_enter_blocking_section();
+  // The coding of images is weired
+  sws_scale(swsc, (const uint8_t * const*)src.data, src.width*4, 0, src.height, dst.data, dst.width*4);
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+*/

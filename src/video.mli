@@ -1,4 +1,4 @@
-(** Operation on video data. *)
+(** Operations on video data. *)
 
 type frame = Image.RGBA8.t
 
@@ -20,9 +20,11 @@ module Ringbuffer_ext : Ringbuffer.R with type elt = frame
 
 module Ringbuffer : Ringbuffer.R with type elt = frame
 
+(** Operations on frame rates. *)
 module FPS : sig
   type t = float
 
+  (** Convert a frame rate to a fraction. *)
   val to_frac : t -> int * int
 end
 
@@ -36,7 +38,7 @@ module IO : sig
     method height : int
 
     (** Number of frames per second. *)
-    method frame_rate : float
+    method frame_rate : FPS.t
 
     method set_target_size : int -> int -> unit
 
