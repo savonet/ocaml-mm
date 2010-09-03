@@ -36,9 +36,14 @@ module Ringbuffer = Ringbuffer.Make (RE)
 module FPS = struct
   type t = float
 
-  (* TODO: relatively prime numbers *)
+  (* TODO: improve this! *)
   let to_frac f =
-    int_of_float (f *. 10.), 10
+    let n = floor (f *. 100. +. 0.5) in
+    let n = int_of_float n in
+    if n mod 100 = 0 then
+      n/100, 1
+    else
+      n, 100
 end
 
 module IO = struct

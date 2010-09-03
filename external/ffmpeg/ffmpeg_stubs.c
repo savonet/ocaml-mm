@@ -265,14 +265,12 @@ CAMLprim value caml_ffmpeg_enc_openfile(value _fname, value _fr, value _width, v
   c->gop_size = 12; /* emit one intra frame every twelve frames at most */
   c->pix_fmt = PIX_FMT_YUV420P;
   /* just for testing, we also add B frames */
-  /*
   if (c->codec_id == CODEC_ID_MPEG2VIDEO)
     c->max_b_frames = 2;
-  */
-  if (c->codec_id == CODEC_ID_MPEG1VIDEO)
     /* needed to avoid using macroblocks in which some coeffs overflow this
        doesn't happen with normal video, it just happens here as the motion of
        the chroma plane doesn't match the luma plane */
+  if (c->codec_id == CODEC_ID_MPEG1VIDEO)
     c->mb_decision=2;
   /* some formats want stream headers to be seperate */
   if(!strcmp(ffe->format_ctx->oformat->name, "mp4") || !strcmp(ffe->format_ctx->oformat->name, "mov") || !strcmp(ffe->format_ctx->oformat->name, "3gp"))

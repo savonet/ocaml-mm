@@ -96,10 +96,8 @@ end
 let reader_of_file fname =
   (new reader_of_file fname :> Video.IO.reader)
 
-class writer_to_file fname fr w h =
+class writer_to_file fname fr w h br =
   let fr = Video.FPS.to_frac fr in
-  (* TODO: parameter for bitrate *)
-  let br = 800000 in
   let enc = E.openfile fname fr w h br in
   let () = E.dump_format enc fname in
 object(self)
@@ -112,5 +110,5 @@ object(self)
     E.close enc
 end
 
-let writer_to_file fname fr w h =
-  (new writer_to_file fname fr w h :> Video.IO.writer)
+let writer_to_file fname fr w h br =
+  (new writer_to_file fname fr w h br :> Video.IO.writer)

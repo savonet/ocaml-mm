@@ -1,8 +1,8 @@
 SOURCES = player.ml
 RESULT = player
 OCAMLFLAGS = -g
-INCDIRS = ../../src ../../external/ffmpeg
-LIBS = str unix bigarray graphics mm mm.ffmpeg
+INCDIRS = ../../src ../../external/ffmpeg ../../external/sdl +sdl
+LIBS = str unix bigarray graphics mm mm.ffmpeg sdl mm.sdl
 
 test: dnc
 	OCAMLRUNPARAM=b ./player ../test.mov
@@ -14,6 +14,9 @@ prof:
 
 gdb: dnc
 	gdb --args ./player ../test.mov
+
+valgrind: dnc
+	valgrind ./player ../test.mov
 
 include OCamlMakefile
 

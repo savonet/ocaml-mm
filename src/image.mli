@@ -40,6 +40,10 @@ module RGBA8 : sig
 
   val create : int -> int -> t
 
+  val get_pixel : t -> int -> int -> Color.t
+
+  val set_pixel : t -> int -> int -> Color.t -> unit
+
   val copy : t -> t
 
   val blit : ?blank:bool -> ?x:int -> ?y:int -> ?w:int -> ?h:int -> t -> t -> unit

@@ -36,6 +36,31 @@
 #define max(a,b) (a>b)?a:b
 #define min(a,b) (a<b)?a:b
 
+/* Remark, this returns an integer, which means that it might be ordered in
+   little-endian... */
+static inline int int_rgb8_of_pixel(frame *rgb, int i, int j)
+{
+  int p = *Int_pixel(rgb,i,j);
+  /* Endianness... */
+  p = ntohl(p);
+  unsigned char a = p & 0xff;
+
+  if (a == 0xff)
+    return (p >> 8);
+  else if (a == 0)
+    return 0;
+  else
+    {
+      /* TODO: why doesn't this work? */
+      //return ((p >> 8) * a / 0xff);
+      int r = (p >> 24) & 0xff;
+      int g = (p >> 16) & 0xff;
+      int b = (p >> 8) & 0xff;
+      int c = ((r * a / 0xff) << 16) + ((g * a / 0xff) << 8) + (b * a / 0xff);
+      return c;
+    }
+}
+
 static void rgb_free(frame *f)
 {
   free(f->data);
@@ -514,11 +539,11 @@ CAMLprim value caml_rgb_set_pixel(value f, value _x, value _y, value _rgb)
 
 CAMLprim value caml_rgb_randomize(value f)
 {
+  CAMLparam1(f);
   frame rgb;
   frame_of_value(f, &rgb);
   int i, j, c;
 
-  caml_register_global_root(&f);
   caml_enter_blocking_section();
   for (j = 0; j < rgb.height; j++)
     for (i = 0; i < rgb.width; i++) {
@@ -527,9 +552,8 @@ CAMLprim value caml_rgb_randomize(value f)
         Color(&rgb,c,i,j) = rand();
     }
   caml_leave_blocking_section();
-  caml_remove_global_root(&f);
 
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_rgb_scale(value _dst, value _src, value xscale, value yscale)
@@ -555,7 +579,7 @@ CAMLprim value caml_rgb_scale(value _dst, value _src, value xscale, value yscale
     for (i = ox; i < dst.width - ox; i++)
       //for (c = 0; c < Rgb_elems_per_pixel; c++)
       //Color(&dst, c, i, j) = Color(&src, c, (i - ox) * xd / xn, (j - oy) * yd / yn);
-      *Int_pixel(dst,i,j) = *Int_pixel(src,(i - ox) * xd / xn, (j - oy) * yd / yn);
+      Copy_pixel(&dst,i,j,&src,(i-ox)*xd/xn,(j-oy)*yd/yn);
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);
@@ -769,7 +793,7 @@ CAMLprim value caml_rgb_to_color_array(value _rgb)
   frame_of_value(_rgb,&rgb);
 
   int i, j, c;
-  unsigned char a;
+  //unsigned char a;
 
   ans = caml_alloc_tuple(rgb.height);
   for(j=0; j < rgb.height; j++)
@@ -777,10 +801,13 @@ CAMLprim value caml_rgb_to_color_array(value _rgb)
     line = caml_alloc_tuple(rgb.width);
     for(i=0; i < rgb.width; i++)
     {
+      /*
       a = Alpha(&rgb, i, j);
       c = ((Red(&rgb,i,j) * a / 0xff) << 16)
         + ((Green(&rgb,i,j) * a / 0xff) << 8)
         + (Blue(&rgb,i,j) * a / 0xff);
+      */
+      c = int_rgb8_of_pixel(&rgb,i,j);
       Store_field(line, i, Val_int(c));
     }
     Store_field(ans, j, line);
@@ -1164,6 +1191,7 @@ CAMLprim value caml_rgb_lomo(value _rgb)
 
 CAMLprim value caml_rgb_color_to_alpha(value _rgb, value color, value _prec)
 {
+  CAMLparam2(_rgb, color);
   frame rgb;
   frame_of_value(_rgb, &rgb);
   int r = Int_val(Field(color, 0)),
@@ -1172,16 +1200,14 @@ CAMLprim value caml_rgb_color_to_alpha(value _rgb, value color, value _prec)
   int prec = Int_val(_prec);
   int i, j;
 
-  caml_register_global_root(&_rgb);
   caml_enter_blocking_section();
   for (j = 0; j < rgb.height; j++)
     for (i = 0; i < rgb.width; i++)
       if (abs(Red(&rgb, i, j) - r) <= prec && abs(Green(&rgb, i, j) - g) <= prec && abs(Blue(&rgb, i, j) - b) <= prec)
         Alpha(&rgb, i, j) = 0;
   caml_leave_blocking_section();
-  caml_remove_global_root(&_rgb);
 
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_rgb_blur_alpha(value _rgb)
