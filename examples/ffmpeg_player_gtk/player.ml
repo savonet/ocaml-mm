@@ -4,7 +4,7 @@ let height = 300
 
 let play (d:GDraw.drawable) () =
   let fname = Sys.argv.(1) in
-  let f = MMFFmpeg.reader_of_file fname in
+  let f = new MMFFmpeg.reader_of_file fname in
   let vid = Video.create fps in
   let loop = ref true in
   let tot = ref 0 in

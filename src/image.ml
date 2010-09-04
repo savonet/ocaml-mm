@@ -275,7 +275,9 @@ module RGBA8 = struct
 
     external lomo : t -> unit = "caml_rgb_lomo"
 
-    external color_to_alpha : t -> int * int * int -> int -> unit = "caml_rgb_color_to_alpha"
+    external color_to_alpha_simple : t -> int * int * int -> float -> float -> unit = "caml_rgb_color_to_alpha_simple"
+
+    external color_to_alpha : t -> int * int * int -> float -> float -> unit = "caml_rgb_color_to_alpha"
 
     external blur_alpha : t -> unit = "caml_rgb_blur_alpha"
   end

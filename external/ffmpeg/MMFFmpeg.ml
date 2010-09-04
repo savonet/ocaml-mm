@@ -67,12 +67,14 @@ object (self)
 
   method height = height
 
+  (*
   method set_target_size (w:int) (h:int) : unit =
     (* Not working yet *)
     assert false
     (* FFmpeg.set_target_size ff w h *)
+  *)
 
-  method read_frame =
+  method private read_frame =
     let img = Image.RGBA8.create width height in
     D.read_frame ff img;
     img
@@ -89,12 +91,7 @@ object (self)
       | FFmpeg.End_of_stream -> !n
 
   method close = D.close ff
-
-  method seek (n:int) : unit = assert false
 end
-
-let reader_of_file fname =
-  (new reader_of_file fname :> Video.IO.reader)
 
 class writer_to_file fname fr w h br =
   let fr = Video.FPS.to_frac fr in
@@ -109,6 +106,3 @@ object(self)
   method close =
     E.close enc
 end
-
-let writer_to_file fname fr w h br =
-  (new writer_to_file fname fr w h br :> Video.IO.writer)

@@ -1219,10 +1219,9 @@ module IO = struct
   object (self)
     inherit IO.helper
 
-    method virtual stream_read : string -> int -> int -> int
-    method virtual stream_close : unit
-    method virtual stream_seek : int -> unit
-    method virtual stream_cur_pos : int
+    method virtual private stream_close : unit
+    method virtual private stream_seek : int -> unit
+    method virtual private stream_cur_pos : int
 
     val mutable sample_rate = 0
     val mutable channels = 0
@@ -1288,12 +1287,12 @@ module IO = struct
     method close = self#stream_close
   end
 
-  let reader_of_wav_file fname =
-  (object
+  class reader_of_wav_file fname =
+  object
     inherit IO.Unix.rw ~read:true fname
     inherit reader_base
     inherit wav_reader
-  end :> reader)
+  end
 
   class type writer =
   object
@@ -1304,20 +1303,20 @@ module IO = struct
 
   class virtual writer_base chans sr =
   object
-    method channels : int = chans
+    method private channels : int = chans
 
-    method sample_rate : int = sr
+    method private sample_rate : int = sr
   end
 
   class virtual wav_writer =
   object (self)
     inherit IO.helper
 
-    method virtual stream_write : string -> int -> int -> int
-    method virtual stream_seek : int -> unit
-    method virtual stream_close : unit
-    method virtual channels : int
-    method virtual sample_rate : int
+    method virtual private stream_write : string -> int -> int -> int
+    method virtual private stream_seek : int -> unit
+    method virtual private stream_close : unit
+    method virtual private channels : int
+    method virtual private sample_rate : int
 
     initializer
     let bits_per_sample = 16 in
@@ -1353,12 +1352,12 @@ module IO = struct
       self#stream_close
   end
 
-  let writer_to_wav_file chans sr fname =
-    (object
-      inherit writer_base chans sr
-      inherit IO.Unix.rw ~write:true fname
-      inherit wav_writer
-     end :> writer)
+  class writer_to_wav_file chans sr fname =
+  object
+    inherit writer_base chans sr
+    inherit IO.Unix.rw ~write:true fname
+    inherit wav_writer
+  end
 
   module OSS = struct
     external set_format : Unix.file_descr -> int -> int = "caml_oss_dsp_setfmt"
@@ -1368,57 +1367,57 @@ module IO = struct
     external set_rate : Unix.file_descr -> int -> int = "caml_oss_dsp_speed"
 
     (* TODO: other formats than 16 bits? *)
-    let writer ?(device="/dev/dsp") channels sample_rate =
-      (object (self)
-	inherit IO.Unix.rw ~write:true device
+    class writer_to_oss ?(device="/dev/dsp") channels sample_rate =
+    object (self)
+      inherit IO.Unix.rw ~write:true device
 
-	initializer
-	  assert (set_format fd 16 = 16);
-	  assert (set_channels fd channels = channels);
-	  assert (set_rate fd sample_rate = sample_rate)
+      initializer
+	assert (set_format fd 16 = 16);
+	assert (set_channels fd channels = channels);
+	assert (set_rate fd sample_rate = sample_rate)
 
-	method stream_really_write buf ofs len =
-	  let w = ref 0 in
-	  while !w <> len do
-	    w := !w + self#stream_write buf (ofs + !w) (len - !w)
-	  done
+      method private stream_really_write buf ofs len =
+	let w = ref 0 in
+	while !w <> len do
+	  w := !w + self#stream_write buf (ofs + !w) (len - !w)
+	done
 
-	method write buf ofs len =
-	  let s = to_16le_create buf ofs len in
-	  self#stream_really_write s 0 (String.length s)
+      method write buf ofs len =
+	let s = to_16le_create buf ofs len in
+	self#stream_really_write s 0 (String.length s)
 
-	method close =
-	  self#stream_close
-       end :> writer)
+      method close =
+	self#stream_close
+    end
 
-    let reader ?(device="/dev/dsp") channels sample_rate =
-      (object (self)
-        inherit IO.Unix.rw ~read:true device
+    class reader_of_oss ?(device="/dev/dsp") channels sample_rate =
+    object (self)
+      inherit IO.Unix.rw ~read:true device
 
-        initializer
-          assert (set_format fd 16 = 16);
-	  assert (set_channels fd channels = channels);
-	  assert (set_rate fd sample_rate = sample_rate)
+      initializer
+        assert (set_format fd 16 = 16);
+	assert (set_channels fd channels = channels);
+	assert (set_rate fd sample_rate = sample_rate)
 
-        method channels = channels
-        method sample_rate = sample_rate
+      method channels = channels
+      method sample_rate = sample_rate
 
-        method duration : int = assert false
-        method duration_time : float = assert false
+      method duration : int = assert false
+      method duration_time : float = assert false
 
-        method read buf ofs len =
-          let slen = length_16le channels len in
-          let s = String.create slen in
-          let r = self#stream_read s 0 slen in
-          let len = duration_16le channels r in
-          of_16le s 0 buf ofs len;
-          len
+      method read buf ofs len =
+        let slen = length_16le channels len in
+        let s = String.create slen in
+        let r = self#stream_read s 0 slen in
+        let len = duration_16le channels r in
+        of_16le s 0 buf ofs len;
+        len
 
-        method seek (n:int) : unit = assert false
+      method seek (n:int) : unit = assert false
 
-        method close =
-          self#stream_close
-       end :> reader)
+      method close =
+        self#stream_close
+    end
   end
 
   class type rw =

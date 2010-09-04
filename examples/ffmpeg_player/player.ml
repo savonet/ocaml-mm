@@ -6,9 +6,9 @@ let () = MMSDL.init ()
 
 let () =
   let fname = Sys.argv.(1) in
-  let f = MMFFmpeg.reader_of_file fname in
-  let sdl = MMSDL.writer_to_screen width height in
-  let out = MMFFmpeg.writer_to_file "out.avi" f#frame_rate width height 4000000 in
+  let f = new MMFFmpeg.reader_of_file fname in
+  let sdl = new MMSDL.writer_to_screen width height in
+  let out = new MMFFmpeg.writer_to_file "out.avi" f#frame_rate width height 4000000 in
   let vid = Video.create vidbuflen in
   let loop = ref true in
   let tot = ref 0 in

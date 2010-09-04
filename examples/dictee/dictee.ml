@@ -22,9 +22,9 @@ let rec list_head_n n l =
 
 let () =
   let fname = Sys.argv.(1) in
-  let f = MMMad.Audio.IO.Mad.reader_of_file fname in
-  let oss = Audio.IO.OSS.writer f#channels f#sample_rate in
-  let wav = Audio.IO.writer_to_wav_file f#channels f#sample_rate "out.wav" in
+  let f = new MMMad.reader_of_file fname in
+  let oss = new Audio.IO.OSS.writer_to_oss f#channels f#sample_rate in
+  let wav = new Audio.IO.writer_to_wav_file f#channels f#sample_rate "out.wav" in
   let mid = MIDI.IO.writer_samples_to_file f#sample_rate "out.mid" in
   let fft_n = 11 in
   let fft = FFT.init fft_n in

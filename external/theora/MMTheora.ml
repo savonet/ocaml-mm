@@ -67,7 +67,7 @@ object (self)
 
   val mutable latest_yuv = None
 
-  method get_yuv =
+  method private get_yuv =
     try
       let yuv = Theora.Decoder.get_yuv dec os in
       latest_yuv <- Some yuv;
@@ -83,7 +83,7 @@ object (self)
             | None   -> raise Video.IO.Invalid_file
         end
 
-  method get_rgba8 =
+  method private get_rgba8 =
     let yuv = self#get_yuv in
     Image.RGBA8.of_YUV420 (Image.YUV420.make yuv.Theora.y yuv.Theora.y_stride yuv.Theora.u yuv.Theora.v yuv.Theora.u_stride)
 
@@ -99,10 +99,4 @@ object (self)
       | Ogg.Not_enough_data -> !n
 
   method close = Unix.close fd
-
-  (* TODO *)
-  method seek (n:int) : unit = assert false
 end
-
-let reader_of_file fname =
-  (new reader_of_file fname :> Video.IO.reader)

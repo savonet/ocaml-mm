@@ -1189,7 +1189,7 @@ CAMLprim value caml_rgb_lomo(value _rgb)
   return Val_unit;
 }
 
-CAMLprim value caml_rgb_color_to_alpha(value _rgb, value color, value _prec)
+CAMLprim value caml_rgb_color_to_alpha_simple(value _rgb, value color, value _prec)
 {
   CAMLparam2(_rgb, color);
   frame rgb;
@@ -1205,6 +1205,43 @@ CAMLprim value caml_rgb_color_to_alpha(value _rgb, value color, value _prec)
     for (i = 0; i < rgb.width; i++)
       if (abs(Red(&rgb, i, j) - r) <= prec && abs(Green(&rgb, i, j) - g) <= prec && abs(Blue(&rgb, i, j) - b) <= prec)
         Alpha(&rgb, i, j) = 0;
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_rgb_color_to_alpha(value _rgb, value color, value _prec, value _sharp)
+{
+  CAMLparam2(_rgb, color);
+  frame rgb;
+  frame_of_value(_rgb, &rgb);
+  int r = Int_val(Field(color, 0)),
+      g = Int_val(Field(color, 1)),
+      b = Int_val(Field(color, 2));
+  float prec = Double_val(_prec);
+  float sharp = Double_val(_sharp);
+  int i, j;
+  double rr, gg, bb, aa;
+  double d;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < rgb.height; j++)
+    for (i = 0; i < rgb.width; i++)
+      {
+        rr = Red(&rgb, i, j);
+        gg = Green(&rgb, i, j);
+        bb = Blue(&rgb, i, j);
+        aa = Alpha(&rgb, i, j);
+        d = sqrt((rr*rr+gg*gg+bb*bb)/(double)(0xff*0xff));
+        /* We only change if we are in the radius */
+        /* if(d <= prec)
+           Alpha(&rgb,i,j) = (int)(0xff) */
+        /* TODO */
+        assert(0);
+
+      if (abs(Red(&rgb, i, j) - r) <= prec && abs(Green(&rgb, i, j) - g) <= prec && abs(Blue(&rgb, i, j) - b) <= prec)
+        Alpha(&rgb, i, j) = 0;
+      }
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);

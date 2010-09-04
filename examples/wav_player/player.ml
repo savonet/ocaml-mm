@@ -1,7 +1,7 @@
 let () =
   let fname = Sys.argv.(1) in
-  let f = Audio.IO.reader_of_wav_file fname in
-  let oss = Audio.IO.OSS.writer f#channels f#sample_rate in
+  let f = new Audio.IO.reader_of_wav_file fname in
+  let oss = new Audio.IO.OSS.writer_to_oss f#channels f#sample_rate in
   let blen = 1024 in
   let buf = Audio.create f#channels blen in
   Printf.printf "Opened WAV file with %d channels at %dHz.\n%!" f#channels f#sample_rate;

@@ -4,7 +4,7 @@ class virtual reader =
 object (self)
   inherit IO.helper
 
-  method virtual stream_close : unit
+  method virtual private stream_close : unit
 
   method channels = chans
   (* TODO *)
@@ -16,7 +16,7 @@ object (self)
 
   val mutable mf = None
 
-  method mf =
+  method private mf =
     match mf with Some mf -> mf | _ -> assert false
 
   initializer
@@ -27,7 +27,7 @@ object (self)
            let n = self#stream_read s 0 n in
            s, n))
 
-  method decode = Mad.decode_frame_float self#mf
+  method private decode = Mad.decode_frame_float self#mf
 
   method close = self#stream_close
 
@@ -52,8 +52,8 @@ object (self)
   method seek (n:int) : unit = assert false
 end
 
-let reader_of_file fname =
-  (object (self)
-    inherit IO.Unix.rw ~read:true fname
-    inherit reader
-   end :> Audio.IO.reader)
+class reader_of_file fname =
+object (self)
+  inherit IO.Unix.rw ~read:true fname
+  inherit reader
+end

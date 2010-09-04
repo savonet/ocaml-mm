@@ -57,7 +57,7 @@ module IO = struct
 
     method frame_rate : float
 
-    method set_target_size : int -> int -> unit
+    (* method set_target_size : int -> int -> unit *)
 
     method read : buffer -> int -> int -> int
 
@@ -81,9 +81,9 @@ module IO = struct
   object (self)
     inherit IO.helper
 
-    method virtual stream_write : string -> int -> int -> int
-    method virtual stream_seek : int -> unit
-    method virtual stream_close : unit
+    method virtual private stream_write : string -> int -> int -> int
+    method virtual private stream_seek : int -> unit
+    method virtual private stream_close : unit
 
     initializer
       self#output "RIFF";
@@ -186,9 +186,9 @@ module IO = struct
       self#stream_close
   end
 
-  let writer_to_avi_file fname fr w h =
-    (object
-      inherit avi_writer fr w h
-      inherit IO.Unix.rw ~write:true fname
-     end:> writer)
+  class writer_to_avi_file fname fr w h =
+  object
+    inherit avi_writer fr w h
+    inherit IO.Unix.rw ~write:true fname
+  end
 end

@@ -164,6 +164,3 @@ object (self)
   method close =
     Sdl.quit ()
 end
-
-let writer_to_screen w h =
-  (new writer_to_screen w h :> Video.IO.writer)

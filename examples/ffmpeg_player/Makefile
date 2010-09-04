@@ -7,6 +7,8 @@ LIBS = str unix bigarray graphics mm mm.ffmpeg sdl mm.sdl
 test: dnc
 	OCAMLRUNPARAM=b ./player ../test.mov
 
+all: nc
+
 prof:
 	$(MAKE) clean pnc test
 	gprof ./player > prof

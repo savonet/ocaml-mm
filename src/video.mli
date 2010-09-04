@@ -40,7 +40,7 @@ module IO : sig
     (** Number of frames per second. *)
     method frame_rate : FPS.t
 
-    method set_target_size : int -> int -> unit
+    (* method set_target_size : int -> int -> unit *)
 
     (** Read a given number of frames. *)
     method read : buffer -> int -> int -> int
@@ -55,5 +55,5 @@ module IO : sig
     method close : unit
   end
 
-  val writer_to_avi_file : string -> FPS.t -> int -> int -> writer
+  class writer_to_avi_file : string -> FPS.t -> int -> int -> writer
 end

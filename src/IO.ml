@@ -16,25 +16,25 @@ module Unix = struct
       in
       Unix.openfile fname flag perms
 
-    method stream_read buf ofs len = Unix.read fd buf ofs len
+    method private stream_read buf ofs len = Unix.read fd buf ofs len
 
-    method stream_write buf ofs len = Unix.write fd buf ofs len
+    method private stream_write buf ofs len = Unix.write fd buf ofs len
 
-    method stream_close = Unix.close fd
+    method private stream_close = Unix.close fd
 
-    method stream_seek n =
+    method private stream_seek n =
       ignore (Unix.lseek fd n Unix.SEEK_SET)
 
-    method stream_cur_pos =
+    method private stream_cur_pos =
       Unix.lseek fd 0 Unix.SEEK_CUR
   end
 end
 
 class virtual helper =
 object (self)
-  method virtual stream_read : string -> int -> int -> int
+  method virtual private stream_read : string -> int -> int -> int
 
-  method input_once n =
+  method private input_once n =
     let buf = String.create n in
     let n = self#stream_read buf 0 n in
     if n = String.length buf then
@@ -42,7 +42,7 @@ object (self)
     else
       String.sub buf 0 n
 
-  method input n =
+  method private input n =
     let buf = self#input_once n in
     let buflen = String.length buf in
     if buflen = n || buflen = 0 then
@@ -50,18 +50,18 @@ object (self)
     else
       buf ^ self#input (n - buflen)
 
-  method really_input n =
+  method private really_input n =
     let buf = self#input n in
     if String.length buf <> n then
       raise Invalid_data;
     buf
 
-  method input_byte =
+  method private input_byte =
     let buf = self#really_input 1 in
     int_of_char buf.[0]
 
   (* TODO: use really_input instead of input_byte *)
-  method input_int_num_bytes n =
+  method private input_int_num_bytes n =
     let rec aux = function
       | 0 -> 0
       | n ->
@@ -70,11 +70,11 @@ object (self)
     in
     aux n
 
-  method input_int = self#input_int_num_bytes 4
+  method private input_int = self#input_int_num_bytes 4
 
-  method input_short = self#input_int_num_bytes 2
+  method private input_short = self#input_int_num_bytes 2
 
-  method input_int_num_bytes_be n =
+  method private input_int_num_bytes_be n =
     let ans = ref 0 in
     let buf = self#really_input n in
     for i = 0 to n - 1 do
@@ -82,37 +82,37 @@ object (self)
     done;
     !ans
 
-  method input_int_be = self#input_int_num_bytes_be 4
+  method private input_int_be = self#input_int_num_bytes_be 4
 
-  method input_short_be = self#input_int_num_bytes_be 2
+  method private input_short_be = self#input_int_num_bytes_be 2
 
-  method virtual stream_write : string -> int -> int -> int
+  method virtual private stream_write : string -> int -> int -> int
 
-  method output s =
+  method private output s =
     let len = String.length s in
     assert (self#stream_write s 0 len = len)
 
-  method output_num b n =
+  method private output_num b n =
     let s = String.create b in
     for i = 0 to b - 1 do
       s.[i] <- char_of_int ((n lsr (8 * i)) land 0xff)
     done;
     self#output s
 
-  method output_byte n = self#output_num 1 n
+  method private output_byte n = self#output_num 1 n
 
-  method output_short n = self#output_num 2 n
+  method private output_short n = self#output_num 2 n
 
-  method output_int n = self#output_num 4 n
+  method private output_int n = self#output_num 4 n
 
-  method output_num_be b n =
+  method private output_num_be b n =
     let s = String.create b in
     for i = 0 to b - 1 do
       s.[i] <- char_of_int ((n lsr (8 * (b - i - 1))) land 0xff)
     done;
     self#output s
 
-  method output_short_be n = self#output_num_be 2 n
+  method private output_short_be n = self#output_num_be 2 n
 
-  method output_int_be n = self#output_num_be 4 n
+  method private output_int_be n = self#output_num_be 4 n
 end

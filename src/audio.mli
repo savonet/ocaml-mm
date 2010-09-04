@@ -400,7 +400,7 @@ module IO : sig
   end
 
   (** Create a reader object from a wav file. *)
-  val reader_of_wav_file : string -> reader
+  class reader_of_wav_file : string -> reader
 
   class type writer =
   object
@@ -409,14 +409,14 @@ module IO : sig
     method close : unit
   end
 
-  val writer_to_wav_file : int -> int -> string -> writer
+  class writer_to_wav_file : int -> int -> string -> writer
 
   (** Audio input and output using the OSS sound devices. *)
   module OSS : sig
     (** Create a writer on an OSS sound device. *)
-    val writer : ?device:string -> int -> int -> writer
+    class writer_to_oss : ?device:string -> int -> int -> writer
 
-    val reader : ?device:string -> int -> int -> reader
+    class reader_of_oss : ?device:string -> int -> int -> reader
   end
 
   class type rw =
