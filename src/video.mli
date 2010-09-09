@@ -31,29 +31,33 @@ end
 module IO : sig
   exception Invalid_file
 
-  class type reader =
-  object
-    method width : int
+  module Reader : sig
+    class type t =
+    object
+      method width : int
 
-    method height : int
+      method height : int
 
     (** Number of frames per second. *)
-    method frame_rate : FPS.t
+      method frame_rate : FPS.t
 
     (* method set_target_size : int -> int -> unit *)
 
     (** Read a given number of frames. *)
-    method read : buffer -> int -> int -> int
+      method read : buffer -> int -> int -> int
 
-    method close : unit
+      method close : unit
+    end
   end
 
-  class type writer =
-  object
-    method write : buffer -> int -> int -> unit
+  module Writer : sig
+    class type t =
+    object
+      method write : buffer -> int -> int -> unit
 
-    method close : unit
+      method close : unit
+    end
+
+    class to_avi_file : string -> FPS.t -> int -> int -> t
   end
-
-  class writer_to_avi_file : string -> FPS.t -> int -> int -> writer
 end

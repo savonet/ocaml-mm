@@ -1,1 +1,6 @@
-ocaml-mm is a library dedicated to performing operations on multimedia contents. It is designed as a pure ocaml library (ie no dependencies are required).
+ocaml-mm is a library dedicated to performing operations on multimedia
+contents. It is designed as a pure ocaml library (ie no dependencies are
+required).
+
+Some extensions requiring bindings to various libraries are located in the
+external/ directory.

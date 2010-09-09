@@ -12,7 +12,7 @@ object (self)
   method duration_time : float = raise Not_found
   method sample_rate = 44100
 
-  val rb = Audio.Ringbuffer.Extensible.create chans 0
+  val rb = Audio.Ringbuffer_ext.create chans 0
 
   val mutable mf = None
 
@@ -33,7 +33,7 @@ object (self)
 
   method read buf ofs len =
     let r = ref (-1) in
-    while !r <> 0 && Audio.Ringbuffer.Extensible.read_space rb < len do
+    while !r <> 0 && Audio.Ringbuffer_ext.read_space rb < len do
       let data =
         try
           self#decode
@@ -41,11 +41,11 @@ object (self)
           | Mad.End_of_stream -> Audio.create (self#channels) 0
       in
       r := Audio.duration data;
-      Audio.Ringbuffer.Extensible.write rb data 0 !r
+      Audio.Ringbuffer_ext.write rb data 0 !r
     done;
-    let maxlen = Audio.Ringbuffer.Extensible.read_space rb in
+    let maxlen = Audio.Ringbuffer_ext.read_space rb in
     let len = min maxlen len in
-    Audio.Ringbuffer.Extensible.read rb buf ofs len;
+    Audio.Ringbuffer_ext.read rb buf ofs len;
     len
 
   (* TODO *)

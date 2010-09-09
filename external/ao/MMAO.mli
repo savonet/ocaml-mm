@@ -1,1 +1,1 @@
-class writer : unit -> Audio.IO.writer
+class writer : unit -> Audio.IO.Writer.t

@@ -63,11 +63,13 @@ module Mono : sig
   (** [add b1 b2] adds to contents of [b2] to [b1]. *)
   val add : buffer -> int -> buffer -> int -> int -> unit
 
+  module Ringbuffer_ext : Ringbuffer.R with type elt = float
+
   module Ringbuffer : Ringbuffer.R with type elt = float
 
   (** Buffers of variable size. These are particularly useful for temporary
       buffers. *)
-  module Extensible_buffer : sig
+  module Buffer_ext : sig
     type t
 
     val create : int -> t
@@ -235,7 +237,13 @@ val to_mono : buffer -> Mono.buffer
     not copied an might thus be modified afterwards. *)
 val of_mono : Mono.buffer -> buffer
 
+val length_16le : int -> int -> int
+
+val duration_16le : int -> int -> int
+
 val to_16le_create : buffer -> int -> int -> string
+
+val of_16le : string -> int -> float array array -> int -> int -> unit
 
 val resample : float -> buffer -> int -> int -> buffer
 
@@ -257,7 +265,7 @@ val add_coeff : buffer -> int -> float -> buffer -> int -> int -> unit
 
 (** Buffers of variable size. These are particularly useful for temporary
     buffers. *)
-module Extensible_buffer : sig
+module Buffer_ext : sig
   type t
 
   val create : int -> int -> t
@@ -292,30 +300,30 @@ module Ringbuffer : sig
   val write : t -> buffer -> int -> int -> unit
 
   val transmit : t -> (buffer -> int -> int -> int) -> int
+end
 
-  module Extensible : sig
-    type t
+module Ringbuffer_ext : sig
+  type t
 
-    val create : int -> int -> t
+  val create : int -> int -> t
 
-    val channels : t -> int
+  val channels : t -> int
 
-    val read_space : t -> int
+  val read_space : t -> int
 
-    val write_space : t -> int
+  val write_space : t -> int
 
-    val read_advance : t -> int -> unit
+  val read_advance : t -> int -> unit
 
-    val write_advance : t -> int -> unit
+  val write_advance : t -> int -> unit
 
-    val peek : t -> buffer -> int -> int -> unit
+  val peek : t -> buffer -> int -> int -> unit
 
-    val read : t -> buffer -> int -> int -> unit
+  val read : t -> buffer -> int -> int -> unit
 
-    val write : t -> buffer -> int -> int -> unit
+  val write : t -> buffer -> int -> int -> unit
 
-    val transmit : t -> (buffer -> int -> int -> int) -> int
-  end
+  val transmit : t -> (buffer -> int -> int -> int) -> int
 end
 
 (** Audio effects. *)
@@ -374,68 +382,66 @@ module IO : sig
   (** Trying to read past the end of the stream. *)
   exception End_of_stream
 
-  class type reader =
-  object
+  module Reader : sig
+    class type t =
+    object
     (** Number of channels. *)
-    method channels : int
+      method channels : int
 
     (** Sample rate in samples per second. *)
-    method sample_rate : int
+      method sample_rate : int
 
     (** Duration in samples. *)
-    method duration : int
+      method duration : int
 
     (** Duration in seconds. *)
-    method duration_time : float
+      method duration_time : float
 
     (** Seek to a given sample. *)
-    method seek : int -> unit
+      method seek : int -> unit
 
     (** Close the file. This method should only be called once. The members of
 	the object should not be accessed anymore after this method has been
 	called. *)
-    method close : unit
+      method close : unit
 
-    method read : buffer -> int -> int -> int
-  end
+      method read : buffer -> int -> int -> int
+    end
 
   (** Create a reader object from a wav file. *)
-  class reader_of_wav_file : string -> reader
-
-  class type writer =
-  object
-    method write : buffer -> int -> int -> unit
-
-    method close : unit
+    class of_wav_file : string -> t
   end
 
-  class writer_to_wav_file : int -> int -> string -> writer
+  module Writer : sig
+    class type t =
+    object
+      method write : buffer -> int -> int -> unit
 
-  (** Audio input and output using the OSS sound devices. *)
-  module OSS : sig
-    (** Create a writer on an OSS sound device. *)
-    class writer_to_oss : ?device:string -> int -> int -> writer
+      method close : unit
+    end
 
-    class reader_of_oss : ?device:string -> int -> int -> reader
+    class to_wav_file : int -> int -> string -> t
   end
 
-  class type rw =
-  object
-    method read : buffer -> int -> int -> unit
+  module RW : sig
+    class type t =
+    object
+      method read : buffer -> int -> int -> unit
 
-    method write : buffer -> int -> int -> unit
+      method write : buffer -> int -> int -> unit
 
-    method close : unit
-  end
+      method close : unit
+    end
 
-  class virtual rw_bufferized : int -> min_duration:int -> fill_duration:int -> max_duration:int -> drop_duration:int ->
-  object
-    method virtual io_read : buffer -> int -> int -> unit
+    class virtual bufferized : int -> min_duration:int -> fill_duration:int -> max_duration:int -> drop_duration:int ->
+    object
+      method virtual io_read : buffer -> int -> int -> unit
 
-    method virtual io_write : buffer -> int -> int -> unit
+      method virtual io_write : buffer -> int -> int -> unit
 
-    method read : buffer -> int -> int -> unit
+      method read : buffer -> int -> int -> unit
 
-    method write : buffer -> int -> int -> unit
+      method write : buffer -> int -> int -> unit
+    end
   end
 end

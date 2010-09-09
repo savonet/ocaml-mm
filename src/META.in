@@ -1,0 +1,6 @@
+name="mm"
+version="@PACKAGE_VERSION@"
+description="OCaml multimedia library"
+requires="@REQUIRES@"
+archive(byte) = "mm.cma"
+archive(native) = "mm.cmxa"

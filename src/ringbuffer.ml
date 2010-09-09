@@ -2,6 +2,8 @@ module type Elt = sig
   type t
 
   val create : unit -> t
+
+  val blit : t array -> int -> t array -> int -> int -> unit
 end
 
 module type R = sig
@@ -40,10 +42,9 @@ module Make (E:Elt) = struct
     buffer : buffer;
     mutable rpos : int; (** current read position *)
     mutable wpos : int; (** current write position *)
-    extensible : bool;
   }
 
-  let create ext size =
+  let create size =
     {
       (* size + 1 so we can store full buffers, while keeping
 	 rpos and wpos different for implementation matters *)
@@ -51,12 +52,7 @@ module Make (E:Elt) = struct
       buffer = Array.make (size + 1) (E.create ());
       rpos = 0;
       wpos = 0;
-      extensible = ext;
     }
-
-  let create_extensible = create true
-
-  let create = create false
 
   let read_space t =
     if t.wpos >= t.rpos then (t.wpos - t.rpos)
@@ -82,11 +78,11 @@ module Make (E:Elt) = struct
     let extra = len - pre in
     if extra > 0 then
       (
-	Array.blit t.buffer t.rpos buff off pre;
-	Array.blit t.buffer 0 buff (off + pre) extra
+	E.blit t.buffer t.rpos buff off pre;
+	E.blit t.buffer 0 buff (off + pre) extra
       )
     else
-      Array.blit t.buffer t.rpos buff off len
+      E.blit t.buffer t.rpos buff off len
 
   let read t buff off len =
     peek t buff off len;
@@ -98,11 +94,11 @@ module Make (E:Elt) = struct
     let extra = len - pre in
     if extra > 0 then
       (
-        Array.blit buff off t.buffer t.wpos pre;
-        Array.blit buff (off + pre) t.buffer 0 extra
+        E.blit buff off t.buffer t.wpos pre;
+        E.blit buff (off + pre) t.buffer 0 extra
       )
     else
-      Array.blit buff off t.buffer t.wpos len;
+      E.blit buff off t.buffer t.wpos len;
     write_advance t len
 
   let transmit t f =

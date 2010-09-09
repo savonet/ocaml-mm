@@ -4,6 +4,8 @@ module type Elt = sig
   type t
 
   val create : unit -> t
+
+  val blit : t array -> int -> t array -> int -> int -> unit
 end
 
 module type R = sig

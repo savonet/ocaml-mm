@@ -146,18 +146,21 @@ module Mono = struct
       done;
       outbuf
 
-  module Ringbuffer =
-    Ringbuffer.Make
-      (
-        struct
-          type t = float
+  module RE =
+  struct
+    type t = float
 
-          let create () = 0.
-        end
-      )
+    let create () = 0.
+
+    let blit = blit
+  end
+
+  module Ringbuffer_ext = Ringbuffer.Make_ext (RE)
+
+  module Ringbuffer = Ringbuffer.Make (RE)
 
   (* TODO: refined allocation/deallocation policies *)
-  module Extensible_buffer = struct
+  module Buffer_ext = struct
     type t =
 	{
 	  mutable buffer : buffer
@@ -640,7 +643,7 @@ module Mono = struct
     object (self)
       val mutable adsr_st = Effect.ADSR.init ()
 
-      val tmpbuf = Extensible_buffer.create 0
+      val tmpbuf = Buffer_ext.create 0
 
       method set_volume = g#set_volume
 
@@ -651,7 +654,7 @@ module Mono = struct
 	adsr_st <- Effect.ADSR.process adsr adsr_st buf ofs len
 
       method fill_add buf ofs len =
-	let tmpbuf = Extensible_buffer.prepare tmpbuf len in
+	let tmpbuf = Buffer_ext.prepare tmpbuf len in
 	self#fill tmpbuf 0 len;
 	blit tmpbuf 0 buf ofs len
 
@@ -795,7 +798,7 @@ let pan x buf ofs len =
   done
 
 (* TODO: we cannot share this with mono, right? *)
-module Extensible_buffer = struct
+module Buffer_ext = struct
   type t =
       {
         mutable buffer : buffer
@@ -898,51 +901,49 @@ module Ringbuffer = struct
       assert (len <= len0);
       read_advance t len;
       len
+end
 
-  module Extensible = struct
-    type ringbuffer = t
-
+module Ringbuffer_ext = struct
     type t = {
-      mutable ringbuffer : ringbuffer
+      mutable ringbuffer : Ringbuffer.t
     }
 
     let prepare buf len =
-      if write_space buf.ringbuffer >= len then
+      if Ringbuffer.write_space buf.ringbuffer >= len then
 	buf.ringbuffer
       else
-	let rb = create (channels buf.ringbuffer) (read_space buf.ringbuffer + len) in
-	while read_space buf.ringbuffer <> 0 do
-	  ignore (transmit buf.ringbuffer (fun buf ofs len -> write rb buf ofs len; len));
+	let rb = Ringbuffer.create (Ringbuffer.channels buf.ringbuffer) (Ringbuffer.read_space buf.ringbuffer + len) in
+	while Ringbuffer.read_space buf.ringbuffer <> 0 do
+	  ignore (Ringbuffer.transmit buf.ringbuffer (fun buf ofs len -> Ringbuffer.write rb buf ofs len; len));
 	done;
 	buf.ringbuffer <- rb;
 	rb
 
-    let channels rb = channels rb.ringbuffer
+    let channels rb = Ringbuffer.channels rb.ringbuffer
 
-    let peek rb = peek rb.ringbuffer
+    let peek rb = Ringbuffer.peek rb.ringbuffer
 
-    let read rb = read rb.ringbuffer
+    let read rb = Ringbuffer.read rb.ringbuffer
 
     let write rb buf ofs len =
       let rb = prepare rb len in
-      write rb buf ofs len
+      Ringbuffer.write rb buf ofs len
 
-    let transmit rb = transmit rb.ringbuffer
+    let transmit rb = Ringbuffer.transmit rb.ringbuffer
 
-    let read_space rb = read_space rb.ringbuffer
+    let read_space rb = Ringbuffer.read_space rb.ringbuffer
 
-    let write_space rb = write_space rb.ringbuffer
+    let write_space rb = Ringbuffer.write_space rb.ringbuffer
 
-    let read_advance rb = read_advance rb.ringbuffer
+    let read_advance rb = Ringbuffer.read_advance rb.ringbuffer
 
-    let write_advance rb = write_advance rb.ringbuffer
+    let write_advance rb = Ringbuffer.write_advance rb.ringbuffer
 
     let create chans len =
       {
-	ringbuffer = create chans len;
+	ringbuffer = Ringbuffer.create chans len;
       }
   end
-end
 
 module Effect = struct
   class type t =
@@ -975,56 +976,41 @@ module Effect = struct
     val sample_rate : int = sample_rate
   end
 
-  class virtual bufferized chans =
-  object
-    val rb = Ringbuffer.Extensible.create chans 0
-
-    method read_space = Ringbuffer.Extensible.read_space rb
-
-    method read_advance = Ringbuffer.Extensible.read_advance rb
-
-    method peek = Ringbuffer.Extensible.peek rb
-
-    method read = Ringbuffer.Extensible.read rb
-
-    method write = Ringbuffer.Extensible.write rb
-  end
-
   class delay_only chans d =
   object (self)
-    inherit bufferized chans
+    val rb = Ringbuffer_ext.create chans 0
 
     initializer
-      self#write (create chans d) 0 d
+      Ringbuffer_ext.write rb (create chans d) 0 d
 
     method process buf ofs len =
-      self#write buf ofs len;
-      self#read buf ofs len
+      Ringbuffer_ext.write rb buf ofs len;
+      Ringbuffer_ext.read rb buf ofs len
   end
 
   (* delay d in samples *)
   class delay chans d once feedback =
   object (self)
-    inherit bufferized chans
+    val rb = Ringbuffer_ext.create chans 0
 
-    val tmpbuf = Extensible_buffer.create chans 0
+    val tmpbuf = Buffer_ext.create chans 0
 
     method process buf ofs len =
       if once then
-	self#write buf ofs len;
+	Ringbuffer_ext.write rb buf ofs len;
       (* Make sure that we have a past of exactly d samples. *)
-      if self#read_space < d then
-	self#write (create chans d) 0 d;
-      if self#read_space > d then
-	self#read_advance (self#read_space - d);
+      if Ringbuffer_ext.read_space rb < d then
+	Ringbuffer_ext.write rb (create chans d) 0 d;
+      if Ringbuffer_ext.read_space rb > d then
+	Ringbuffer_ext.read_advance rb (Ringbuffer_ext.read_space rb - d);
       if len > d then
 	add_coeff buf (ofs + d) feedback buf ofs (len - d);
       let rlen = min d len in
-      let tmpbuf = Extensible_buffer.prepare tmpbuf rlen in
-      self#read tmpbuf 0 rlen;
+      let tmpbuf = Buffer_ext.prepare tmpbuf rlen in
+      Ringbuffer_ext.read rb tmpbuf 0 rlen;
       add_coeff buf ofs feedback tmpbuf 0 rlen;
       if not once then
-	self#write buf ofs len
+	Ringbuffer_ext.write rb buf ofs len
   end
 
   (* delay in seconds *)
@@ -1145,7 +1131,7 @@ module Generator = struct
 
   let of_mono g =
   object
-    val tmpbuf = Mono.Extensible_buffer.create 0
+    val tmpbuf = Mono.Buffer_ext.create 0
 
     method set_volume = g#set_volume
 
@@ -1158,7 +1144,7 @@ module Generator = struct
       done
 
     method fill_add buf ofs len =
-      let tmpbuf = Mono.Extensible_buffer.prepare tmpbuf len in
+      let tmpbuf = Mono.Buffer_ext.prepare tmpbuf len in
       g#fill tmpbuf 0 len;
       for c = 0 to Array.length buf - 1 do
 	Mono.add buf.(c) ofs tmpbuf 0 len
@@ -1177,79 +1163,80 @@ module IO = struct
 
   exception End_of_stream
 
-  class type reader =
-  object
-    method channels : int
+  module Reader = struct
+    class type t =
+    object
+      method channels : int
 
-    method sample_rate : int
+      method sample_rate : int
 
-    method duration : int
+      method duration : int
 
-    method duration_time : float
+      method duration_time : float
 
-    method seek : int -> unit
+      method seek : int -> unit
 
-    method close : unit
+      method close : unit
 
-    method read : buffer -> int -> int -> int
-  end
+      method read : buffer -> int -> int -> int
+    end
 
-  class virtual reader_base =
-  object (self)
-    method virtual channels : int
+    class virtual base =
+    object (self)
+      method virtual channels : int
 
-    method virtual sample_rate : int
+      method virtual sample_rate : int
 
-    method virtual duration : int
+      method virtual duration : int
 
-    method duration_time =
-      float self#duration /. float self#sample_rate
+      method duration_time =
+        float self#duration /. float self#sample_rate
 
-(*
+  (*
     method virtual seek : int -> unit
 
     method virtual close : unit
 
     method virtual read : buffer -> int -> int -> int
-*)
-  end
+  *)
+    end
 
   (* TODO: handle more formats... *)
-  class virtual wav_reader =
-  object (self)
-    inherit IO.helper
+    class virtual wav =
+    object (self)
+      inherit IO.helper
 
-    method virtual private stream_close : unit
-    method virtual private stream_seek : int -> unit
-    method virtual private stream_cur_pos : int
+      method virtual private stream_close : unit
+      method virtual private stream_seek : int -> unit
+      method virtual private stream_cur_pos : int
 
-    val mutable sample_rate = 0
-    val mutable channels = 0
+      val mutable sample_rate = 0
+      val mutable channels = 0
     (** Size of a sample in bits. *)
-    val mutable sample_size = 0
-    val mutable bytes_per_sample = 0
+      val mutable sample_size = 0
+      val mutable bytes_per_sample = 0
     (** Duration in samples. *)
-    val mutable duration = 0
-    val mutable data_offset = 0
+      val mutable duration = 0
+      val mutable data_offset = 0
 
-    method sample_rate = sample_rate
-    method channels = channels
-    method duration = duration
+      method sample_rate = sample_rate
+      method channels = channels
+      method duration = duration
 
-    initializer
-      if self#input 4 <> "RIFF" then
+      initializer
+        if self#input 4 <> "RIFF" then
 	(* failwith "Bad header: \"RIFF\" not found"; *)
-	raise Invalid_file;
+	  raise Invalid_file;
       (* Ignore the file size *)
-      ignore (self#input 4) ;
-      if self#input 8 <> "WAVEfmt " then
+        ignore (self#input 4) ;
+        if self#input 8 <> "WAVEfmt " then
 	(* failwith "Bad header: \"WAVEfmt \" not found"; *)
-	raise Invalid_file;
+	  raise Invalid_file;
       (* Now we always have the following uninteresting bytes:
        * 0x10 0x00 0x00 0x00 0x01 0x00 *)
-      ignore (self#really_input 6);
-      channels <- self#input_short;
-      sample_rate <- self#input_int;
+        ignore (self#really_input 6);
+        channels <- self#input_short;
+        sample_rate <- self#input_int;
       (* byt_per_sec *) ignore (self#input_int);
       (* byt_per_samp *) ignore (self#input_short);
       sample_size <- self#input_short;
@@ -1272,187 +1259,131 @@ module IO = struct
       bytes_per_sample <- sample_size / 8 * channels;
       duration <- len_dat / bytes_per_sample
 
-    method read buf ofs len =
-      let sbuflen = len * channels * 2 in
-      let sbuf = self#input sbuflen in
-      let sbuflen = String.length sbuf in
-      let len = sbuflen / (channels * 2) in
-      of_16le sbuf 0 buf ofs len;
-      len
-
-    method seek n =
-      let n = data_offset + n * bytes_per_sample in
-      self#stream_seek n
-
-    method close = self#stream_close
-  end
-
-  class reader_of_wav_file fname =
-  object
-    inherit IO.Unix.rw ~read:true fname
-    inherit reader_base
-    inherit wav_reader
-  end
-
-  class type writer =
-  object
-    method write : buffer -> int -> int -> unit
-
-    method close : unit
-  end
-
-  class virtual writer_base chans sr =
-  object
-    method private channels : int = chans
-
-    method private sample_rate : int = sr
-  end
-
-  class virtual wav_writer =
-  object (self)
-    inherit IO.helper
-
-    method virtual private stream_write : string -> int -> int -> int
-    method virtual private stream_seek : int -> unit
-    method virtual private stream_close : unit
-    method virtual private channels : int
-    method virtual private sample_rate : int
-
-    initializer
-    let bits_per_sample = 16 in
-    (* RIFF *)
-    self#output "RIFF";
-    self#output_int 0;
-    self#output "WAVE";
-    (* Format *)
-    self#output "fmt ";
-    self#output_int 16;
-    self#output_short 1;
-    self#output_short self#channels;
-    self#output_int self#sample_rate;
-    self#output_int (self#sample_rate * self#channels * bits_per_sample / 8);
-    self#output_short (self#channels * bits_per_sample / 8);
-    self#output_short bits_per_sample;
-    (* Data *)
-    self#output "data";
-    self#output_int 0 (* size of the data, to be updated afterwards *)
-
-    val mutable datalen = 0
-
-    method write buf ofs len =
-      let s = to_16le_create buf ofs len in
-      self#output s;
-      datalen <- datalen + String.length s
-
-    method close =
-      self#stream_seek 4;
-      self#output_int (36 + datalen);
-      self#stream_seek 40;
-      self#output_int datalen;
-      self#stream_close
-  end
-
-  class writer_to_wav_file chans sr fname =
-  object
-    inherit writer_base chans sr
-    inherit IO.Unix.rw ~write:true fname
-    inherit wav_writer
-  end
-
-  module OSS = struct
-    external set_format : Unix.file_descr -> int -> int = "caml_oss_dsp_setfmt"
-
-    external set_channels : Unix.file_descr -> int -> int = "caml_oss_dsp_channels"
-
-    external set_rate : Unix.file_descr -> int -> int = "caml_oss_dsp_speed"
-
-    (* TODO: other formats than 16 bits? *)
-    class writer_to_oss ?(device="/dev/dsp") channels sample_rate =
-    object (self)
-      inherit IO.Unix.rw ~write:true device
-
-      initializer
-	assert (set_format fd 16 = 16);
-	assert (set_channels fd channels = channels);
-	assert (set_rate fd sample_rate = sample_rate)
-
-      method private stream_really_write buf ofs len =
-	let w = ref 0 in
-	while !w <> len do
-	  w := !w + self#stream_write buf (ofs + !w) (len - !w)
-	done
-
-      method write buf ofs len =
-	let s = to_16le_create buf ofs len in
-	self#stream_really_write s 0 (String.length s)
-
-      method close =
-	self#stream_close
-    end
-
-    class reader_of_oss ?(device="/dev/dsp") channels sample_rate =
-    object (self)
-      inherit IO.Unix.rw ~read:true device
-
-      initializer
-        assert (set_format fd 16 = 16);
-	assert (set_channels fd channels = channels);
-	assert (set_rate fd sample_rate = sample_rate)
-
-      method channels = channels
-      method sample_rate = sample_rate
-
-      method duration : int = assert false
-      method duration_time : float = assert false
-
       method read buf ofs len =
-        let slen = length_16le channels len in
-        let s = String.create slen in
-        let r = self#stream_read s 0 slen in
-        let len = duration_16le channels r in
-        of_16le s 0 buf ofs len;
+        let sbuflen = len * channels * 2 in
+        let sbuf = self#input sbuflen in
+        let sbuflen = String.length sbuf in
+        let len = sbuflen / (channels * 2) in
+        of_16le sbuf 0 buf ofs len;
         len
 
-      method seek (n:int) : unit = assert false
+      method seek n =
+        let n = data_offset + n * bytes_per_sample in
+        self#stream_seek n
 
-      method close =
-        self#stream_close
+      method close = self#stream_close
+    end
+
+    class of_wav_file fname =
+    object
+      inherit IO.Unix.rw ~read:true fname
+      inherit base
+      inherit wav
     end
   end
 
-  class type rw =
-  object
-    method read : buffer -> int -> int -> unit
+  module Writer = struct
+    class type t =
+    object
+      method write : buffer -> int -> int -> unit
 
-    method write : buffer -> int -> int -> unit
+      method close : unit
+    end
 
-    method close : unit
+    class virtual base chans sr =
+    object
+      method private channels : int = chans
+
+      method private sample_rate : int = sr
+    end
+
+    class virtual wav =
+    object (self)
+      inherit IO.helper
+
+      method virtual private stream_write : string -> int -> int -> int
+      method virtual private stream_seek : int -> unit
+      method virtual private stream_close : unit
+      method virtual private channels : int
+      method virtual private sample_rate : int
+
+      initializer
+      let bits_per_sample = 16 in
+    (* RIFF *)
+      self#output "RIFF";
+      self#output_int 0;
+      self#output "WAVE";
+    (* Format *)
+      self#output "fmt ";
+      self#output_int 16;
+      self#output_short 1;
+      self#output_short self#channels;
+      self#output_int self#sample_rate;
+      self#output_int (self#sample_rate * self#channels * bits_per_sample / 8);
+      self#output_short (self#channels * bits_per_sample / 8);
+      self#output_short bits_per_sample;
+    (* Data *)
+      self#output "data";
+      self#output_int 0 (* size of the data, to be updated afterwards *)
+
+      val mutable datalen = 0
+
+      method write buf ofs len =
+        let s = to_16le_create buf ofs len in
+        self#output s;
+        datalen <- datalen + String.length s
+
+      method close =
+        self#stream_seek 4;
+        self#output_int (36 + datalen);
+        self#stream_seek 40;
+        self#output_int datalen;
+        self#stream_close
+    end
+
+    class to_wav_file chans sr fname =
+    object
+      inherit base chans sr
+      inherit IO.Unix.rw ~write:true fname
+      inherit wav
+    end
   end
 
-  class virtual rw_bufferized channels ~min_duration ~fill_duration ~max_duration ~drop_duration =
-  object
-    method virtual io_read : buffer -> int -> int -> unit
-    method virtual io_write : buffer -> int -> int -> unit
+  module RW = struct
+    class type t =
+    object
+      method read : buffer -> int -> int -> unit
 
-    initializer
-      assert (fill_duration <= max_duration);
-      assert (drop_duration <= max_duration)
+      method write : buffer -> int -> int -> unit
 
-    val rb = Ringbuffer.create channels max_duration
+      method close : unit
+    end
 
-    method read buf ofs len =
-      let rs = Ringbuffer.read_space rb in
-      if rs < min_duration + len then
-        (
-          let ps = min_duration + len - rs in
-          Ringbuffer.write rb (create channels ps) 0 ps
-        );
-      Ringbuffer.read rb buf ofs len
+    class virtual bufferized channels ~min_duration ~fill_duration ~max_duration ~drop_duration =
+    object
+      method virtual io_read : buffer -> int -> int -> unit
+      method virtual io_write : buffer -> int -> int -> unit
 
-    method write buf ofs len =
-      let ws = Ringbuffer.write_space rb in
-      if ws + len > max_duration then
-        Ringbuffer.read_advance rb (ws - drop_duration);
-      Ringbuffer.write rb buf ofs len
+      initializer
+        assert (fill_duration <= max_duration);
+        assert (drop_duration <= max_duration)
+
+      val rb = Ringbuffer.create channels max_duration
+
+      method read buf ofs len =
+        let rs = Ringbuffer.read_space rb in
+        if rs < min_duration + len then
+          (
+            let ps = min_duration + len - rs in
+            Ringbuffer.write rb (create channels ps) 0 ps
+          );
+        Ringbuffer.read rb buf ofs len
+
+      method write buf ofs len =
+        let ws = Ringbuffer.write_space rb in
+        if ws + len > max_duration then
+          Ringbuffer.read_advance rb (ws - drop_duration);
+        Ringbuffer.write rb buf ofs len
+    end
   end
 end
