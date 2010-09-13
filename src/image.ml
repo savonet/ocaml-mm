@@ -21,6 +21,8 @@ module YUV420 = struct
 
   let make y ys u v uvs = (y, ys), (u, v, uvs)
 
+  let internal buf = buf
+
   external create : int -> int -> t = "caml_yuv_create"
 
   external blank_all : t -> unit = "caml_yuv_blank"
@@ -46,6 +48,23 @@ module RGBA8 = struct
 
   let height buf = buf.height
 
+  let data buf = buf.data
+
+  let stride buf = buf.stride
+
+  let make ?stride width height data =
+    let stride =
+      match stride with
+	| Some v -> v
+	| None -> 4*width
+    in
+    {
+      data   = data;
+      width  = width;
+      height = height;
+      stride = stride
+    }
+
   let create ?stride width height =
     let stride =
       match stride with
@@ -57,12 +76,7 @@ module RGBA8 = struct
 	Bigarray.int8_unsigned Bigarray.c_layout
 	(stride*height)
     in
-    {
-      data   = data;
-      width  = width;
-      height = height;
-      stride = stride
-    }
+    make ~stride width height data
 
   let copy f =
     let nf = create ~stride:f.stride f.width f.height in
@@ -112,42 +126,45 @@ module RGBA8 = struct
 
   external set_pixel : t -> int -> int -> Color.t -> unit = "caml_rgb_set_pixel"
 
-  external randomize : t -> unit = "caml_rgb_randomize"
+  external randomize_all : t -> unit = "caml_rgb_randomize"
 
-  external scale_coef : t -> t -> int * int -> int * int -> unit = "caml_rgb_scale"
+  module Scale = struct
+    type kind = Linear | Bilinear
 
-  external bilinear_scale_coef : t -> t -> float -> float -> unit = "caml_rgb_bilinear_scale"
+    (* TODO: swap dst and src to be consistent... *)
+    external scale_coef : t -> t -> int * int -> int * int -> unit = "caml_rgb_scale"
 
-  let scale_to src dst =
-    let sw, sh = src.width,src.height in
-    let dw, dh = dst.width,dst.height in
-    scale_coef dst src (dw, sw) (dh, sh)
+    external bilinear_scale_coef : t -> t -> float -> float -> unit = "caml_rgb_bilinear_scale"
 
-  let scale_create src w h =
-    let sw, sh = src.width,src.height in
-    let dst = create w h in
-    scale_coef dst src (w, sw) (h, sh);
-    dst
+    let scale_coef_kind k dst src (dw,sw) (dh,sh) =
+      match k with
+        | Linear ->
+          scale_coef dst src (dw,sw) (dh,sh)
+        | Bilinear ->
+          let x = float dw /. float sw in
+          let y = float dh /. float sh in
+          bilinear_scale_coef dst src x y
 
-  let proportional_scale_to ?(bilinear=false) dst src =
-    let sw, sh = src.width,src.height in
-    let dw, dh = dst.width,dst.height in
-    let n, d =
-      if dh * sw < sh * dw then
-	dh, sh
+    let onto ?(kind=Linear) ?(proportional=false) src dst =
+      let sw, sh = src.width,src.height in
+      let dw, dh = dst.width,dst.height in
+      if not proportional then
+        scale_coef_kind kind dst src (dw, sw) (dh, sh)
       else
-	dw, sw
-    in
-    if bilinear then
-      let a = float_of_int n /. float_of_int d in
-      bilinear_scale_coef dst src a a
-    else
-      scale_coef dst src (n, d) (n, d)
+        let n, d =
+          if dh * sw < sh * dw then
+	    dh, sh
+          else
+	    dw, sw
+        in
+        scale_coef_kind kind dst src (n,d) (n,d)
 
-  let proportional_scale_create ?(bilinear=false) src w h =
-    let dst = create w h in
-    proportional_scale_to ~bilinear dst src;
-    dst
+    let create ?kind ?proportional src w h =
+      let dst = create w h in
+      onto ?kind ?proportional src dst;
+      dst
+
+  end
 
   external to_bmp : t -> string = "caml_rgb_to_bmp"
 
@@ -244,7 +261,7 @@ module RGBA8 = struct
   let add ?(x=0) ?(y=0) ?w ?h src dst =
     match (w,h) with
       | None, None ->
-        if x = 0 && y = 0 && src.width = dst.width then
+        if x = 0 && y = 0 && src.width = dst.width && src.height = dst.height then
           add_fast src dst
         else
           add_off src dst x y
@@ -262,10 +279,6 @@ module RGBA8 = struct
 
     external rotate : t -> float -> unit = "caml_rgb_rotate"
 
-    external scale_opacity : t -> float -> unit = "caml_rgb_scale_opacity"
-
-    external disk_opacity : t -> int -> int -> int -> unit = "caml_rgb_disk_opacity"
-
     external affine : t -> float -> float -> int -> int -> unit = "caml_rgb_affine"
 
     (* TODO: faster implementation? *)
@@ -275,10 +288,16 @@ module RGBA8 = struct
 
     external lomo : t -> unit = "caml_rgb_lomo"
 
-    external color_to_alpha_simple : t -> int * int * int -> float -> float -> unit = "caml_rgb_color_to_alpha_simple"
+    module Alpha = struct
+      external scale : t -> float -> unit = "caml_rgb_scale_opacity"
 
-    external color_to_alpha : t -> int * int * int -> float -> float -> unit = "caml_rgb_color_to_alpha"
+      external blur : t -> unit = "caml_rgb_blur_alpha"
 
-    external blur_alpha : t -> unit = "caml_rgb_blur_alpha"
+      external disk : t -> int -> int -> int -> unit = "caml_rgb_disk_opacity"
+
+      external of_color_simple : t -> int * int * int -> float -> float -> unit = "caml_rgb_color_to_alpha_simple"
+
+      external of_color : t -> int * int * int -> float -> float -> unit = "caml_rgb_color_to_alpha"
+    end
   end
 end

@@ -18,17 +18,39 @@ let map_all buf f =
     buf.(i) <- f buf.(i)
   done
 
-(* TODO: we don't want to fill it with useless frames, right? *)
+(* TODO: we don't want to fill it with useless frames *)
 let create len =
-  let i = Image.RGBA8.create 0 0 in
+  let i = Frame.create 0 0 in
   Array.make len i
+
+let make len width height =
+  Array.init len (fun _ -> Frame.create width height)
+
+(* TODO: more parameters. *)
+let blit sbuf sofs dbuf dofs len =
+  for i = 0 to len - 1 do
+    Frame.blit_all sbuf.(sofs + i) dbuf.(dofs + i)
+  done
+
+let randomize buf ofs len =
+  for i = ofs to ofs + len - 1 do
+    Frame.randomize_all buf.(i)
+  done
+
+let blank buf ofs len =
+  for i = ofs to ofs + len - 1 do
+    Frame.blank_all buf.(i)
+  done
+
+let copy buf =
+  Array.map Frame.copy buf
 
 module RE = struct
   type t = frame
 
-  let create () = Image.RGBA8.create 0 0
+  let create () = Frame.create 0 0
 
-  let blit = Array.blit
+  let blit = blit
 end
 
 module Ringbuffer_ext = Ringbuffer.Make_ext (RE)

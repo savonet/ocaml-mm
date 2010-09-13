@@ -47,7 +47,7 @@ static inline short clip(double s)
     return (s * (SHRT_MAX - 1));
 }
 
-CAMLprim value caml_float_pcm_to_16le(value a, value _offs, value _len, value _dst, value _dst_offs)
+CAMLprim value caml_float_pcm_to_s16le(value a, value _offs, value _dst, value _dst_offs, value _len)
 {
   CAMLparam2(a, _dst);
   int c, i;
@@ -68,16 +68,15 @@ CAMLprim value caml_float_pcm_to_16le(value a, value _offs, value _len, value _d
     for (i = 0; i < len; i++)
     {
       dst[i*nc+c] = clip(Double_field(src, i + offs));
-#ifdef LIQ_BIG_ENDIAN
-      dst[i*nc+c] = bswap_16(dst[i*nc+c]);
-#endif
+      /* TODO: on big endian arch */
+      //dst[i*nc+c] = bswap_16(dst[i*nc+c]);
     }
    }
 
   CAMLreturn(Val_int(dst_len));
 }
 
-CAMLprim value caml_float_pcm_from_16le(value _buf, value _boffs, value a, value _aoffs, value _len)
+CAMLprim value caml_float_pcm_from_s16le(value _buf, value _boffs, value a, value _aoffs, value _len)
 {
   CAMLparam2(a, _buf);
   CAMLlocal1(cbuf);
@@ -99,4 +98,99 @@ CAMLprim value caml_float_pcm_from_16le(value _buf, value _boffs, value a, value
   }
 
   CAMLreturn(Val_unit);
+}
+
+#define u8tof(x)  (((double)x-127)/127)
+#define get_u8(src,offset,nc,c,i)    u8tof(((uint8_t*)src)[offset+i*nc+c])
+#define s16tof(x) (((double)x)/32768)
+/* TODO */
+#ifdef LIQ_BIG_ENDIAN
+#define get_s16le(src,offset,nc,c,i) s16tof(bswap_16(((int16_t*)src)[offset/2+i*nc+c]))
+#else
+#define get_s16le(src,offset,nc,c,i) s16tof(((int16_t*)src)[offset/2+i*nc+c])
+#endif
+
+CAMLprim value caml_float_pcm_of_u8_resample_native(
+    value _src, value _offset, value _length,
+    value _ratio, value _dst, value _dst_off)
+{
+  CAMLparam2(_src, _dst) ;
+  CAMLlocal1(dstc) ;
+  char* src = String_val(_src) ;
+  int offset = Int_val(_offset) ;
+  int len = Int_val(_length) ;
+  double ratio = Double_val(_ratio) ;
+  int dst_off = Int_val(_dst_off) ;
+  int dst_len = Wosize_val(Field(_dst, 0)) / Double_wosize ;
+  int newlen = (int)(ratio*len) ;
+  int i,c ;
+  int nc = Wosize_val(_dst) ;
+
+  if (dst_off + newlen > dst_len)
+    caml_invalid_argument("convert_native: output buffer too small");
+
+  if (ratio==1) {
+    for (c=0 ; c<nc ; c++) {
+      dstc = Field(_dst,c) ;
+      for (i=0 ; i<newlen; i++) {
+        Store_double_field(dstc, dst_off+i, get_u8(src,offset,nc,c,i)) ;
+      }
+    }
+  }else{
+    for (c=0 ; c<nc ; c++) {
+      dstc = Field(_dst,c) ;
+      for (i=0 ; i<newlen; i++) {
+        Store_double_field(dstc, dst_off+i, get_u8(src,offset,nc,c,((int)(i/ratio)))) ;
+      }
+    }
+  }
+
+  CAMLreturn(Val_int(dst_off+newlen)) ;
+}
+
+CAMLprim value caml_float_pcm_of_u8_resample_byte(value* argv, int argn)
+{
+  return caml_float_pcm_of_u8_resample_native(argv[0],argv[1],argv[2],argv[3],argv[4],argv[5]);
+}
+
+
+CAMLprim value caml_float_pcm_convert_s16le_native(value _src, value _offset, value _length, value _ratio, value _dst, value _dst_off)
+{
+  CAMLparam2(_src, _dst) ;
+  CAMLlocal1(dstc) ;
+  char* src = String_val(_src) ;
+  int offset = Int_val(_offset) ;
+  int len = Int_val(_length) ;
+  double ratio = Double_val(_ratio) ;
+  int dst_off = Int_val(_dst_off) ;
+  int dst_len = Wosize_val(Field(_dst, 0)) / Double_wosize ;
+  int newlen = (int)(ratio*len) ;
+  int i,c ;
+  int nc = Wosize_val(_dst) ;
+
+  if (dst_off + newlen > dst_len)
+    caml_invalid_argument("convert_native: output buffer too small");
+
+  if (ratio==1) {
+    for (c=0 ; c<nc ; c++) {
+      dstc = Field(_dst,c) ;
+      for (i=0 ; i<newlen; i++) {
+        Store_double_field(dstc, dst_off+i, get_s16le(src,offset,nc,c,i)) ;
+      }
+    }
+  }else{
+    for (c=0 ; c<nc ; c++) {
+      dstc = Field(_dst,c) ;
+      for (i=0 ; i<newlen; i++) {
+        Store_double_field(dstc, dst_off+i, get_s16le(src,offset,nc,c,((int)(i/ratio)))) ;
+      }
+    }
+  }
+
+  CAMLreturn(Val_int(dst_off+newlen)) ;
+}
+
+CAMLprim value caml_float_pcm_convert_s16le_byte(value* argv, int argn)
+{
+  return caml_float_pcm_convert_s16le_native(argv[0],argv[1],argv[2],argv[3],argv[4],argv[5]);
 }

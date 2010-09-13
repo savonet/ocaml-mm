@@ -48,13 +48,14 @@ module Mono : sig
 
   val create : int -> buffer
 
+  val blit : buffer -> int -> buffer -> int -> int -> unit
+
+  val copy : buffer -> buffer
+
   val duration : buffer -> int
 
   (** Clear a portion of a buffer (fill it with zeroes). *)
   val clear : buffer -> int -> int -> unit
-
-  (** Fill the buffer with random data (ie produce white noise). *)
-  val randomize : buffer -> int -> int -> unit
 
   val resample : float -> buffer -> int -> int -> buffer
 
@@ -227,6 +228,8 @@ val create_same : buffer -> buffer
 (** Clear the buffer (sets all the samples to zero). *)
 val clear : buffer -> int -> int -> unit
 
+val channels : buffer -> int
+
 (** Duration of a buffer in samples. *)
 val duration : buffer -> int
 
@@ -237,13 +240,25 @@ val to_mono : buffer -> Mono.buffer
     not copied an might thus be modified afterwards. *)
 val of_mono : Mono.buffer -> buffer
 
-val length_16le : int -> int -> int
+module U8 : sig
+  val to_audio : string -> int -> buffer -> int -> int -> unit
 
-val duration_16le : int -> int -> int
+  val convert_to_audio : string -> int -> int -> ?resample:float -> buffer -> int -> int
+end
 
-val to_16le_create : buffer -> int -> int -> string
+module S16LE : sig
+  val length : int -> int -> int
 
-val of_16le : string -> int -> float array array -> int -> int -> unit
+  val duration : int -> int -> int
+
+  val of_audio : buffer -> int -> string -> int -> int -> unit
+
+  val make : buffer -> int -> int -> string
+
+  val to_audio : string -> int -> buffer -> int -> int -> unit
+
+  val convert_to_audio : string -> int -> int -> ?resample:float -> buffer -> int -> int
+end
 
 val resample : float -> buffer -> int -> int -> buffer
 
@@ -326,6 +341,10 @@ module Ringbuffer_ext : sig
   val transmit : t -> (buffer -> int -> int -> int) -> int
 end
 
+module Analyze : sig
+  val rms : buffer -> int -> int -> float array
+end
+
 (** Audio effects. *)
 module Effect : sig
   (** A possibly stateful audio effect. *)
@@ -352,6 +371,8 @@ end
 
 (** Sound generators. *)
 module Generator : sig
+  val white_noise : buffer -> int -> int -> unit
+
   class type t =
   object
     method set_volume : float -> unit

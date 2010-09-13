@@ -17,6 +17,8 @@ module YUV420 : sig
 
   val height : t -> int
 
+  val internal : t -> (data * int) * (data * data * int)
+
   val create : int -> int -> t
 
   val make : data -> int -> data -> data -> int -> t
@@ -31,6 +33,8 @@ module RGBA8 : sig
     type t = int * int * int * int
   end
 
+  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
   (** An image. *)
   type t
 
@@ -38,7 +42,14 @@ module RGBA8 : sig
 
   val height : t -> int
 
+  val data : t -> data
+
+  val stride : t -> int
+
   val create : int -> int -> t
+
+  (* Does not copy the data. Use [copy] for this. *)
+  val make : ?stride:int -> int -> int -> data -> t
 
   val get_pixel : t -> int -> int -> Color.t
 
@@ -64,9 +75,23 @@ module RGBA8 : sig
 
   val to_int_image : t -> int array array
 
-  val scale_to : t -> t -> unit
+  val randomize_all : t -> unit
+
+  val add : ?x:int -> ?y:int -> ?w:int -> ?h:int -> t -> t -> unit
+
+  module Scale : sig
+    type kind = Linear | Bilinear
+
+    val onto : ?kind:kind -> ?proportional:bool -> t -> t -> unit
+
+    val create : ?kind:kind -> ?proportional:bool -> t -> int -> int -> t
+  end
 
   module Effect : sig
+    val translate : t -> int -> int -> unit
+
+    val affine : t -> float -> float -> int -> int -> unit
+
     val greyscale : t -> unit
 
     val sepia : t -> unit
@@ -79,6 +104,14 @@ module RGBA8 : sig
 
     val mask : t -> t -> unit
 
-    val blur_alpha : t -> unit
+    (** Effects on alpha channel. *)
+    module Alpha : sig
+      val blur : t -> unit
+
+      (** Scale alpha channel with a given coefficient. *)
+      val scale : t -> float -> unit
+
+      val disk : t -> int -> int -> int -> unit
+    end
   end
 end

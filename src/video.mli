@@ -10,11 +10,21 @@ val size : buffer -> int
 
 val create : int -> buffer
 
+val make : int -> int -> int -> buffer
+
+val copy : buffer -> buffer
+
 val append : buffer -> buffer -> buffer
 
 val iter_all : buffer -> (frame -> unit) -> unit
 
 val map_all : buffer -> (frame -> frame) -> unit
+
+val blit : buffer -> int -> buffer -> int -> int -> unit
+
+val randomize : buffer -> int -> int -> unit
+
+val blank : buffer -> int -> int -> unit
 
 module Ringbuffer_ext : Ringbuffer.R with type elt = frame
 

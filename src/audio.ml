@@ -99,6 +99,12 @@ module Mono = struct
   (* let blit b1 o1 b2 o2 len = Array.blit b1 o1 b2 o2 len *)
   external blit : float array -> int -> float array -> int -> int -> unit = "caml_float_array_blit"
 
+  let copy buf =
+    let len = duration buf in
+    let ans = create len in
+    blit buf 0 ans 0 len;
+    ans
+
   let add b1 o1 b2 o2 len=
     for i = 0 to len - 1 do
       b1.(o1 + i) <- b1.(o1 + i) +. b2.(o2 + i)
@@ -120,11 +126,6 @@ module Mono = struct
   let amplify k b ofs len =
     for i = ofs to ofs + len - 1 do
       b.(i) <- k *. b.(i)
-    done
-
-  let randomize b ofs len =
-    for i = ofs to ofs + len - 1 do
-      b.(i) <- Random.float 2. -. 1.
     done
 
   let clip buf ofs len =
@@ -517,6 +518,11 @@ module Mono = struct
   end
 
   module Generator = struct
+    let white_noise b ofs len =
+      for i = ofs to ofs + len - 1 do
+        b.(i) <- Random.float 2. -. 1.
+      done
+
     class type t =
     object
       method set_volume : float -> unit
@@ -727,51 +733,35 @@ let of_mono b = [|b|]
 let resample ratio buf ofs len =
   map (fun buf -> Mono.resample ratio buf ofs len) buf
 
-(*
-let to_16le buf ofs sbuf sofs len =
-  let chans = channels buf in
-  assert (String.length sbuf >= sofs + chans * len * 2);
-  for i = 0 to len - 1 do
-    for c = 0 to chans - 1 do
-      let s = Sample.clip buf.(c).(i + ofs) *. 32767. in
-      let s = int_of_float s in
-      let s = if s < 0 then (-s) lxor 65535 else s in
-      let s1 = s mod 256 in
-      let s2 = (s / 256) mod 256 in
-      (* Printf.printf "%d -> %d-%d\n%!" s s1 s2; *)
-      let s1 = char_of_int s1 in
-      let s2 = char_of_int s2 in
-      sbuf.[sofs + 2 * (i * chans + c)] <- s1;
-      sbuf.[sofs + 2 * (i * chans + c) + 1] <- s2
-    done
-  done
-*)
-external to_16le : float array array -> int -> int -> string -> int -> int = "caml_float_pcm_to_16le"
+module U8 = struct
+  external resample_to_audio : string -> int -> int -> float -> buffer -> int -> int = "caml_float_pcm_of_u8_resample_byte" "caml_float_pcm_of_u8_resample_native"
 
-let length_16le channels samples = channels * samples * 2
-let duration_16le channels len = len / (2 * channels)
+  let convert_to_audio s sofs slen ?(resample=1.) buf bofs =
+    resample_to_audio s sofs slen resample buf bofs
 
-let to_16le_create buf ofs len =
-  let slen = length_16le (channels buf) len in
-  let sbuf = String.create slen in
-  ignore (to_16le buf ofs len sbuf 0);
-  sbuf
+  let to_audio s sofs buf bofs len = ignore (resample_to_audio s sofs len 1. buf bofs)
+end
 
-(*
-let of_16le sbuf sofs buf ofs len =
-  let chans = channels buf in
-  for i = 0 to len - 1 do
-    for c = 0 to chans - 1 do
-      let s1 = int_of_char sbuf.[sofs + 4 * i + 2 * c] in
-      let s2 = int_of_char sbuf.[sofs + 4 * i + 2 * c + 1] in
-      let s = s1 + s2 * 256 in
-      let s = if s >= 32768 then - (s lxor 65535) else s in
-      let s = float s /. 32768. in
-      buf.(c).(i + ofs) <- s
-    done
-  done
-*)
-external of_16le : string -> int -> float array array -> int -> int -> unit = "caml_float_pcm_from_16le"
+module S16LE = struct
+  let length channels samples = channels * samples * 2
+
+  let duration channels len = len / (2 * channels)
+
+  external of_audio : float array array -> int -> string -> int -> int -> unit = "caml_float_pcm_to_s16le"
+
+  let make buf ofs len =
+    let slen = length (channels buf) len in
+    let sbuf = String.create slen in
+    of_audio buf ofs sbuf 0 len;
+    sbuf
+
+  external resample_to_audio : string -> int -> int -> float -> float array array -> int -> int = "caml_float_pcm_convert_s16le_byte" "caml_float_pcm_convert_s16le_native"
+
+  let convert_to_audio s sofs slen ?(resample=1.) buf bofs =
+    resample_to_audio s sofs slen resample buf bofs
+
+  external to_audio : string -> int -> float array array -> int -> int -> unit = "caml_float_pcm_from_s16le"
+end
 
 let add b1 o1 b2 o2 len = iter2 (fun b1 b2 -> Mono.add b1 o1 b2 o2 len) b1 b2
 
@@ -943,7 +933,12 @@ module Ringbuffer_ext = struct
       {
 	ringbuffer = Ringbuffer.create chans len;
       }
-  end
+end
+
+module Analyze = struct
+  let rms buf ofs len =
+    Array.init (channels buf) (fun i -> Mono.Analyze.rms buf.(i) ofs len)
+end
 
 module Effect = struct
   class type t =
@@ -1114,6 +1109,11 @@ module Effect = struct
 end
 
 module Generator = struct
+  let white_noise buf ofs len =
+    for c = 0 to channels buf - 1 do
+      Mono.Generator.white_noise buf.(c) ofs len
+    done
+
   class type t =
   object
     method set_volume : float -> unit
@@ -1264,7 +1264,7 @@ module IO = struct
         let sbuf = self#input sbuflen in
         let sbuflen = String.length sbuf in
         let len = sbuflen / (channels * 2) in
-        of_16le sbuf 0 buf ofs len;
+        S16LE.to_audio sbuf 0 buf ofs len;
         len
 
       method seek n =
@@ -1329,7 +1329,7 @@ module IO = struct
       val mutable datalen = 0
 
       method write buf ofs len =
-        let s = to_16le_create buf ofs len in
+        let s = S16LE.make buf ofs len in
         self#output s;
         datalen <- datalen + String.length s
 
