@@ -277,9 +277,10 @@ module RGBA8 = struct
 
       external disk : t -> int -> int -> int -> unit = "caml_rgb_disk_opacity"
 
-      external of_color_simple : t -> int * int * int -> float -> float -> unit = "caml_rgb_color_to_alpha_simple"
-
+      external of_color_simple : t -> int * int * int -> int -> unit = "caml_rgb_color_to_alpha_simple"
+      (* TODO: this does not work yet. *)
       external of_color : t -> int * int * int -> float -> float -> unit = "caml_rgb_color_to_alpha"
+      let of_color = of_color_simple
     end
   end
 end

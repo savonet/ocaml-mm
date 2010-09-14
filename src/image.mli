@@ -73,10 +73,6 @@ module RGBA8 : sig
 
   val blit_all : t -> t -> unit
 
-  val fill_all : t -> Color.t -> unit
-
-  val blank_all : t -> unit
-
   (** {2 Conversions from/to other formats} *)
 
   val of_RGB8_string : string -> int -> t
@@ -94,6 +90,10 @@ module RGBA8 : sig
   (** {2 Manipulation of images} *)
 
   val add : ?x:int -> ?y:int -> ?w:int -> ?h:int -> t -> t -> unit
+
+  val fill_all : t -> Color.t -> unit
+
+  val blank_all : t -> unit
 
   val randomize_all : t -> unit
 
@@ -137,6 +137,8 @@ module RGBA8 : sig
       val scale : t -> float -> unit
 
       val disk : t -> int -> int -> int -> unit
+
+      val of_color : t -> RGB8.Color.t -> int -> unit
     end
   end
 end
