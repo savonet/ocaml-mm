@@ -23,9 +23,9 @@ module type R = sig
 
   val write_advance : t -> int -> unit
 
-  val peek : t -> buffer -> int -> int -> unit
-
   val read : t -> buffer -> int -> int -> unit
+
+  val peek : t -> buffer -> int -> int -> unit
 
   val write : t -> buffer -> int -> int -> unit
 

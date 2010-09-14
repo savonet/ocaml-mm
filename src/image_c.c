@@ -556,7 +556,7 @@ CAMLprim value caml_rgb_randomize(value f)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_rgb_scale(value _dst, value _src, value xscale, value yscale)
+CAMLprim value caml_rgb_scale(value _src, value _dst, value xscale, value yscale)
 {
   CAMLparam4(_dst, _src, xscale, yscale);
   frame src,dst;
@@ -585,8 +585,9 @@ CAMLprim value caml_rgb_scale(value _dst, value _src, value xscale, value yscale
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_rgb_bilinear_scale(value _dst, value _src, value xscale, value yscale)
+CAMLprim value caml_rgb_bilinear_scale(value _src, value _dst, value xscale, value yscale)
 {
+  CAMLparam2(_src, _dst);
   frame src,dst;
   frame_of_value(_src, &src);
   frame_of_value(_dst, &dst);
@@ -599,8 +600,6 @@ CAMLprim value caml_rgb_bilinear_scale(value _dst, value _src, value xscale, val
 
   assert(ox >= 0 && oy >= 0);
 
-  caml_register_global_root(&_dst);
-  caml_register_global_root(&_src);
   caml_enter_blocking_section();
   if (ox != 0 || oy != 0)
     rgb_blank(&dst);
@@ -622,10 +621,8 @@ CAMLprim value caml_rgb_bilinear_scale(value _dst, value _src, value xscale, val
               (Space_clip_color(&src, c, i2+1, j2+1) * dx * dy)));
     }
   caml_leave_blocking_section();
-  caml_remove_global_root(&_dst);
-  caml_remove_global_root(&_src);
 
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 /*

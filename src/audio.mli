@@ -141,7 +141,7 @@ module Mono : sig
   end
 
   module Effect : sig
-    (** A compander following the µ-law (see
+    (** A compander following the mu-law (see
 	http://en.wikipedia.org/wiki/Mu-law).*)
     val compand_mu_law : float -> buffer -> int -> int -> unit
 

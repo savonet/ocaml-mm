@@ -1,5 +1,6 @@
 (** Operations on video data. *)
 
+(** A frame. *)
 type frame = Image.RGBA8.t
 
 (** A video buffer. *)
@@ -8,19 +9,24 @@ type buffer = frame array
 (** Size of the buffer in frames. *)
 val size : buffer -> int
 
+(** Create a buffer with a given number of frames. The frames themselves should
+    not be read or written to, otherwise use [make]. *)
 val create : int -> buffer
 
+(** Create a buffer with a given number of frames of given size. *)
 val make : int -> int -> int -> buffer
 
+(** Create a fresh copy of a buffer. *)
 val copy : buffer -> buffer
 
+(** Concatenate two buffers. *)
 val append : buffer -> buffer -> buffer
+
+val blit : buffer -> int -> buffer -> int -> int -> unit
 
 val iter_all : buffer -> (frame -> unit) -> unit
 
 val map_all : buffer -> (frame -> frame) -> unit
-
-val blit : buffer -> int -> buffer -> int -> int -> unit
 
 val randomize : buffer -> int -> int -> unit
 

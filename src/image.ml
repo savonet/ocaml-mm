@@ -48,6 +48,8 @@ module RGBA8 = struct
 
   let height buf = buf.height
 
+  let dimensions buf = buf.width, buf.height
+
   let data buf = buf.data
 
   let stride buf = buf.stride
@@ -131,25 +133,24 @@ module RGBA8 = struct
   module Scale = struct
     type kind = Linear | Bilinear
 
-    (* TODO: swap dst and src to be consistent... *)
     external scale_coef : t -> t -> int * int -> int * int -> unit = "caml_rgb_scale"
 
     external bilinear_scale_coef : t -> t -> float -> float -> unit = "caml_rgb_bilinear_scale"
 
-    let scale_coef_kind k dst src (dw,sw) (dh,sh) =
+    let scale_coef_kind k src dst (dw,sw) (dh,sh) =
       match k with
         | Linear ->
-          scale_coef dst src (dw,sw) (dh,sh)
+          scale_coef src dst (dw,sw) (dh,sh)
         | Bilinear ->
           let x = float dw /. float sw in
           let y = float dh /. float sh in
-          bilinear_scale_coef dst src x y
+          bilinear_scale_coef src dst x y
 
     let onto ?(kind=Linear) ?(proportional=false) src dst =
       let sw, sh = src.width,src.height in
       let dw, dh = dst.width,dst.height in
       if not proportional then
-        scale_coef_kind kind dst src (dw, sw) (dh, sh)
+        scale_coef_kind kind src dst (dw, sw) (dh, sh)
       else
         let n, d =
           if dh * sw < sh * dw then
@@ -157,7 +158,7 @@ module RGBA8 = struct
           else
 	    dw, sw
         in
-        scale_coef_kind kind dst src (n,d) (n,d)
+        scale_coef_kind kind src dst (n,d) (n,d)
 
     let create ?kind ?proportional src w h =
       let dst = create w h in
@@ -166,7 +167,7 @@ module RGBA8 = struct
 
   end
 
-  external to_bmp : t -> string = "caml_rgb_to_bmp"
+  external to_BMP : t -> string = "caml_rgb_to_bmp"
 
   external to_RGB8_string : t -> string = "caml_image_to_rgb8"
 
@@ -202,7 +203,7 @@ module RGBA8 = struct
   let ppm_header =
     Str.regexp "P6\n\\(#.*\n\\)?\\([0-9]+\\) \\([0-9]+\\)\n\\([0-9]+\\)\n"
 
-  let of_ppm ?alpha data =
+  let of_PPM ?alpha data =
     (
       try
 	if not (Str.string_partial_match ppm_header data 0) then
@@ -239,14 +240,6 @@ module RGBA8 = struct
       done
     done;
     ans
-
-  let read_ppm ?alpha fname =
-    let ic = open_in_bin fname in
-    let len = in_channel_length ic in
-    let data = String.create len in
-    really_input ic data 0 len;
-    close_in ic;
-    of_ppm ?alpha data
 
   external to_int_image : t -> int array array = "caml_rgb_to_color_array"
 
