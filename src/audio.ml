@@ -773,19 +773,16 @@ let amplify k buf ofs len =
 
 (* x between -1 and 1 *)
 let pan x buf ofs len =
-  assert (channels buf = 2);
-  (* Field width in degrees. *)
-  let field = 90. in
-  (* Degrees to radians + half field. *)
-  let phi0 = field *. pi /. 360. in
-  (* Map -1 / 1 to radians. *)
-  let phi = x *. phi0 in
-  let gain_left = ((tan phi0) +. tan phi) /. 2. in
-  let gain_right = ((tan phi0) -. tan phi) /. 2. in
-  for i = ofs to ofs + len - 1 do
-    buf.(0).(i) <- buf.(0).(i) *. gain_left;
-    buf.(1).(i) <- buf.(1).(i) *. gain_right
-  done
+  if x > 0. then
+    let x = 1. -. x in
+    for i = ofs to ofs + len - 1 do
+      buf.(0).(i) <- buf.(0).(i) *. x
+    done
+  else if x < 0. then
+    let x = 1. +. x in
+    for i = ofs to ofs + len - 1 do
+      buf.(1).(i) <- buf.(1).(i) *. x
+    done
 
 (* TODO: we cannot share this with mono, right? *)
 module Buffer_ext = struct
@@ -1053,6 +1050,121 @@ module Effect = struct
       new delay_ping_pong chans sample_rate d once feedback
     else
       new delay chans sample_rate d once feedback
+
+  (* See http://www.musicdsp.org/archive.php?classid=4#169 *)
+  (* times in sec, ratios in dB, gain linear *)
+  class compress ?(attack=0.1) ?(release=0.1) ?(threshold=(-.10.)) ?(ratio=3.) ?(knee=1.) ?(rms_window=0.1) ?(gain=1.) chans samplerate =
+    (** Number of samples for computing rms. *)
+    let rmsn = samples_of_seconds samplerate rms_window in
+    let samplerate = float samplerate in
+  object (self)
+    val mutable attack = attack
+    method set_attack a = attack <- a
+    val mutable release = release
+    method set_release r = release <- r
+    val mutable threshold = threshold
+    method set_threshold t = threshold <- t
+    val mutable ratio = ratio
+    method set_ratio r = ratio <- r
+    val mutable knee = knee
+    method set_knee k = knee <- k
+    val mutable gain = gain
+    method set_gain g = gain <- g
+
+
+    (** [rmsn] last squares. *)
+    val rmsv = Array.make rmsn 0.
+    (** Current position in [rmsv]. *)
+    val mutable rmsp = 0
+    (** Current squares of RMS. *)
+    val mutable rms = 0.
+
+    (* Processing variables. *)
+    val mutable amp = 0.
+    (** Envelope. *)
+    val mutable env = 0.
+    (** Current gain. *)
+    val mutable g = 1.
+
+    method process buf ofs len =
+      let ratio = (ratio -. 1.) /. ratio in
+      (* Attack and release "per sample decay". *)
+      let g_attack = if attack = 0. then 0. else exp (-1. /. (samplerate *. attack)) in
+      let ef_a = g_attack *. 0.25 in
+      let g_release = if release = 0. then 0. else exp (-1. /. (samplerate *. release)) in
+      let ef_ai = 1. -. ef_a in
+      (* Knees. *)
+      let knee_min = lin_of_dB (threshold -. knee) in
+      let knee_max = lin_of_dB (threshold +. knee) in
+      for i = ofs to ofs + len - 1 do
+
+        (* Input level. *)
+        let lev_in =
+          let ans = ref 0. in
+          for c = 0 to chans - 1 do
+            ans := !ans +. buf.(c).(i) *. buf.(c).(i) *. gain *. gain
+          done;
+          !ans /. (float chans)
+        in
+
+        (* RMS *)
+        rms <- rms -. rmsv.(rmsp) +. lev_in;
+        rms <- abs_float rms; (* Sometimes the rms was -0., avoid that. *)
+        rmsv.(rmsp) <- lev_in;
+        rmsp <- (rmsp + 1) mod rmsn;
+        amp <- sqrt (rms /. float rmsn);
+
+        (* Dynamic selection: attack or release? *)
+        (* Smoothing with capacitor, envelope extraction... Here be aware of
+         * pIV denormal numbers glitch. *)
+        if amp > env then
+          env <- env *. g_attack +. amp *. (1. -. g_attack)
+        else
+          env <- env *. g_release +. amp *. (1. -. g_release);
+
+        (* Compute the gain. *)
+        let gain_t =
+          if env < knee_min then
+            (* Do not compress. *)
+            1.
+          else
+            if env < knee_max then
+              (* Knee: compress smoothly. *)
+              let x = (knee +. dB_of_lin env -. threshold) /. (2. *. knee) in
+              lin_of_dB (0. -. knee *. ratio *. x *. x)
+            else
+              (* Maximal (n:1) compression. *)
+              lin_of_dB ((threshold -. dB_of_lin env) *. ratio)
+        in
+        g <- g *. ef_a +. gain_t *. ef_ai;
+
+        (* Apply the gain. *)
+        let g = g *. gain in
+        for c = 0 to chans - 1 do
+          buf.(c).(i) <- buf.(c).(i) *. g
+        done;
+
+      (*
+      (* Debug messages. *)
+        count <- count + 1;
+        if count mod 10000 = 0 then
+        self#log#f 4
+        "RMS:%7.02f     Env:%7.02f     Gain: %4.02f\r%!"
+        (Audio.dB_of_lin amp) (Audio.dB_of_lin env) gain
+      *)
+
+      done
+
+    method reset =
+      rms <- 0.;
+      rmsp <- 0;
+      for i = 0 to rmsn - 1 do
+        rmsv.(i) <- 0.
+      done;
+      g <- 1.;
+      env <- 0.;
+      amp <- 0.
+  end
 
   class auto_gain_control channels samplerate
     rmst (* target RMS *)

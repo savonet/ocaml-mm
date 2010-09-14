@@ -4,8 +4,10 @@ val samples_of_seconds : int -> float -> int
 
 val seconds_of_samples : int -> int -> float
 
+(** Convert decibels to linear coefficient. *)
 val lin_of_dB : float -> float
 
+(** Convert linear coefficient to decibels. *)
 val dB_of_lin : float -> float
 
 (** Operations on samples. *)
@@ -370,6 +372,23 @@ module Effect : sig
       in seconds and [feedback] as feedback. If [once] is set to [true] only one
       echo will be heard (no feedback). *)
   val delay : int -> int -> float -> ?once:bool -> ?ping_pong:bool -> float -> delay_t
+
+  (** Hardknee compressor with RMS look-ahead envelope calculation and
+      adjustable attack/decay. Given parameters are [attack] and [release] in
+      seconds, [ratio] n means n:1 compression, [threshold] and [knee] in dB,
+      and [rms_window] in second is the duration for RMS acquisition. [gain] is
+      an additional pre-gain. *)
+  class compress : ?attack:float -> ?release:float -> ?threshold:float -> ?ratio:float -> ?knee:float -> ?rms_window:float -> ?gain:float -> int -> int ->
+  object
+    inherit t
+    method set_attack : float -> unit
+    method set_gain : float -> unit
+    method set_knee : float -> unit
+    method set_ratio : float -> unit
+    method set_release : float -> unit
+    method set_threshold : float -> unit
+    method reset : unit
+  end
 
   val biquad_filter : int -> int -> [ `Band_pass | `High_pass | `Low_pass ] -> float -> float -> t
 
