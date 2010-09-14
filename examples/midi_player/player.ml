@@ -1,10 +1,10 @@
 let () =
   let fname = Sys.argv.(1) in
-  let f = MIDI.IO.reader_of_file fname in
+  let f = new MIDI.IO.Reader.of_file fname in
   let channels = 2 in
   let sample_rate = 44100 in
-  let wav = new Audio.IO.writer_to_wav_file channels sample_rate "out.wav" in
-  let oss = new Audio.IO.OSS.writer_to_oss channels sample_rate in
+  let wav = new Audio.IO.Writer.to_wav_file channels sample_rate "out.wav" in
+  let oss = new MMOSS.writer channels sample_rate in
   let blen = 1024 in
   let buf = Audio.create channels blen in
   let mchannels = 16 in

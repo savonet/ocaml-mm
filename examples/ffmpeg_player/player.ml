@@ -27,7 +27,7 @@ let () =
       vid
       (fun f ->
         let img = Image.RGBA8.create width height in
-        Image.RGBA8.scale_to f img;
+        Image.RGBA8.Scale.onto f img;
         img
       );
     (* Video.iter_all vid Image.RGBA8.Effect.invert; *)

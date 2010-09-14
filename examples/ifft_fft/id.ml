@@ -4,8 +4,8 @@
 module FFT = Audio.Mono.Analyze.FFT
 
 let () =
-  let read = new Audio.IO.reader_of_wav_file Sys.argv.(1) in
-  let write = new Audio.IO.writer_to_wav_file read#channels read#sample_rate "out.wav" in
+  let read = new Audio.IO.Reader.of_wav_file Sys.argv.(1) in
+  let write = new Audio.IO.Writer.to_wav_file read#channels read#sample_rate "out.wav" in
   let fft_n = 11 in
   let fft = FFT.init fft_n in
   let blen = 1 lsl fft_n in

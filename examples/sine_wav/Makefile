@@ -1,7 +1,7 @@
 SOURCES = sine_wav.ml
 RESULT = sine_wav
-INCDIRS = ../../src
-LIBS = unix mm
+INCDIRS = ../../src ../../external/oss
+LIBS = unix bigarray mm mm.oss
 
 all: nc
 

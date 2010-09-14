@@ -2,9 +2,10 @@ SOURCES = ringbuffer.mli ringbuffer.ml IO.ml audio_c.c audio.mli audio.ml	\
 image_c.h image_c.c image.mli image.ml video.mli video.ml MIDI.mli MIDI.ml	\
 synth.mli synth.ml
 RESULT = mm
-OCAMLFLAGS = @OCAMLFLAGS@ -g
-OCAMLNCFLAGS = -p
+OCAMLFLAGS = @OCAMLFLAGS@
+OCAMLNCFLAGS = @OCAMLNCFLAGS@
 OCAMLLDFLAGS = -linkall
+CFLAGS = @CFLAGS@
 INCDIRS = @INC@
 NO_CUSTOM = yes
 OCAMLDOCFLAGS = -sort -stars

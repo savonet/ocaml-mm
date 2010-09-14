@@ -24,15 +24,29 @@ typedef struct
 #define Space_clip_color(rgb,c,i,j) (Is_outside(rgb,i,j))?0:Color(rgb,c,i,j)
 //For copying pixel by pixel
 #define Int_pixel(rgb,i,j)  (((uint32*)(rgb)->data)+i+j*(rgb)->width)
+
+#ifndef BIGENDIAN
+#define rshift 0
+#define gshift 8
+#define bshift 16
+#define ashift 24
+#else
+#define rshift 24
+#define gshift 16
+#define bshift 8
+#define ashift 0
+#endif
+
 #define Copy_pixel(dst,di,dj,src,si,sj) (*Int_pixel(dst,di,dj)=*Int_pixel(src,si,sj))
 
 #define assert_same_dim(src, dst) { assert((dst)->width == (src)->width); assert((dst)->height == (src)->height); }
 
+#define Rgb_data_val(v) Caml_ba_data_val(Field(v,0))
+#define Rgb_width_val(v) Int_val(Field(v,1))
 static frame *frame_of_value(value v, frame *f)
 {
-  value ba = Field(v,0);
-  f->data = Caml_ba_data_val(ba);
-  f->width = Int_val(Field(v,1));
+  f->data = Rgb_data_val(v);
+  f->width = Rgb_width_val(v);
   f->height = Int_val(Field(v,2));
   f->stride = Int_val(Field(v,3));
 

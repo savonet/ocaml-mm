@@ -173,22 +173,38 @@ module RGBA8 = struct
 
   exception Invalid_format of string
 
-  (* TODO: avoid using Str *)
-  let ppm_header =
-    Str.regexp "P6\n\\(#.*\n\\)?\\([0-9]+\\) \\([0-9]+\\)\n\\([0-9]+\\)\n"
-
   let of_PPM ?alpha data =
-    (
+    let w, h, d, o =
       try
-	if not (Str.string_partial_match ppm_header data 0) then
-          raise (Invalid_format "Not a PPM file.");
+        (* TODO: make it useable without bound checks *)
+        assert (data.[0] = 'P');
+        assert (data.[1] = '6');
+        assert (data.[2] = '\n');
+        let n = ref 3 in
+        let read_int () =
+          let ans = ref 0 in
+          let (!!) = int_of_char in
+          while !!'0' <= !!(data.[!n]) && !!(data.[!n]) <= !!'9' do
+            ans := !ans * 10 + !!(data.[!n]) - !!'0';
+            incr n
+          done;
+          assert (data.[!n] = ' ' || data.[!n] = '\n');
+          incr n;
+          !ans
+        in
+        if data.[!n] = '#' then
+          (
+            incr n;
+            while data.[!n] <> '\n' do incr n done;
+            incr n
+          );
+        let w = read_int () in
+        let h = read_int () in
+        let d = read_int () in
+        w,h,d,!n
       with
 	| _ -> raise (Invalid_format "Not a PPM file.")
-    );
-    let w = int_of_string (Str.matched_group 2 data) in
-    let h = int_of_string (Str.matched_group 3 data) in
-    let d = int_of_string (Str.matched_group 4 data) in
-    let o = Str.match_end () in
+    in
     let datalen = String.length data - o in
     if d <> 255 then
       raise (Invalid_format (Printf.sprintf "Files of color depth %d \

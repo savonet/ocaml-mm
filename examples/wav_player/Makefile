@@ -1,7 +1,7 @@
 SOURCES = player.ml
 RESULT = player
-INCDIRS = ../../src
-LIBS = unix mm
+INCDIRS = ../../src ../../external/oss
+LIBS = unix bigarray mm mm.oss
 
 all: pnc
 

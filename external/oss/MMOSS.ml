@@ -23,7 +23,7 @@ object (self)
     done
 
   method write buf ofs len =
-    let s = Audio.to_16le_create buf ofs len in
+    let s = Audio.S16LE.make buf ofs len in
     self#stream_really_write s 0 (String.length s)
 
   method close =
@@ -46,11 +46,11 @@ object (self)
   method duration_time : float = assert false
 
   method read buf ofs len =
-    let slen = Audio.length_16le channels len in
+    let slen = Audio.S16LE.length channels len in
     let s = String.create slen in
     let r = self#stream_read s 0 slen in
-    let len = Audio.duration_16le channels r in
-    Audio.of_16le s 0 buf ofs len;
+    let len = Audio.S16LE.duration channels r in
+    Audio.S16LE.to_audio s 0 buf ofs len;
     len
 
   method seek (n:int) : unit = assert false

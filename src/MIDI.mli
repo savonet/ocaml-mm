@@ -41,26 +41,30 @@ end
 type buffer = Track.t array
 
 module IO : sig
-  class type reader =
-  object
-    method read_samples : int -> Track.t array -> int -> int
+  module Reader : sig
+    class type t =
+    object
+      method read_samples : int -> Track.t array -> int -> int
 
-    method close : unit
+      method close : unit
+    end
+
+    class of_file : string -> t
   end
 
-  val reader_of_file : string -> reader
+  module Writer : sig
+    class type t =
+    object
+      method put : int -> event -> unit
 
-  class type writer_samples =
-  object
-    method put : int -> event -> unit
+      method note_off : int -> int -> float -> unit
+      method note_on : int -> int -> float -> unit
 
-    method note_off : int -> int -> float -> unit
-    method note_on : int -> int -> float -> unit
+      method advance : int -> unit
 
-    method advance : int -> unit
+      method close : unit
+    end
 
-    method close : unit
+    class to_file : int -> ?tracks:int -> string -> t
   end
-
-  val writer_samples_to_file : int -> ?tracks:int -> string -> writer_samples
 end

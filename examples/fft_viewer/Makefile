@@ -1,7 +1,7 @@
 SOURCES = fft.ml
 RESULT = fft
-INCDIRS = ../../src
-LIBS = unix mm graphics
+INCDIRS = ../../src ../../external/oss
+LIBS = unix bigarray mm graphics mm.oss
 
 all: dnc
 

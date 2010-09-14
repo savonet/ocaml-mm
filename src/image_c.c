@@ -509,12 +509,25 @@ CAMLprim value caml_rgb_get_pixel(value f, value _x, value _y)
   frame_of_value(f, &rgb);
   int x = Int_val(_x);
   int y = Int_val(_y);
+  uint8 *data = Rgb_data_val(f);
+  int width = Rgb_width_val(f);
+
+  /*
   unsigned char pix[Rgb_elems_per_pixel] = Pixel(&rgb,x,y);
   int i;
 
   ans = caml_alloc_tuple(Rgb_elems_per_pixel);
   for (i = 0; i < Rgb_elems_per_pixel; i++)
     Store_field(ans, i, Val_int(pix[i]));
+  */
+
+  /* Specialized version so that we get faster... */
+  ans = caml_alloc_tuple(4);
+  /* TODO: use stride? */
+  Store_field(ans,0,Val_int(data[4*(x+y*width)+0]));
+  Store_field(ans,1,Val_int(data[4*(x+y*width)+1]));
+  Store_field(ans,2,Val_int(data[4*(x+y*width)+2]));
+  Store_field(ans,3,Val_int(data[4*(x+y*width)+3]));
 
   CAMLreturn(ans);
 }

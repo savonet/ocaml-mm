@@ -1,7 +1,7 @@
 SOURCES = autotune.ml
 RESULT = autotune
 INCDIRS = ../../src ../../external/alsa +alsa
-LIBS = unix mm alsa mm.alsa
+LIBS = unix bigarray mm alsa mm.alsa
 OCAMLFLAGS = -g
 
 test: all

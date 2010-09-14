@@ -1,7 +1,7 @@
 SOURCES = id.ml
 RESULT = id
 INCDIRS = ../../src
-LIBS = unix mm
+LIBS = unix bigarray mm
 
 all: nc
 
