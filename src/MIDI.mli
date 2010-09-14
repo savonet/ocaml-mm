@@ -31,6 +31,7 @@ type event =
 type delta = int
 
 module Track : sig
+  (* TODO: add a total duration *)
   type t = (delta * event) list
 
   val create : unit -> t
@@ -44,8 +45,11 @@ module IO : sig
   module Reader : sig
     class type t =
     object
+      (** Read samples at a given samplerate in a given track, with a given
+          length in samples. *)
       method read_samples : int -> Track.t array -> int -> int
 
+      (** Close the stream. *)
       method close : unit
     end
 

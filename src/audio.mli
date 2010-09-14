@@ -152,7 +152,7 @@ module Mono : sig
       method process : buffer -> int -> int -> unit
     end
 
-    val biquad_filter : int -> [ `Band_pass | `High_pass | `Low_pass ] -> float -> float -> t
+    class biquad_filter : int -> [ `Band_pass | `High_pass | `Low_pass | `Notch | `All_pass | `Peaking | `Low_shelf | `High_shelf ] -> ?gain:float -> float -> float -> t
 
     (** ADSR (Attack/Decay/Sustain/Release) envelopes. *)
     module ADSR : sig
@@ -356,9 +356,9 @@ module Effect : sig
     method process : buffer -> int -> int -> unit
   end
 
-  val chain : t -> t -> t
+  class chain : t -> t -> t
 
-  val of_mono : int -> (unit -> Mono.Effect.t) -> t
+  class of_mono : int -> (unit -> Mono.Effect.t) -> t
 
   class type delay_t =
   object
@@ -390,7 +390,8 @@ module Effect : sig
     method reset : unit
   end
 
-  val biquad_filter : int -> int -> [ `Band_pass | `High_pass | `Low_pass ] -> float -> float -> t
+  (** A biquadratic filter. [gain] in dB is only used by peaking, low and high shelves. *)
+  class biquad_filter : int -> int -> [ `Band_pass | `High_pass | `Low_pass | `Notch | `All_pass | `Peaking | `Low_shelf | `High_shelf ] -> ?gain:float -> float -> float -> t
 
   val auto_gain_control : int -> int -> ?rms_target:float -> ?rms_window:float -> ?kup:float -> ?kdown:float -> ?rms_threshold:float -> ?volume_init:float -> ?volume_min:float -> ?volume_max:float -> unit -> t
 end
