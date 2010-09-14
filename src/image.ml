@@ -171,32 +171,6 @@ module RGBA8 = struct
 
   external to_RGB8_string : t -> string = "caml_image_to_rgb8"
 
-  (* cf to_int_image *)
-  (*
-  let to_graphics_image buf =
-    let w = buf.width in
-    let h = buf.height in
-    let buf = to_RGB8_string buf in
-    Array.init
-      h
-      (fun j ->
-        Array.init
-          w
-          (fun i ->
-            let r = int_of_char buf.[3*(j*w+i)+0] in
-            let g = int_of_char buf.[3*(j*w+i)+1] in
-            let b = int_of_char buf.[3*(j*w+i)+2] in
-            (r lsl 16) + (g lsl 8) + b
-          )
-      )
-  *)
-(*
-  let save_bmp f fname =
-  let oc = open_out_bin fname in
-  output_string oc (to_bmp f);
-  close_out oc
-*)
-
   exception Invalid_format of string
 
   (* TODO: avoid using Str *)
@@ -242,6 +216,21 @@ module RGBA8 = struct
     ans
 
   external to_int_image : t -> int array array = "caml_rgb_to_color_array"
+  (*
+  let to_int_image buf =
+    let w = buf.width in
+    let h = buf.height in
+    Array.init
+      h
+      (fun j ->
+        Array.init
+          w
+          (fun i ->
+            let r,g,b,a = get_pixel buf i j in
+            (r lsl 16) + (g lsl 8) + b
+          )
+      )
+  *)
 
   external add : t -> t -> unit = "caml_rgb_add"
 

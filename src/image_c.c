@@ -507,7 +507,8 @@ CAMLprim value caml_rgb_get_pixel(value f, value _x, value _y)
   CAMLlocal1(ans);
   frame rgb;
   frame_of_value(f, &rgb);
-  int x = Int_val(_x), y = Int_val(_y);
+  int x = Int_val(_x);
+  int y = Int_val(_y);
   unsigned char pix[Rgb_elems_per_pixel] = Pixel(&rgb,x,y);
   int i;
 

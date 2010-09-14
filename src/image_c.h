@@ -19,7 +19,7 @@ typedef struct
 #define Green(rgb,i,j)      Color(rgb,1,i,j)
 #define Blue(rgb,i,j)       Color(rgb,2,i,j)
 #define Alpha(rgb,i,j)      Color(rgb,3,i,j)
-#define Pixel(rgb,i,j)      {Red(rgb,i,j),Blue(rgb,i,j),Green(rgb,i,j),Alpha(rgb,i,j)}
+#define Pixel(rgb,i,j)      {Red(rgb,i,j),Green(rgb,i,j),Blue(rgb,i,j),Alpha(rgb,i,j)}
 #define Is_outside(rgb,i,j) (i<0||j<0||i>=(rgb)->width||j>=(rgb)->height)
 #define Space_clip_color(rgb,c,i,j) (Is_outside(rgb,i,j))?0:Color(rgb,c,i,j)
 //For copying pixel by pixel
