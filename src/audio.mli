@@ -358,11 +358,18 @@ module Effect : sig
 
   val of_mono : int -> (unit -> Mono.Effect.t) -> t
 
+  class type delay_t =
+  object
+    inherit t
+    method set_delay : float -> unit
+    method set_feedback : float -> unit
+  end
+
   (** [delay chans samplerate d once feedback] creates a delay operator for
       buffer with [chans] channels at [samplerate] samplerate with [d] as delay
       in seconds and [feedback] as feedback. If [once] is set to [true] only one
       echo will be heard (no feedback). *)
-  val delay : int -> int -> float -> ?once:bool -> ?ping_pong:bool -> float -> t
+  val delay : int -> int -> float -> ?once:bool -> ?ping_pong:bool -> float -> delay_t
 
   val biquad_filter : int -> int -> [ `Band_pass | `High_pass | `Low_pass ] -> float -> float -> t
 

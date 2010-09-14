@@ -119,9 +119,9 @@ module Mono = struct
     if k = 0. then
       ()
     else if k = 1. then
-      add_coeff b1 o1 k b2 o2 len
-    else
       add b1 o1 b2 o2 len
+    else
+      add_coeff b1 o1 k b2 o2 len
 
   let amplify k b ofs len =
     for i = ofs to ofs + len - 1 do
@@ -966,26 +966,41 @@ module Effect = struct
   let biquad_filter chans samplerate kind freq q =
     of_mono chans (fun () -> Mono.Effect.biquad_filter samplerate kind freq q)
 
-  class virtual base sample_rate =
+  class type delay_t =
   object
-    val sample_rate : int = sample_rate
+    inherit t
+    method set_delay : float -> unit
+    method set_feedback : float -> unit
   end
 
-  class delay_only chans d =
+  class delay_only chans sample_rate delay =
+    let delay = int_of_float (float sample_rate *. delay) in
   object (self)
+    val mutable delay = delay
+
+    method set_delay d = delay <- int_of_float (float sample_rate *. d)
+
     val rb = Ringbuffer_ext.create chans 0
 
     initializer
-      Ringbuffer_ext.write rb (create chans d) 0 d
+      Ringbuffer_ext.write rb (create chans delay) 0 delay
 
     method process buf ofs len =
       Ringbuffer_ext.write rb buf ofs len;
       Ringbuffer_ext.read rb buf ofs len
   end
 
-  (* delay d in samples *)
-  class delay chans d once feedback =
+  class delay chans sample_rate delay once feedback =
+    let delay = int_of_float (float sample_rate *. delay) in
   object (self)
+    val mutable delay = delay
+
+    method set_delay d = delay <- int_of_float (float sample_rate *. d)
+
+    val mutable feedback = feedback
+
+    method set_feedback f = feedback <- f
+
     val rb = Ringbuffer_ext.create chans 0
 
     val tmpbuf = Buffer_ext.create chans 0
@@ -994,13 +1009,13 @@ module Effect = struct
       if once then
 	Ringbuffer_ext.write rb buf ofs len;
       (* Make sure that we have a past of exactly d samples. *)
-      if Ringbuffer_ext.read_space rb < d then
-	Ringbuffer_ext.write rb (create chans d) 0 d;
-      if Ringbuffer_ext.read_space rb > d then
-	Ringbuffer_ext.read_advance rb (Ringbuffer_ext.read_space rb - d);
-      if len > d then
-	add_coeff buf (ofs + d) feedback buf ofs (len - d);
-      let rlen = min d len in
+      if Ringbuffer_ext.read_space rb < delay then
+	Ringbuffer_ext.write rb (create chans delay) 0 delay;
+      if Ringbuffer_ext.read_space rb > delay then
+	Ringbuffer_ext.read_advance rb (Ringbuffer_ext.read_space rb - delay);
+      if len > delay then
+	add_coeff buf (ofs + delay) feedback buf ofs (len - delay);
+      let rlen = min delay len in
       let tmpbuf = Buffer_ext.prepare tmpbuf rlen in
       Ringbuffer_ext.read rb tmpbuf 0 rlen;
       add_coeff buf ofs feedback tmpbuf 0 rlen;
@@ -1008,24 +1023,36 @@ module Effect = struct
 	Ringbuffer_ext.write rb buf ofs len
   end
 
-  (* delay in seconds *)
+  class delay_ping_pong chans sample_rate delay once feedback =
+    let r1 = new delay_only 1 sample_rate delay in
+    let d1 = new delay 1 sample_rate (2.*.delay) once feedback in
+    let d1' = chain r1 d1 in
+    let d2 = new delay 1 sample_rate (2.*.delay) once feedback in
+  object
+    initializer
+      assert (chans = 2)
+
+    method set_delay d =
+      r1#set_delay d;
+      d1#set_delay (2.*.d);
+      d2#set_delay (2.*.d)
+
+    method set_feedback f =
+      d1#set_feedback f;
+      d2#set_feedback f
+
+    method process buf ofs len =
+      assert (channels buf = 2);
+      (* Add original on channel 0. *)
+      d1'#process [|buf.(0)|] ofs len;
+      d2#process [|buf.(1)|] ofs len
+  end
+
   let delay chans sample_rate d ?(once=false) ?(ping_pong=false) feedback =
-    let d = int_of_float (float sample_rate *. d) in
     if ping_pong then
-      (
-	let r1 = new delay_only 1 d in
-	let d1 = new delay 1 (2*d) once feedback in
-	let d1 = chain r1 d1 in
-	let d2 = new delay 1 (2*d) once feedback in
-        object
-	  method process buf ofs len =
-	    assert (channels buf = 2);
-	    d1#process [|buf.(0)|] ofs len;
-	    d2#process [|buf.(1)|] ofs len
-	end
-      )
+      new delay_ping_pong chans sample_rate d once feedback
     else
-      ((new delay chans d once feedback):>t)
+      new delay chans sample_rate d once feedback
 
   class auto_gain_control channels samplerate
     rmst (* target RMS *)
@@ -1043,7 +1070,6 @@ module Effect = struct
     let kup = kup ** (seconds_of_samples samplerate rms_len) in
     let kdown = kdown ** (seconds_of_samples samplerate rms_len) in
   object (self)
-    inherit base samplerate
 
     (** Square of the currently computed rms. *)
     val mutable rms = Array.make channels 0.
