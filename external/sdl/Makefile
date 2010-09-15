@@ -1,6 +1,6 @@
 SOURCES = sdl_stubs.c MMSDL.mli MMSDL.ml
 RESULT = mm.sdl
-INCDIRS = ../../src +sdl
+INCDIRS = ../../src
 OCAMLFLAGS = -g
 OCAMLNCFLAGS = -g
 CFLAGS = -g
@@ -8,3 +8,4 @@ CFLAGS = -g
 all: ncl
 
 include OCamlMakefile
+include ../Makefile.defs

@@ -1,2 +1,2 @@
-all clean doc:
+all clean doc install:
 	make -C src $@

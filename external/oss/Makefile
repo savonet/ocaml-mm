@@ -9,3 +9,4 @@ CFLAGS = -g
 all: ncl
 
 include OCamlMakefile
+include ../Makefile.defs
