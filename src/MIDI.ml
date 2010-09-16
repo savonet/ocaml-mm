@@ -84,15 +84,71 @@ let encode_event chan e =
   );
   s
 
-module Track = struct
-  type t = (delta * event) list
+type buffer =
+    {
+      (* time is offset from the beginning of the buffer at given samplerate *)
+      mutable data : (int * event) list;
+      duration : int;
+    }
 
-  let create () = []
+let create duration =
+  {
+    data = [];
+    duration = duration;
+  }
 
-  let append t1 t2 : t = List.append t1 t2
+let duration buf =
+  buf.duration
+
+let clear_all buf =
+  buf.data <- []
+
+let clear buf ofs len =
+  if ofs = 0 && len = duration buf then
+    clear_all buf
+  else
+    buf.data <- List.filter (fun (t,_) -> t < ofs || t >= ofs + len) buf.data
+
+let cmp te1 te2 = fst te1 - fst te2
+
+let merge b1 b2 =
+  b1.data <- List.merge cmp b1.data b2.data
+
+let insert b te =
+  b.data <- List.merge cmp b.data [te]
+
+let data buf = buf.data
+
+let append b1 b2 =
+  let d = duration b1 in
+  {
+    data = b1.data@(List.map (fun (t,e) -> t+d,e) b2.data);
+    duration = d + duration b2;
+  }
+
+module Multitrack = struct
+  type t = buffer array
+  type buffer = t
+
+  let channels buf = Array.length buf
+
+  let duration buf = duration buf.(0)
+
+  let create chans duration = Array.init chans (fun _ -> create duration)
+
+  let clear ?channel buf ofs len =
+    match channel with
+      | None ->
+        Array.iter (fun buf -> clear buf ofs len) buf
+      | Some c ->
+        clear buf.(c) ofs len
+
+  let clear_all buf =
+    Array.iter clear_all buf
+
+  let append t1 t2 =
+    Array.init (channels t1) (fun c -> append t1.(c) t2.(c))
 end
-
-type buffer = Track.t array
 
 module IO = struct
   exception Invalid_header
@@ -102,7 +158,7 @@ module IO = struct
   module Reader = struct
     class type t =
     object
-      method read_samples : int -> Track.t array -> int -> int
+      method read : int -> Multitrack.buffer -> int -> int -> int
 
       method close : unit
     end
@@ -327,11 +383,11 @@ module IO = struct
       val mutable tempo = 500000
 
       initializer
-      (* Read header. *)
+        (* Read header. *)
         self#read_header;
-      (* Read all tracks. *)
+        (* Read all tracks. *)
         let tracks = Array.init tracks (fun _ -> self#read_track) in
-      (* Merge all tracks. *)
+        (* Merge all tracks. *)
         let trk =
 	  let find_min () =
             let ans = ref None in
@@ -368,13 +424,13 @@ module IO = struct
         in
         track <- trk
 
-    (* We store here the track with delta-times in samples. TODO: this way of
-       doing things is messy but simpler to implement *)
+      (* We store here the track with delta-times in samples. TODO: this way of
+         doing things is messy but simpler to implement *)
       val mutable track_samples = []
       val mutable track_samples_computed = false
 
-      method read_samples sr buf len =
-      (* Compute track_samples if this has not been done yet. *)
+      method private read_add sr buf ofs len =
+        (* Compute track_samples if this has not been done yet. *)
         if not track_samples_computed then
 	  (
 	    let t = tempo in
@@ -394,10 +450,6 @@ module IO = struct
 	    track_samples_computed <- true
 	  );
         let offset_in_buf = ref 0 in
-      (* Clear the input buffer. *)
-        for c = 0 to Array.length buf - 1 do
-	  buf.(c) <- []
-        done;
         while track_samples <> [] && !offset_in_buf < len do
           let d,(c,e) = List.hd track_samples in
           offset_in_buf := !offset_in_buf + d;
@@ -411,14 +463,14 @@ module IO = struct
               track_samples <- List.tl track_samples;
               match c with
 	        | Some c ->
-                (* Filter out relevant events. *)
+                  (* Filter out relevant events. *)
 		  (
                     match e with
                       | Note_on _
                       | Note_off _
                       | Control_change _ ->
 		        if c < Array.length buf then
-			  buf.(c) <- (buf.(c))@[d, e]
+                          insert buf.(c) (!offset_in_buf+ofs,e)
                       | _ -> () (* TODO *)
                   )
 	        | None -> () (* TODO *)
@@ -427,6 +479,10 @@ module IO = struct
             track_samples <- (!offset_in_buf - len,(c,e))::(List.tl track_samples)
         done;
         if track_samples <> [] then len else !offset_in_buf
+
+      method read sr buf ofs len =
+        Multitrack.clear buf ofs len;
+        self#read_add sr buf ofs len
 
       method close = self#stream_close
     end

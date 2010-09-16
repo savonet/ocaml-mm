@@ -8,9 +8,9 @@ object
 
   method fill_add : Audio.buffer -> int -> int -> unit
 
-  method play_add : MIDI.Track.t -> Audio.buffer -> int -> int -> unit
+  method play_add : MIDI.buffer -> Audio.buffer -> int -> int -> unit
 
-  method play : MIDI.Track.t -> Audio.buffer -> int -> int -> unit
+  method play : MIDI.buffer -> Audio.buffer -> int -> int -> unit
 
   method reset : unit
 end
@@ -26,7 +26,7 @@ type note =
 
 class virtual base =
 object (self)
-  method virtual generator : float -> float -> Audio.Generator.t
+  method virtual private generator : float -> float -> Audio.Generator.t
 
   val mutable vol : float = 1.
 
@@ -53,11 +53,11 @@ object (self)
   method fill_add buf ofs len =
     List.iter (fun note -> note.generator#fill_add buf ofs len) notes;
 
-  method fill buf ofs len =
+  method private fill buf ofs len =
     Audio.clear buf ofs len;
     self#fill_add buf ofs len
 
-  method event = function
+  method private event = function
     | MIDI.Note_off (n,v) ->
       self#note_off n v
     | MIDI.Note_on (n,v) ->
@@ -66,15 +66,21 @@ object (self)
       self#set_volume (float v /. 127.)
     | _ -> ()
 
+  (* TODO: add offset for evs *)
   method play_add evs buf ofs len =
-    match evs with
-      | (t,e)::tl ->
-        assert (t < len);
-        self#fill_add buf ofs t;
-        self#event e;
-        self#play_add tl buf (ofs+t) (len-t)
-      | [] ->
-        self#fill_add buf ofs len
+    let rec play o evs ofs =
+      match evs with
+        | (t,e)::_ when t >= len ->
+          ()
+        | (t,e)::tl ->
+          let delta = t-o in
+          self#fill_add buf ofs delta;
+          self#event e;
+          play t tl (ofs+delta)
+        | [] ->
+          self#fill_add buf ofs (len-o)
+    in
+    play 0 (MIDI.data evs) ofs
 
   method play evs buf ofs len =
     Audio.clear buf ofs len;
@@ -83,14 +89,17 @@ object (self)
   method reset = notes <- []
 end
 
-let create g =
-  (object
-    inherit base
+class create g =
+object
+  inherit base
 
-    method generator f v = g f v
-   end :> t)
+  method private generator f v = g f v
+end
 
-let create_mono g = create (fun f v -> Audio.Generator.of_mono (g f v))
+class create_mono g =
+object
+  inherit create (fun f v -> Audio.Generator.of_mono (g f v))
+end
 
 let might_adsr adsr g =
   match adsr with
@@ -102,11 +111,11 @@ let simple_gen g ?adsr sr ?(volume=1.) ?(phase=0.) f =
     let g = might_adsr adsr g in
     Audio.Generator.of_mono g
 
-let sine ?adsr sr = create (fun f v -> simple_gen Audio.Mono.Generator.sine ?adsr sr ~volume:v f)
+let sine ?adsr sr = new create (fun f v -> simple_gen Audio.Mono.Generator.sine ?adsr sr ~volume:v f)
 
-let square ?adsr sr = create (fun f v -> simple_gen Audio.Mono.Generator.square ?adsr sr ~volume:v f)
+let square ?adsr sr = new create (fun f v -> simple_gen Audio.Mono.Generator.square ?adsr sr ~volume:v f)
 
-let saw ?adsr sr = create (fun f v -> simple_gen Audio.Mono.Generator.saw ?adsr sr ~volume:v f)
+let saw ?adsr sr = new create (fun f v -> simple_gen Audio.Mono.Generator.saw ?adsr sr ~volume:v f)
 
 let monophonic (g:Audio.Generator.t) =
 object (self)
@@ -132,19 +141,19 @@ object (self)
   method reset = g#set_volume 0.
 end
 
-module Multichan = struct
+module Multitrack = struct
   class type t =
   object
-    method play_add : MIDI.buffer -> Audio.buffer -> int -> int -> unit
+    method play_add : MIDI.Multitrack.buffer -> Audio.buffer -> int -> int -> unit
 
-    method play : MIDI.buffer -> Audio.buffer -> int -> int -> unit
+    method play : MIDI.Multitrack.buffer -> Audio.buffer -> int -> int -> unit
   end
 
-  let create n f =
+  class create n (f : int -> synth) =
   object (self)
     val synth = Array.init n f
 
-    method play_add evs buf ofs len =
+    method play_add (evs:MIDI.Multitrack.buffer) buf ofs len =
       for c = 0 to Array.length synth - 1 do
         synth.(c)#play_add evs.(c) buf ofs len
       done

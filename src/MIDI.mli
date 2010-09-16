@@ -27,27 +27,33 @@ type event =
   | Key_signature of int * bool
   | Custom of string
 
-(** Delta-time (difference of time with the preceding event). *)
-type delta = int
+type buffer
 
-module Track : sig
-  (* TODO: add a total duration *)
-  type t = (delta * event) list
+val data : buffer -> (int * event) list
 
-  val create : unit -> t
+val create : int -> buffer
 
-  val append : t -> t -> t
+module Multitrack : sig
+  type t = buffer array
+
+  type buffer = t
+
+  val channels : buffer -> int
+
+  val duration : buffer -> int
+
+  val create : int -> int -> buffer
+
+  val clear : ?channel:int -> buffer -> int -> int -> unit
 end
-
-type buffer = Track.t array
 
 module IO : sig
   module Reader : sig
     class type t =
     object
-      (** Read samples at a given samplerate in a given track, with a given
-          length in samples. *)
-      method read_samples : int -> Track.t array -> int -> int
+      (** Read data at with given samplerate for events, in a given track, with a
+          given length in samples. *)
+      method read : int -> Multitrack.buffer -> int -> int -> int
 
       (** Close the stream. *)
       method close : unit

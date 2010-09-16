@@ -172,7 +172,7 @@ AC_DEFUN([AC_CHECK_OCAML_PKG],
   unset found
   unset pkg
   found=no
-  if test -z "$with_alsa_dir"; then
+  if test -z "$with_$1_dir"; then
     for pkg in $1 $2 ; do
       if $OCAMLFIND query $pkg >/dev/null 2>/dev/null; then
         AC_MSG_RESULT([found])
@@ -185,7 +185,7 @@ AC_DEFUN([AC_CHECK_OCAML_PKG],
   else
     echo $with_$1_dir | grep ^/ > /dev/null 2>&1 || with_$1_dir=$PWD/$with_$1_dir
     AS_TR_SH([OCAML_PKG_$1])=no
-    OCAML_DIR_$1="$with_alsa_dir"
+    OCAML_DIR_$1="$with_$1_dir"
     found=yes
   fi
   if test "$found" = "no" ; then
