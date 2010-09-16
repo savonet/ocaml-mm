@@ -8,9 +8,9 @@ object
 
   method fill_add : Audio.buffer -> int -> int -> unit
 
-  method play_add : MIDI.buffer -> Audio.buffer -> int -> int -> unit
+  method play_add : MIDI.buffer -> int -> Audio.buffer -> int -> int -> unit
 
-  method play : MIDI.buffer -> Audio.buffer -> int -> int -> unit
+  method play : MIDI.buffer -> int -> Audio.buffer -> int -> int -> unit
 
   method reset : unit
 end
@@ -67,13 +67,15 @@ object (self)
     | _ -> ()
 
   (* TODO: add offset for evs *)
-  method play_add evs buf ofs len =
+  method play_add evs eofs buf ofs len =
     let rec play o evs ofs =
       match evs with
-        | (t,e)::_ when t >= len ->
+        | (t,_)::_ when t >= eofs + len ->
           ()
+        | (t,_)::tl when t < eofs ->
+          play t tl ofs
         | (t,e)::tl ->
-          let delta = t-o in
+          let delta = t-(max eofs o) in
           self#fill_add buf ofs delta;
           self#event e;
           play t tl (ofs+delta)
@@ -82,9 +84,9 @@ object (self)
     in
     play 0 (MIDI.data evs) ofs
 
-  method play evs buf ofs len =
+  method play evs eofs buf ofs len =
     Audio.clear buf ofs len;
-    self#play_add evs buf ofs len
+    self#play_add evs eofs buf ofs len
 
   method reset = notes <- []
 end
@@ -97,27 +99,37 @@ object
 end
 
 class create_mono g =
-object
-  inherit create (fun f v -> Audio.Generator.of_mono (g f v))
-end
+  create (fun f v -> new Audio.Generator.of_mono (g f v))
 
 let might_adsr adsr g =
   match adsr with
     | None -> g
-    | Some a -> Audio.Mono.Generator.adsr a g
+    | Some a -> new Audio.Mono.Generator.adsr a g
 
 let simple_gen g ?adsr sr ?(volume=1.) ?(phase=0.) f =
     let g = g sr ?volume:(Some volume) ?phase:(Some phase) f in
     let g = might_adsr adsr g in
-    Audio.Generator.of_mono g
+    new Audio.Generator.of_mono g
 
-let sine ?adsr sr = new create (fun f v -> simple_gen Audio.Mono.Generator.sine ?adsr sr ~volume:v f)
+class sine ?adsr sr =
+  create_mono
+    (fun f v ->
+      might_adsr adsr
+        (new Audio.Mono.Generator.sine sr ~volume:v f))
 
-let square ?adsr sr = new create (fun f v -> simple_gen Audio.Mono.Generator.square ?adsr sr ~volume:v f)
+class square ?adsr sr =
+  create_mono
+    (fun f v ->
+      might_adsr adsr
+        (new Audio.Mono.Generator.square sr ~volume:v f))
 
-let saw ?adsr sr = new create (fun f v -> simple_gen Audio.Mono.Generator.saw ?adsr sr ~volume:v f)
+class saw ?adsr sr =
+  create_mono
+    (fun f v ->
+      might_adsr adsr
+        (new Audio.Mono.Generator.saw sr ~volume:v f))
 
-let monophonic (g:Audio.Generator.t) =
+class monophonic (g:Audio.Generator.t) =
 object (self)
   method set_volume v = g#set_volume v
 
@@ -126,16 +138,18 @@ object (self)
     g#set_volume v
 
   method note_off (_:int) (_:float) =
-	(* TODO: check for the last note? *)
+    (* TODO: check for the last note? *)
     g#release
 
-  method fill_add buf ofs len = g#fill_add buf ofs len
+  method fill_add buf ofs len =
+    g#fill_add buf ofs len
 
   (* TODO *)
-  method play_add evs buf ofs len =
+  method play_add (evs:MIDI.buffer) (eofs:int) (buf:Audio.buffer) (ofs:int) (len:int) : unit =
     assert false
 
-  method play evs buf ofs len =
+  method play evs eofs buf ofs len : unit =
+    self#play_add evs eofs buf ofs len;
     assert false
 
   method reset = g#set_volume 0.
@@ -144,22 +158,22 @@ end
 module Multitrack = struct
   class type t =
   object
-    method play_add : MIDI.Multitrack.buffer -> Audio.buffer -> int -> int -> unit
+    method play_add : MIDI.Multitrack.buffer -> int -> Audio.buffer -> int -> int -> unit
 
-    method play : MIDI.Multitrack.buffer -> Audio.buffer -> int -> int -> unit
+    method play : MIDI.Multitrack.buffer -> int -> Audio.buffer -> int -> int -> unit
   end
 
   class create n (f : int -> synth) =
   object (self)
     val synth = Array.init n f
 
-    method play_add (evs:MIDI.Multitrack.buffer) buf ofs len =
+    method play_add (evs:MIDI.Multitrack.buffer) eofs buf ofs len =
       for c = 0 to Array.length synth - 1 do
-        synth.(c)#play_add evs.(c) buf ofs len
+        synth.(c)#play_add evs.(c) eofs buf ofs len
       done
 
-    method play evs buf ofs len =
+    method play evs eofs buf ofs len =
       Audio.clear buf ofs len;
-      self#play_add evs buf ofs len
+      self#play_add evs eofs buf ofs len
   end
 end

@@ -32,7 +32,7 @@ let () =
   let buf = Audio.create f#channels blen in
   let agc = Audio.Effect.auto_gain_control f#channels f#sample_rate ~kup:0.9 ~kdown:0.7 ~rms_target:2. () in
   let adsr = Audio.Mono.Effect.ADSR.make f#sample_rate (0.02,0.01,0.9,0.05) in
-  let synth = Synth.saw ~adsr f#sample_rate in
+  let synth = new Synth.saw ~adsr f#sample_rate in
   let loop = ref true in
   let prevnotes = ref [] in
   synth#set_volume 0.1;

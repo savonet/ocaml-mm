@@ -100,6 +100,11 @@ let create duration =
 let duration buf =
   buf.duration
 
+let copy b =
+  let ans = create (duration b) in
+  ans.data <- b.data;
+  ans
+
 let clear_all buf =
   buf.data <- []
 
@@ -109,12 +114,34 @@ let clear buf ofs len =
   else
     buf.data <- List.filter (fun (t,_) -> t < ofs || t >= ofs + len) buf.data
 
+(* complement of clear *)
+let extract buf ofs len =
+  if not (ofs = 0 && len = duration buf) then
+    buf.data <- List.filter (fun (t,_) -> ofs <= t & t < ofs + len) buf.data
+
 let cmp te1 te2 = fst te1 - fst te2
 
 let merge b1 b2 =
   b1.data <- List.merge cmp b1.data b2.data
 
+let translate b d =
+  b.data <- List.map (fun (t,e) -> t+d,e) b.data
+
+let blit_all b1 b2 =
+  b2.data <- b1.data
+
+let blit b1 o1 b2 o2 len =
+  if o1 = 0 && o2 = 0 && duration b1 = len && duration b2 = len then
+    blit_all b1 b2
+  else
+    let b1 = copy b1 in
+    clear b2 o2 len;
+    extract b1 o1 len;
+    translate b1 (o2-o1);
+    merge b2 b1
+
 let insert b te =
+  assert (fst te < duration b);
   b.data <- List.merge cmp b.data [te]
 
 let data buf = buf.data

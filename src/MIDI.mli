@@ -33,6 +33,19 @@ val data : buffer -> (int * event) list
 
 val create : int -> buffer
 
+val copy : buffer -> buffer
+
+val blit : buffer -> int -> buffer -> int -> int -> unit
+
+val blit_all : buffer -> buffer -> unit
+
+(** [merge b1 b2] merges the buffer [b2] into [b1]. *)
+val merge : buffer -> buffer -> unit
+
+val clear_all : buffer -> unit
+
+val insert : buffer -> (int * event) -> unit
+
 module Multitrack : sig
   type t = buffer array
 

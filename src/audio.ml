@@ -571,7 +571,7 @@ module Mono = struct
       method dead : bool
     end
 
-    class virtual base sample_rate volume freq =
+    class virtual base sample_rate ?(volume=1.) freq =
     object (self)
       val mutable vol = volume
 
@@ -585,9 +585,9 @@ module Mono = struct
 	vol <- 0.;
 	dead <- true
 
-      method sample_rate : int = sample_rate
+      method private sample_rate : int = sample_rate
 
-      method volume : float = vol
+      method private volume : float = vol
 
       method set_volume v = vol <- v
 
@@ -602,40 +602,42 @@ module Mono = struct
 	add buf ofs tmp 0 len
     end
 
-    let sine sr ?(volume=1.) ?(phase=0.) freq =
-    (object (self)
-      inherit base sr volume freq
+    class sine sr ?volume ?(phase=0.) freq =
+    object (self)
+      inherit base sr ?volume freq
 
       val mutable phase = phase
 
       method fill buf ofs len =
 	let sr = float self#sample_rate in
 	let omega = 2. *. pi *. freq /. sr in
+        let volume = self#volume in
 	for i = 0 to len - 1 do
 	  buf.(ofs + i) <- volume *. sin (float i *. omega +. phase)
 	done;
 	phase <- mod_float (phase +. float len *. omega) (2. *. pi)
-     end :> t)
+    end
 
-    let square sr ?(volume=1.) ?(phase=0.) freq =
-    (object (self)
-      inherit base sr volume freq
+    class square sr ?volume ?(phase=0.) freq =
+    object (self)
+      inherit base sr ?volume freq
 
       val mutable phase = phase
 
       method fill buf ofs len =
 	let sr = float self#sample_rate in
+        let volume = self#volume in
 	let omega = freq /. sr in
 	for i = 0 to len - 1 do
 	  let t = fracf (float i *. omega +. phase) in
 	  buf.(ofs + i) <- if t < 0.5 then volume else (-.volume)
 	done;
 	phase <- mod_float (phase +. float len *. omega) 1.
-     end :> t)
+    end
 
-    let saw sr ?(volume=1.) ?(phase=0.) freq =
-    (object (self)
-      inherit base sr volume freq
+    class saw sr ?volume ?(phase=0.) freq =
+    object (self)
+      inherit base sr ?volume freq
 
       val mutable phase = phase
 
@@ -648,28 +650,29 @@ module Mono = struct
 	  buf.(ofs + i) <- volume *. (2. *. t -. 1.)
 	done;
 	phase <- mod_float (phase +. float len *. omega) 1.
-     end :> t)
+    end
 
-    let triangle sr ?(volume=1.) ?(phase=0.) freq =
-    (object (self)
-      inherit base sr volume freq
+    class triangle sr ?volume ?(phase=0.) freq =
+    object (self)
+      inherit base sr ?volume freq
 
       val mutable phase = phase
 
       method fill buf ofs len =
 	let sr = float self#sample_rate in
+        let volume = self#volume in
 	let omega = freq /. sr in
 	for i = 0 to len - 1 do
 	  let t = fracf (float i *. omega +. phase) +. 0.25 in
 	  buf.(ofs + i) <- volume *. (if t < 0.5 then 4. *. t -. 1. else 4. *. (1. -. t) -. 1.)
 	done;
 	phase <- mod_float (phase +. float len *. omega) 1.
-     end :> t)
+    end
 
-    let tb303 sr =
+    class tb303 sr =
     object (self)
       (* Freq of 0. means no slide for next note. *)
-      inherit base sr 0. 0.
+      inherit base sr 0.
 
       (* Real frequency: during slides, this is the frequency that gets heard. *)
       val mutable real_freq = 0.
@@ -678,7 +681,7 @@ module Mono = struct
 	assert false
     end
 
-    let adsr (adsr:Effect.ADSR.t) (g:t) =
+    class adsr (adsr:Effect.ADSR.t) (g:t) =
     object (self)
       val mutable adsr_st = Effect.ADSR.init ()
 
@@ -1300,7 +1303,7 @@ module Generator = struct
     method fill_add : buffer -> int -> int -> unit
   end
 
-  let of_mono g =
+  class of_mono (g : Mono.Generator.t) =
   object
     val tmpbuf = Mono.Buffer_ext.create 0
 

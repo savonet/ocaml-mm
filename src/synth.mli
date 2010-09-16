@@ -17,10 +17,10 @@ object
 
   (** Synthesize into an audio buffer. Notice that the delta times in the track
       should be in samples (so they do depend on the samplerate). *)
-  method play : MIDI.buffer -> Audio.buffer -> int -> int -> unit
+  method play : MIDI.buffer -> int -> Audio.buffer -> int -> int -> unit
 
   (** Same as [play] but keeps data originally present in the buffer. *)
-  method play_add : MIDI.buffer -> Audio.buffer -> int -> int -> unit
+  method play_add : MIDI.buffer -> int -> Audio.buffer -> int -> int -> unit
 
   (** Reset the synthesizer (sets all notes off in particular). *)
   method reset : unit
@@ -37,16 +37,16 @@ class create : (float -> float -> Audio.Generator.t) -> t
 class create_mono : (float -> float -> Audio.Mono.Generator.t) -> t
 
 (** Sine synthesizer. *)
-val sine : ?adsr:Audio.Mono.Effect.ADSR.t -> int -> t
+class sine : ?adsr:Audio.Mono.Effect.ADSR.t -> int -> t
 
 (** Square synthesizer. *)
-val square : ?adsr:Audio.Mono.Effect.ADSR.t -> int -> t
+class square : ?adsr:Audio.Mono.Effect.ADSR.t -> int -> t
 
 (** Saw synthesizer. *)
-val saw : ?adsr:Audio.Mono.Effect.ADSR.t -> int -> t
+class saw : ?adsr:Audio.Mono.Effect.ADSR.t -> int -> t
 
 (** Synths with only one note at a time. *)
-val monophonic : Audio.Generator.t -> t
+class monophonic : Audio.Generator.t -> t
 
 (** Multichannel synthesizers. *)
 module Multitrack : sig
@@ -54,10 +54,10 @@ module Multitrack : sig
   class type t =
   object
     (** Synthesize into an audio buffer. *)
-    method play : MIDI.Multitrack.buffer -> Audio.buffer -> int -> int -> unit
+    method play : MIDI.Multitrack.buffer -> int -> Audio.buffer -> int -> int -> unit
 
     (** Same as [play] but keeps data originally present in the buffer. *)
-    method play_add : MIDI.Multitrack.buffer -> Audio.buffer -> int -> int -> unit
+    method play_add : MIDI.Multitrack.buffer -> int -> Audio.buffer -> int -> int -> unit
   end
 
   (** Create a multichannel synthesizer with given number of channels and a

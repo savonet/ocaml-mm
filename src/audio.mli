@@ -203,16 +203,16 @@ module Mono : sig
     end
 
     (** Generate a sine waveform. *)
-    val sine : int -> ?volume:float -> ?phase:float -> float -> t
+    class sine : int -> ?volume:float -> ?phase:float -> float -> t
 
     (** Generate a square waveform. *)
-    val square : int -> ?volume:float -> ?phase:float -> float -> t
+    class square : int -> ?volume:float -> ?phase:float -> float -> t
 
     (** Generate a saw waveform. *)
-    val saw : int -> ?volume:float -> ?phase:float -> float -> t
+    class saw : int -> ?volume:float -> ?phase:float -> float -> t
 
     (** Apply an ADSR envlope on a generator. *)
-    val adsr : Effect.ADSR.t -> t -> t
+    class adsr : Effect.ADSR.t -> t -> t
   end
 end
 
@@ -415,7 +415,7 @@ module Generator : sig
     method dead : bool
   end
 
-  val of_mono : Mono.Generator.t -> t
+  class of_mono : Mono.Generator.t -> t
 end
 
 (** Operation for reading and writing audio data from files, streams or
