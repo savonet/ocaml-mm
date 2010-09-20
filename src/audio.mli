@@ -63,7 +63,8 @@ module Mono : sig
 
   val clip : buffer -> int -> int -> unit
 
-  (** [add b1 b2] adds to contents of [b2] to [b1]. *)
+  (** [add b1 o1 b2 o2 len] adds [len] samples of contents of [b2] starting at
+      [o2] to [b1] starting at [o1]. *)
   val add : buffer -> int -> buffer -> int -> int -> unit
 
   module Ringbuffer_ext : Ringbuffer.R with type elt = float

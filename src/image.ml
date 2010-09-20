@@ -514,7 +514,7 @@ module Generic = struct
       height = img.height;
     }
 
-  external rgba8_to_bgra8 : data -> int -> data -> int -> int * int -> unit = "caml_RGBA8_to_BGRA8"
+  external rgba32_to_bgr32 : data -> int -> data -> int -> int * int -> unit = "caml_RGBA32_to_BGR32"
 
   let convert ?(copy=false) ?(proportional=true) ?scale_kind src dst =
     match src.data, dst.data with
@@ -534,7 +534,7 @@ module Generic = struct
         RGBA8.to_YUV420 src dst
       | RGB s, RGB d when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.BGR32 ->
         if src.width = dst.width && src.height = dst.height then
-          rgba8_to_bgra8 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride (src.width,src.height)
+          rgba32_to_bgr32 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride (src.width,src.height)
         else
           raise Not_implemented
       | _ -> raise Not_implemented

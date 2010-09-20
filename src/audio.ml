@@ -105,7 +105,7 @@ module Mono = struct
     blit buf 0 ans 0 len;
     ans
 
-  let add b1 o1 b2 o2 len=
+  let add b1 o1 b2 o2 len =
     for i = 0 to len - 1 do
       b1.(o1 + i) <- b1.(o1 + i) +. b2.(o2 + i)
     done
