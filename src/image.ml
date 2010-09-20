@@ -12,16 +12,28 @@ module YUV420 = struct
   (* TODO: also store width and height? *)
   type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
+  type yuv_data = (data * int) * (data * data * int)
+
   (** (Y, Y stride), (U, V, UV stride) *)
-  type t = (data * int) * (data * data * int)
+  type t =
+      {
+        data : yuv_data;
+        width : int;
+        height : int;
+      }
 
-  let width ((_,w),_) = w
+  let width img = img.width
 
-  let height ((y,w),_) = Bigarray.Array1.dim y / w
+  let height img = img.height
 
-  let make y ys u v uvs = (y, ys), (u, v, uvs)
+  let make w h y ys u v uvs =
+    {
+      data = (y, ys), (u, v, uvs);
+      width = w;
+      height = h;
+    }
 
-  let internal buf = buf
+  let internal img = img.data
 
   external create : int -> int -> t = "caml_yuv_create"
 
@@ -95,6 +107,7 @@ module RGBA8 = struct
   external blit_off_scale : t -> t -> int * int -> int * int -> bool -> unit = "caml_rgb_blit_off_scale"
 
   let blit_all src dst =
+    assert (src.width = dst.width && src.height = dst.height);
     blit src dst
 
   let blit ?(blank=true) ?(x=0) ?(y=0) ?w ?h src dst =
@@ -115,7 +128,9 @@ module RGBA8 = struct
     of_RGB8_string ans data;
     ans
 
-  external of_YUV420 : YUV420.t -> t -> unit = "caml_rgb_of_YUV420"
+  external of_YUV420 : YUV420.yuv_data -> t -> unit = "caml_rgb_of_YUV420"
+
+  let of_YUV420 img = of_YUV420 img.YUV420.data
 
   let of_YUV420 frame =
     let ans = create (YUV420.width frame) (YUV420.height frame) in
@@ -138,33 +153,41 @@ module RGBA8 = struct
     external bilinear_scale_coef : t -> t -> float -> float -> unit = "caml_rgb_bilinear_scale"
 
     let scale_coef_kind k src dst (dw,sw) (dh,sh) =
-      match k with
-        | Linear ->
-          scale_coef src dst (dw,sw) (dh,sh)
-        | Bilinear ->
-          let x = float dw /. float sw in
-          let y = float dh /. float sh in
-          bilinear_scale_coef src dst x y
+      if dw <> sw || dh <> sh then
+        match k with
+          | Linear ->
+            scale_coef src dst (dw,sw) (dh,sh)
+          | Bilinear ->
+            let x = float dw /. float sw in
+            let y = float dh /. float sh in
+            bilinear_scale_coef src dst x y
 
     let onto ?(kind=Linear) ?(proportional=false) src dst =
       let sw, sh = src.width,src.height in
       let dw, dh = dst.width,dst.height in
-      if not proportional then
-        scale_coef_kind kind src dst (dw, sw) (dh, sh)
+      if dw = sw && dh = sh then
+        blit_all src dst
       else
-        let n, d =
-          if dh * sw < sh * dw then
-	    dh, sh
+        (
+          if not proportional then
+            scale_coef_kind kind src dst (dw, sw) (dh, sh)
           else
-	    dw, sw
-        in
-        scale_coef_kind kind src dst (n,d) (n,d)
+            let n, d =
+              if dh * sw < sh * dw then
+	        dh, sh
+              else
+	        dw, sw
+            in
+            scale_coef_kind kind src dst (n,d) (n,d)
+        )
 
-    let create ?kind ?proportional src w h =
-      let dst = create w h in
-      onto ?kind ?proportional src dst;
-      dst
-
+    let create ?kind ?(copy=true) ?proportional src w h =
+      if not copy && width src = w && height src = h then
+        src
+      else
+        let dst = create w h in
+        onto ?kind ?proportional src dst;
+        dst
   end
 
   external to_BMP : t -> string = "caml_rgb_to_bmp"
@@ -299,4 +322,190 @@ module RGBA8 = struct
       let of_color = of_color_simple
     end
   end
+end
+
+module Generic = struct
+  exception Not_implemented
+
+  module Pixel = struct
+    type rgb_format =
+      | RGB24       (* 24 bit RGB. Each color is an uint8_t. Color order is RGBRGB *)
+      | BGR24       (* 24 bit BGR. Each color is an uint8_t. Color order is BGRBGR *)
+      | RGB32       (* 32 bit RGB. Each color is an uint8_t. Color order is RGBXRGBX, where X is unused *)
+      | BGR32       (* 32 bit BGR. Each color is an uint8_t. Color order is BGRXBGRX, where X is unused *)
+      | RGBA32      (* 32 bit RGBA. Each color is an uint8_t. Color order is RGBARGBA *)
+    type yuv_format =
+      | YUV422    (* Planar YCbCr 4:2:2. Each component is an uint8_t *)
+      | YUV444    (* Planar YCbCr 4:4:4. Each component is an uint8_t *)
+      | YUV411    (* Planar YCbCr 4:1:1. Each component is an uint8_t *)
+      | YUV410    (* Planar YCbCr 4:1:0. Each component is an uint8_t *)
+      | YUVJ420   (* Planar YCbCr 4:2:0. Each component is an uint8_t,
+                   * luma and chroma values are full range (0x00 .. 0xff) *)
+      | YUVJ422   (* Planar YCbCr 4:2:2. Each component is an uint8_t,
+                   * luma and chroma values are full range (0x00 .. 0xff) *)
+      | YUVJ444   (* Planar YCbCr 4:4:4. Each component is an uint8_t, luma and
+                   * chroma values are full range (0x00 .. 0xff) *)
+    type format =
+      | RGB of rgb_format
+      | YUV of yuv_format
+
+    let string_of_format = function
+      | RGB x ->
+        begin
+          match x with
+            | RGB24  -> "RGB24"
+            | BGR24  -> "BGR32"
+            | RGB32  -> "RGB32"
+            | BGR32  -> "BGR32"
+            | RGBA32 -> "RGBA32"
+        end
+      | YUV x ->
+        begin
+          match x with
+            | YUV422  -> "YUV422"
+            | YUV444  -> "YUV444"
+            | YUV411  -> "YUV411"
+            | YUV410  -> "YUV410"
+            | YUVJ420 -> "YUVJ420"
+            | YUVJ422 -> "YUVJ422"
+            | YUVJ444 -> "YUVJ444"
+        end
+  end
+
+  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+  type rgb =
+      {
+        rgb_pixel : Pixel.rgb_format;
+        rgb_data : data;
+        rgb_stride : int;
+      }
+
+  type yuv =
+      {
+        yuv_pixel  : Pixel.yuv_format;
+        y          : data;
+        y_stride   : int;
+        u          : data;
+        v          : data;
+        uv_stride  : int;
+      }
+
+  type t_data =
+    | RGB of rgb
+    | YUV of yuv
+
+  type t =
+      {
+        data : t_data;
+        width : int;
+        height : int;
+      }
+
+  let rgb_data img =
+    match img.data with
+      | RGB rgb -> rgb.rgb_data, rgb.rgb_stride
+      | _ -> assert false
+
+  let yuv_data img =
+    match img.data with
+      | YUV yuv -> (yuv.y,yuv.y_stride),(yuv.u,yuv.v,yuv.uv_stride)
+      | _ -> assert false
+
+  let width img = img.width
+
+  let height img = img.height
+
+  let pixel_format img =
+    match img.data with
+      | RGB rgb -> Pixel.RGB rgb.rgb_pixel
+      | YUV yuv -> Pixel.YUV yuv.yuv_pixel
+
+  (* TODO: naming RGB8 vs RGBA32 *)
+  let of_RGBA8 img =
+    let rgb_data =
+      {
+        rgb_pixel = Pixel.RGBA32;
+        rgb_data = img.RGBA8.data;
+        rgb_stride = img.RGBA8.stride;
+      }
+    in
+      {
+        data = RGB rgb_data;
+        width = img.RGBA8.width;
+        height = img.RGBA8.height;
+      }
+
+  let to_RGBA8 img =
+    let rgb_data =
+      match img.data with
+        | RGB d -> d
+        | _ -> assert false
+    in
+    assert (rgb_data.rgb_pixel = Pixel.RGBA32);
+    {
+      RGBA8.
+      data = rgb_data.rgb_data;
+      width = img.width;
+      height = img.height;
+      stride = rgb_data.rgb_stride;
+    }
+
+  let of_YUV420 img =
+    let (y,y_stride),(u,v,uv_stride) = img.YUV420.data in
+    let yuv_data =
+      {
+        yuv_pixel = Pixel.YUVJ420;
+        y = y;
+        y_stride = y_stride;
+        u = u;
+        v = v;
+        uv_stride = uv_stride
+      }
+    in
+    {
+      data = YUV yuv_data;
+      width = img.YUV420.width;
+      height = img.YUV420.height;
+    }
+
+  let to_YUV420 img =
+    let yuv =
+      match img.data with
+        | YUV yuv -> yuv
+        | _ -> assert false
+    in
+    assert (yuv.yuv_pixel = Pixel.YUVJ420);
+    {
+      YUV420.
+      data = yuv_data img;
+      width = img.width;
+      height = img.height;
+    }
+
+  let convert ?(copy=false) ?(proportional=true) ?scale_kind src dst =
+    let is_rgb img =
+      match img.data with
+        | RGB x when x.rgb_pixel = Pixel.RGBA32 -> true
+        | YUV x when x.yuv_pixel = Pixel.YUVJ420 -> false
+        | _ -> raise Not_implemented
+    in
+    match is_rgb src,is_rgb dst with
+      | false,false -> raise Not_implemented (* TODO *)
+      | true,true ->
+        let src = to_RGBA8 src in
+        let dst = to_RGBA8 dst in
+        RGBA8.Scale.onto ?kind:scale_kind ~proportional src dst
+      | false,true ->
+        let src = to_YUV420 src in
+        let src = RGBA8.of_YUV420 src in
+        let dst = to_RGBA8 dst in
+      (* TODO: optim: we can reuse the data of rgb instead of blitting to dst
+         when the dims are the same. *)
+        RGBA8.Scale.onto ?kind:scale_kind ~proportional src dst
+      | true,false ->
+        let src = to_RGBA8 src in
+        let src = RGBA8.Scale.create ?kind:scale_kind ~proportional ~copy:false src dst.width dst.height in
+        let dst = to_YUV420 dst in
+        RGBA8.to_YUV420 src dst
 end

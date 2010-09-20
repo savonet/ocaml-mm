@@ -32,7 +32,7 @@ module YUV420 : sig
   (** Clear an image (sets it to black). *)
   val blank_all : t -> unit
 
-  val make : data -> int -> data -> data -> int -> t
+  val make : int -> int -> data -> int -> data -> data -> int -> t
   val internal : t -> (data * int) * (data * data * int)
 end
 
@@ -71,6 +71,7 @@ module RGBA8 : sig
 
   val blit : ?blank:bool -> ?x:int -> ?y:int -> ?w:int -> ?h:int -> t -> t -> unit
 
+  (** [blit_all src dst] copies all the contents of [src] into [dst]. *)
   val blit_all : t -> t -> unit
 
   (** {2 Conversions from/to other formats} *)
@@ -102,7 +103,7 @@ module RGBA8 : sig
 
     val onto : ?kind:kind -> ?proportional:bool -> t -> t -> unit
 
-    val create : ?kind:kind -> ?proportional:bool -> t -> int -> int -> t
+    val create : ?kind:kind -> ?copy:bool -> ?proportional:bool -> t -> int -> int -> t
   end
 
   module Effect : sig
@@ -141,4 +142,52 @@ module RGBA8 : sig
       val of_color : t -> RGB8.Color.t -> int -> unit
     end
   end
+end
+
+module Generic : sig
+  module Pixel : sig
+    type rgb_format =
+      | RGB24       (** 24 bit RGB. Each color is an uint8_t. Color order is RGBRGB *)
+      | BGR24       (** 24 bit BGR. Each color is an uint8_t. Color order is BGRBGR *)
+      | RGB32       (** 32 bit RGB. Each color is an uint8_t. Color order is RGBXRGBX, where X is unused *)
+      | BGR32       (** 32 bit BGR. Each color is an uint8_t. Color order is BGRXBGRX, where X is unused *)
+      | RGBA32      (** 32 bit RGBA. Each color is an uint8_t. Color order is RGBARGBA *)
+    type yuv_format =
+      | YUV422    (** Planar YCbCr 4:2:2. Each component is an uint8_t *)
+      | YUV444    (** Planar YCbCr 4:4:4. Each component is an uint8_t *)
+      | YUV411    (** Planar YCbCr 4:1:1. Each component is an uint8_t *)
+      | YUV410    (** Planar YCbCr 4:1:0. Each component is an uint8_t *)
+      | YUVJ420   (** Planar YCbCr 4:2:0. Each component is an uint8_t, luma
+                      and chroma values are full range (0x00 .. 0xff) *)
+      | YUVJ422   (** Planar YCbCr 4:2:2. Each component is an uint8_t, luma and
+                      chroma values are full range (0x00 .. 0xff) *)
+      | YUVJ444   (** Planar YCbCr 4:4:4. Each component is an uint8_t, luma and
+                      chroma values are full range (0x00 .. 0xff) *)
+
+    type format =
+      | RGB of rgb_format
+      | YUV of yuv_format
+
+    val string_of_format : format -> string
+  end
+
+  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+  type t
+
+  val width : t -> int
+
+  val height : t -> int
+
+  val pixel_format : t -> Pixel.format
+
+  val rgb_data : t -> data * int
+
+  val yuv_data : t -> (data * int) * (data * data * int)
+
+  val of_RGBA8 : RGBA8.t -> t
+
+  val of_YUV420 : YUV420.t -> t
+
+  val convert : ?copy:bool -> ?proportional:bool -> ?scale_kind:RGBA8.Scale.kind -> t -> t -> unit
 end
