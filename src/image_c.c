@@ -221,7 +221,7 @@ CAMLprim value caml_rgb_fill(value f, value col)
 #define POS(x,o)     ((x << 1)+o)
 #define PIX(p,s,x,y) p[y*s+x]
 
-void YUV420_to_RGB(unsigned char *ysrc, int y_stride, unsigned char *usrc,
+static inline void YUV420_to_RGB(unsigned char *ysrc, int y_stride, unsigned char *usrc,
                    unsigned char *vsrc, int uv_stride, frame *rgb)
 {
 /* From libv4l code. */
@@ -381,6 +381,7 @@ void RGB_to_YUV420(frame *rgb,
 
 CAMLprim value caml_rgb_of_YUV420(value yuv, value dst)
 {
+  CAMLparam2(yuv,dst);
   frame rgb;
   frame_of_value(dst, &rgb);
   value y_val = Field(yuv, 0);
@@ -391,18 +392,12 @@ CAMLprim value caml_rgb_of_YUV420(value yuv, value dst)
   unsigned char *v = Caml_ba_data_val(Field(uv_val, 1));
   int uv_stride = Int_val(Field(uv_val, 2));
 
-  caml_register_global_root(&yuv);
-  caml_register_global_root(&dst);
-
   /* TODO: check the size of the data */
   caml_enter_blocking_section();
   YUV420_to_RGB(y, y_stride, u, v, uv_stride, &rgb);
   caml_leave_blocking_section();
 
-  caml_remove_global_root(&yuv);
-  caml_remove_global_root(&dst);
-
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_yuv_create(value w, value h)
