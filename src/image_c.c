@@ -1268,3 +1268,28 @@ CAMLprim value caml_rgb_blur_alpha(value _rgb)
 
   return Val_unit;
 }
+
+CAMLprim value caml_RGBA8_to_BGRA8(value _src, value _src_stride, value _dst, value _dst_stride, value dim)
+{
+  CAMLparam2(_src, _dst);
+  unsigned char *src = Caml_ba_data_val(_src);
+  unsigned char *dst = Caml_ba_data_val(_dst);
+  int src_stride = Int_val(_src_stride);
+  int dst_stride = Int_val(_dst_stride);
+  int width = Int_val(Field(dim,0));
+  int height = Int_val(Field(dim,1));
+  int i,j;
+
+  caml_enter_blocking_section();
+  for (j=0; j<height; j++)
+    for (i=0; i<width; i++)
+      {
+        dst[j*dst_stride+i*4+0] = src[j*src_stride+i*4+2];
+        dst[j*dst_stride+i*4+1] = src[j*src_stride+i*4+1];
+        dst[j*dst_stride+i*4+2] = src[j*src_stride+i*4+0];
+        dst[j*dst_stride+i*4+3] = src[j*src_stride+i*4+3];
+      }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}

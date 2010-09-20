@@ -107,7 +107,7 @@ module RGBA8 = struct
   external blit_off_scale : t -> t -> int * int -> int * int -> bool -> unit = "caml_rgb_blit_off_scale"
 
   let blit_all src dst =
-    assert (src.width = dst.width && src.height = dst.height);
+    assert (src.width = dst.width && src.height = dst.height && src.stride = dst.stride);
     blit src dst
 
   let blit ?(blank=true) ?(x=0) ?(y=0) ?w ?h src dst =
@@ -349,6 +349,18 @@ module Generic = struct
       | RGB of rgb_format
       | YUV of yuv_format
 
+    let size = function
+      | RGB x ->
+        begin
+          match x with
+            | RGB24
+            | BGR24 -> 3
+            | RGB32
+            | BGR32
+            | RGBA32 -> 4
+        end
+      | YUV _ -> raise Not_implemented
+
     let string_of_format = function
       | RGB x ->
         begin
@@ -421,6 +433,25 @@ module Generic = struct
       | RGB rgb -> Pixel.RGB rgb.rgb_pixel
       | YUV yuv -> Pixel.YUV yuv.yuv_pixel
 
+  let make_rgb pix ?stride width height data =
+    let stride =
+      match stride with
+        | Some s -> s
+        | None -> Pixel.size (Pixel.RGB pix)
+    in
+    let rgb_data =
+      {
+        rgb_pixel = pix;
+        rgb_data = data;
+        rgb_stride = stride;
+      }
+    in
+    {
+      data = RGB rgb_data;
+      width = width;
+      height = height;
+    }
+
   (* TODO: naming RGB8 vs RGBA32 *)
   let of_RGBA8 img =
     let rgb_data =
@@ -483,29 +514,28 @@ module Generic = struct
       height = img.height;
     }
 
+  external rgba8_to_bgra8 : data -> int -> data -> int -> int * int -> unit = "caml_RGBA8_to_BGRA8"
+
   let convert ?(copy=false) ?(proportional=true) ?scale_kind src dst =
-    let is_rgb img =
-      match img.data with
-        | RGB x when x.rgb_pixel = Pixel.RGBA32 -> true
-        | YUV x when x.yuv_pixel = Pixel.YUVJ420 -> false
-        | _ -> raise Not_implemented
-    in
-    match is_rgb src,is_rgb dst with
-      | false,false -> raise Not_implemented (* TODO *)
-      | true,true ->
+    match src.data, dst.data with
+      | RGB s, RGB d when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.RGBA32 ->
         let src = to_RGBA8 src in
         let dst = to_RGBA8 dst in
         RGBA8.Scale.onto ?kind:scale_kind ~proportional src dst
-      | false,true ->
+      | YUV s, RGB d when s.yuv_pixel = Pixel.YUVJ420 && d.rgb_pixel = Pixel.RGBA32 ->
         let src = to_YUV420 src in
         let src = RGBA8.of_YUV420 src in
         let dst = to_RGBA8 dst in
-      (* TODO: optim: we can reuse the data of rgb instead of blitting to dst
-         when the dims are the same. *)
         RGBA8.Scale.onto ?kind:scale_kind ~proportional src dst
-      | true,false ->
+      | RGB s, YUV d when s.rgb_pixel = Pixel.RGBA32 && d.yuv_pixel = Pixel.YUVJ420 ->
         let src = to_RGBA8 src in
         let src = RGBA8.Scale.create ?kind:scale_kind ~proportional ~copy:false src dst.width dst.height in
         let dst = to_YUV420 dst in
         RGBA8.to_YUV420 src dst
+      | RGB s, RGB d when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.BGR32 ->
+        if src.width = dst.width && src.height = dst.height then
+          rgba8_to_bgra8 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride (src.width,src.height)
+        else
+          raise Not_implemented
+      | _ -> raise Not_implemented
 end

@@ -152,6 +152,7 @@ module Generic : sig
       | RGB32       (** 32 bit RGB. Each color is an uint8_t. Color order is RGBXRGBX, where X is unused *)
       | BGR32       (** 32 bit BGR. Each color is an uint8_t. Color order is BGRXBGRX, where X is unused *)
       | RGBA32      (** 32 bit RGBA. Each color is an uint8_t. Color order is RGBARGBA *)
+
     type yuv_format =
       | YUV422    (** Planar YCbCr 4:2:2. Each component is an uint8_t *)
       | YUV444    (** Planar YCbCr 4:4:4. Each component is an uint8_t *)
@@ -180,6 +181,8 @@ module Generic : sig
   val height : t -> int
 
   val pixel_format : t -> Pixel.format
+
+  val make_rgb : Pixel.rgb_format -> ?stride:int -> int -> int -> data -> t
 
   val rgb_data : t -> data * int
 
