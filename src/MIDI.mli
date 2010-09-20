@@ -42,6 +42,8 @@ val blit_all : buffer -> buffer -> unit
 (** [merge b1 b2] merges the buffer [b2] into [b1]. *)
 val merge : buffer -> buffer -> unit
 
+val add : buffer -> int -> buffer -> int -> int -> unit
+
 val clear_all : buffer -> unit
 
 val insert : buffer -> (int * event) -> unit

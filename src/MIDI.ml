@@ -127,6 +127,12 @@ let merge b1 b2 =
 let translate b d =
   b.data <- List.map (fun (t,e) -> t+d,e) b.data
 
+let add b1 o1 b2 o2 len =
+  let b2 = copy b2 in
+  extract b2 o2 len;
+  translate b2 (o1-o2);
+  merge b1 b2
+
 let blit_all b1 b2 =
   b2.data <- b1.data
 
