@@ -144,8 +144,16 @@ module RGBA8 : sig
   end
 end
 
+(** Operations on images in generic formats (many formats are supported). *)
 module Generic : sig
+  (** Since the module is very generic, many of the functions are not
+      implemented for particular formats. This exception is raised when it is
+      the case. *)
+  exception Not_implemented
+
+  (** Generic pixels. *)
   module Pixel : sig
+    (** Format of an RGB pixel. *)
     type rgb_format =
       | RGB24       (** 24 bit RGB. Each color is an uint8_t. Color order is RGBRGB *)
       | BGR24       (** 24 bit BGR. Each color is an uint8_t. Color order is BGRBGR *)
@@ -153,6 +161,7 @@ module Generic : sig
       | BGR32       (** 32 bit BGR. Each color is an uint8_t. Color order is BGRXBGRX, where X is unused *)
       | RGBA32      (** 32 bit RGBA. Each color is an uint8_t. Color order is RGBARGBA *)
 
+    (** Format of a YUV pixel. *)
     type yuv_format =
       | YUV422    (** Planar YCbCr 4:2:2. Each component is an uint8_t *)
       | YUV444    (** Planar YCbCr 4:4:4. Each component is an uint8_t *)
@@ -165,10 +174,12 @@ module Generic : sig
       | YUVJ444   (** Planar YCbCr 4:4:4. Each component is an uint8_t, luma and
                       chroma values are full range (0x00 .. 0xff) *)
 
+    (** Format of a pixel. *)
     type format =
       | RGB of rgb_format
       | YUV of yuv_format
 
+    (** String representation of the format of a pixel. *)
     val string_of_format : format -> string
   end
 
