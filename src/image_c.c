@@ -396,48 +396,12 @@ CAMLprim value caml_rgb_of_YUV420(value yuv, value dst)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_yuv_create(value w, value h)
-{
-  CAMLparam0();
-  CAMLlocal2(tmp,ans);
-  int width = Int_val(w);
-  int height = Int_val(h);
-  intnat len = width * height;
-  unsigned char *y = malloc(len),
-                *u = malloc(len/4),
-                *v = malloc(len/4);
-
-  ans = caml_alloc_tuple(2);
-  tmp = caml_alloc_tuple(2);
-  Store_field(tmp, 0, caml_ba_alloc(CAML_BA_C_LAYOUT | CAML_BA_UINT8 | CAML_BA_MANAGED, 1, y, &len));
-  Store_field(tmp, 1, Val_int(width));
-  Store_field(ans, 0, tmp);
-  len /= 4;
-  tmp = caml_alloc_tuple(3);
-  Store_field(tmp, 0, caml_ba_alloc(CAML_BA_C_LAYOUT | CAML_BA_UINT8 | CAML_BA_MANAGED, 1, u, &len));
-  Store_field(tmp, 1, caml_ba_alloc(CAML_BA_C_LAYOUT | CAML_BA_UINT8 | CAML_BA_MANAGED, 1, v, &len));
-  Store_field(tmp, 2, Val_int(width / 2));
-  Store_field(ans, 1, tmp);
-
-  CAMLreturn(ans);
-}
-
 CAMLprim value caml_yuv_blank(value f)
 {
   CAMLparam1(f);
-  CAMLlocal1(tmp);
   struct caml_ba_array *ba;
 
-  /* Y data */
-  tmp = Field(f,0);
-  ba = Caml_ba_array_val(Field(tmp,0));
-  memset(ba->data,0,ba->dim[0]);
-
-  /* UV data */
-  tmp = Field(f,1);
-  ba = Caml_ba_array_val(Field(tmp,0));
-  memset(ba->data,0,ba->dim[0]);
-  ba = Caml_ba_array_val(Field(tmp,1));
+  ba = Caml_ba_array_val(f);
   memset(ba->data,0,ba->dim[0]);
 
   CAMLreturn(Val_unit);

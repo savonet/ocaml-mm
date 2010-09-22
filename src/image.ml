@@ -11,6 +11,7 @@ end
 module YUV420 = struct
   (* TODO: also store width and height? *)
   type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+  let kind = Bigarray.int8_unsigned
 
   type yuv_data = (data * int) * (data * data * int)
 
@@ -35,9 +36,21 @@ module YUV420 = struct
 
   let internal img = img.data
 
-  external create : int -> int -> t = "caml_yuv_create"
+  let create w h = 
+    let len = w * h in
+    let create len = 
+      Bigarray.Array1.create kind Bigarray.c_layout len 
+    in
+    let y = create len in
+    let u = create (len/4) in
+    let v = create (len/4) in
+    make w h y w u v (w/2)
 
-  external blank_all : t -> unit = "caml_yuv_blank"
+  external blank : data -> unit = "caml_yuv_blank"
+
+  let blank_all x = 
+    let (y,_),(u,v,_) = x.data in
+    blank y ; blank u ; blank v
 end
 
 module RGBA8 = struct
