@@ -168,14 +168,13 @@ module RGBA8 = struct
     external bilinear_scale_coef : t -> t -> float -> float -> unit = "caml_rgb_bilinear_scale"
 
     let scale_coef_kind k src dst (dw,sw) (dh,sh) =
-      if dw <> sw || dh <> sh then
-        match k with
-          | Linear ->
-            scale_coef src dst (dw,sw) (dh,sh)
-          | Bilinear ->
-            let x = float dw /. float sw in
-            let y = float dh /. float sh in
-            bilinear_scale_coef src dst x y
+      match k with
+        | Linear ->
+          scale_coef src dst (dw,sw) (dh,sh)
+        | Bilinear ->
+          let x = float dw /. float sw in
+          let y = float dh /. float sh in
+          bilinear_scale_coef src dst x y
 
     let onto ?(kind=Linear) ?(proportional=false) src dst =
       let sw, sh = src.width,src.height in

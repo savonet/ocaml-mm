@@ -544,33 +544,43 @@ CAMLprim value caml_rgb_bilinear_scale(value _src, value _dst, value xscale, val
   frame_of_value(_src, &src);
   frame_of_value(_dst, &dst);
   int i, j, c, i2, j2;
+  /* Scaling coefficients. */
   float ax = Double_val(xscale),
         ay = Double_val(yscale);
+  /* Since the scaled image might not fill dst, we center it. These are the
+     offsets of the scaled image in dst. */
   int ox = (dst.width - src.width * ax) / 2,
       oy = (dst.height - src.height * ay) / 2;
   float dx, dy;
+  int p00, p01, p10, p11;
 
   assert(ox >= 0 && oy >= 0);
 
   caml_enter_blocking_section();
+  /* TODO: only blank what is necessary. */
   if (ox != 0 || oy != 0)
     rgb_blank(&dst);
-  for (j = oy; j < dst.height - oy; j++)
-    for (i = ox; i < dst.width - ox; i++)
+  for (j = oy; j < dst.height + oy; j++)
+    for (i = ox; i < dst.width + ox; i++)
     {
-      dx = (i - ox) / ax;
-      i2 = floor(dx);
-      dx -= i2;
+      dx = (i - ox) / ax; // Corresponding pixel in src
+      i2 = floor(dx);     // Nearest pixel on the left
+      dx -= i2;           // Distance to the nearest pixel on the left
       dy = (j - oy) / ay;
       j2 = floor(dy);
       dy -= j2;
-      for (c = 0; c < Rgb_elems_per_pixel; c++)
-        Color(&dst, c, i, j) =
-          CLIP((int)
-              ((Space_clip_color(&src, c, i2, j2) * (1-dx) * (1-dy)) +
-              (Space_clip_color(&src, c, i2+1, j2) * dx * (1-dy)) +
-              (Space_clip_color(&src, c, i2, j2+1) * (1-dx) * dy) +
-              (Space_clip_color(&src, c, i2+1, j2+1) * dx * dy)));
+      if (i2+1 < src.width && j2+1 < src.height)
+        for (c = 0; c < Rgb_elems_per_pixel; c++)
+          {
+            p00 = Color(&src, c, i2  , j2  );
+            p10 = Color(&src, c, i2+1, j2  );
+            p01 = Color(&src, c, i2  , j2+1);
+            p11 = Color(&src, c, i2+1, j2+1);
+            Color(&dst,c,i,j) = CLIP(p00*(1-dx)*(1-dy) + p10*dx*(1-dy) + p01*(1-dx)*dy + p11*dx*dy);
+          }
+      else
+        for (c = 0; c < Rgb_elems_per_pixel; c++)
+          Color(&dst,c,i,j) = (i2 < src.width && j2 < src.height)?Color(&src, c, i2, j2):0;
     }
   caml_leave_blocking_section();
 

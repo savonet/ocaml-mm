@@ -1,8 +1,9 @@
 (** Operations on MIDI data. *)
 
+(** Units for delta-times. *)
 type division =
-  | Ticks_per_quarter of int
-  | SMPTE of int * int
+  | Ticks_per_quarter of int (** Ticks per quarter note. *)
+  | SMPTE of int * int (** SMPTE (frames per second, ticks per frame). *)
 
 type event =
   | Note_off of Audio.Note.t * float
@@ -27,12 +28,15 @@ type event =
   | Key_signature of int * bool
   | Custom of string
 
+(** A MIDI buffer. *)
 type buffer
 
 val data : buffer -> (int * event) list
 
+(** Create a MIDI buffer of given length in samples. *)
 val create : int -> buffer
 
+(** Create a copy of a MIDI buffer. *)
 val copy : buffer -> buffer
 
 val blit : buffer -> int -> buffer -> int -> int -> unit
