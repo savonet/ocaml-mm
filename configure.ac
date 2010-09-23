@@ -27,6 +27,11 @@ if test "x$enable_debugging" = "xyes" ; then
   OCAMLFLAGS="$OCAMLFLAGS -g"
 fi
 
+# Include a config.h
+AC_CONFIG_HEADERS([config.h:config.h.in])
+# Include it
+CFLAGS="$CFLAGS -I`pwd`/`dirname $0`"
+
 AC_ARG_ENABLE([profiling],
    AC_HELP_STRING(
       [--enable-profiling],
@@ -97,6 +102,7 @@ AC_SUBST(OCAMLCP)	# TODO
 AC_SUBST(CAMLLIBPATH)
 AC_SUBST(BEST)
 AC_SUBST(INCDIRS)
+AC_SUBST(CFLAGS)
 
 AC_SUBST(LATEX)		# TODO
 AC_SUBST(DVIPS)		# TODO

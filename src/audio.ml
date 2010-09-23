@@ -796,7 +796,8 @@ module S16LE = struct
   let convert_to_audio s sofs slen ?(resample=1.) buf bofs =
     resample_to_audio s sofs slen resample buf bofs
 
-  external to_audio : string -> int -> float array array -> int -> int -> unit = "caml_float_pcm_from_s16le"
+  (* TODO: unify the parameters.. *)
+  let to_audio s sofs buf bofs len = ignore(resample_to_audio s sofs len 1. buf bofs)
 end
 
 let add b1 o1 b2 o2 len = iter2 (fun b1 b2 -> Mono.add b1 o1 b2 o2 len) b1 b2

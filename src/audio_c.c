@@ -5,13 +5,14 @@
 #include <caml/misc.h>
 #include <caml/mlvalues.h>
 
-#include <limits.h>
 #include <stdint.h>
 static inline int16_t bswap_16 (int16_t x) { return ((((x) >> 8) & 0xff) | (((x) & 0xff) << 8)); }
 
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "config.h"
 
 /* Optimized implementation of Array.blit for float arrays.
  * See http://caml.inria.fr/mantis/view.php?id=2787
@@ -27,25 +28,34 @@ CAMLprim value caml_float_array_blit(value _src, value _src_off,
   return Val_unit ;
 }
 
-static inline short clip(double s)
+static inline int16_t clip(double s)
 {
   if (s < -1)
   {
 #ifdef DEBUG
     printf("Wrong sample: %f\n", s);
 #endif
-    return SHRT_MIN;
+    return -32768;
   }
   else if (s > 1)
   {
 #ifdef DEBUG
     printf("Wrong sample: %f\n", s);
 #endif
-    return SHRT_MAX;
+    return 32767;
   }
   else
-    return (s * (SHRT_MAX - 1));
+    return (s * 32767);
 }
+
+#define u8tof(x)  (((double)x-127)/127)
+#define get_u8(src,offset,nc,c,i)    u8tof(((uint8_t*)src)[offset+i*nc+c])
+#define s16tof(x) (((double)x)/32768)
+#ifdef BIGENDIAN
+#define get_s16le(src,offset,nc,c,i) s16tof(bswap_16(((int16_t*)src)[offset/2+i*nc+c]))
+#else
+#define get_s16le(src,offset,nc,c,i) s16tof(((int16_t*)src)[offset/2+i*nc+c])
+#endif
 
 CAMLprim value caml_float_pcm_to_s16le(value a, value _offs, value _dst, value _dst_offs, value _len)
 {
@@ -57,7 +67,7 @@ CAMLprim value caml_float_pcm_to_s16le(value a, value _offs, value _dst, value _
   int nc = Wosize_val(a);
   int dst_len = 2 * len * nc;
   value src;
-  short *dst = (short*)String_val(_dst);
+  int16_t *dst = (int16_t*)String_val(_dst);
 
   if (caml_string_length(_dst) < dst_offs + dst_len)
     caml_invalid_argument("pcm_to_16le: destination buffer too short");
@@ -68,47 +78,14 @@ CAMLprim value caml_float_pcm_to_s16le(value a, value _offs, value _dst, value _
     for (i = 0; i < len; i++)
     {
       dst[i*nc+c] = clip(Double_field(src, i + offs));
-      /* TODO: on big endian arch */
-      //dst[i*nc+c] = bswap_16(dst[i*nc+c]);
+#ifdef BIGENDIAN
+      dst[i*nc+c] = bswap_16(dst[i*nc+c]);
+#endif
     }
    }
 
   CAMLreturn(Val_int(dst_len));
 }
-
-CAMLprim value caml_float_pcm_from_s16le(value _buf, value _boffs, value a, value _aoffs, value _len)
-{
-  CAMLparam2(a, _buf);
-  CAMLlocal1(cbuf);
-  short *buf = (short*)String_val(_buf);
-  int aoffs = Int_val(_aoffs);
-  int boffs = Int_val(_boffs);
-  int len = Int_val(_len);
-  int i, c;
-  int chans = Wosize_val(a);
-
-  if (Wosize_val(Field(a, 0)) / Double_wosize - boffs < len)
-    caml_invalid_argument("from_s16le: buffer too small");
-
-  for(c = 0; c < chans; c++)
-  {
-    cbuf = Field(a, c);
-      for(i = 0; i < len; i++)
-        Store_double_field(cbuf, i + aoffs, ((double)buf[chans*i+c+boffs])/32768);
-  }
-
-  CAMLreturn(Val_unit);
-}
-
-#define u8tof(x)  (((double)x-127)/127)
-#define get_u8(src,offset,nc,c,i)    u8tof(((uint8_t*)src)[offset+i*nc+c])
-#define s16tof(x) (((double)x)/32768)
-/* TODO */
-#ifdef LIQ_BIG_ENDIAN
-#define get_s16le(src,offset,nc,c,i) s16tof(bswap_16(((int16_t*)src)[offset/2+i*nc+c]))
-#else
-#define get_s16le(src,offset,nc,c,i) s16tof(((int16_t*)src)[offset/2+i*nc+c])
-#endif
 
 CAMLprim value caml_float_pcm_of_u8_resample_native(
     value _src, value _offset, value _length,
