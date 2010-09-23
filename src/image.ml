@@ -150,7 +150,9 @@ module RGBA8 = struct
     of_YUV420 frame ans;
     ans
 
-  external to_YUV420 : t -> YUV420.t -> unit = "caml_rgb_to_YUV420"
+  external to_YUV420 : t -> YUV420.yuv_data -> unit = "caml_rgb_to_YUV420"
+
+  let to_YUV420 x y = to_YUV420 x y.YUV420.data
 
   external get_pixel : t -> int -> int -> Color.t = "caml_rgb_get_pixel"
 
