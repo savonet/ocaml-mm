@@ -1,18 +1,18 @@
 (* TODO: use optimized version for files. *)
 class virtual reader =
-  let chans = Mad.wav_output_channels in
 object (self)
   inherit IO.helper
 
   method virtual private stream_close : unit
 
-  method channels = chans
+  val mutable channels = 0
+  method channels = channels
   (* TODO *)
   method duration : int = raise Not_found
   method duration_time : float = raise Not_found
   method sample_rate = 44100
 
-  val rb = Audio.Ringbuffer_ext.create chans 0
+  val mutable rb = Audio.Ringbuffer_ext.create 0 0
 
   val mutable mf = None
 
@@ -20,12 +20,20 @@ object (self)
     match mf with Some mf -> mf | _ -> assert false
 
   initializer
-    mf <- Some
-      (Mad.openstream
-	 (fun n ->
-           let s = String.create n in
-           let n = self#stream_read s 0 n in
-           s, n))
+  let f =
+    Mad.openstream
+      (fun n ->
+        let s = String.create n in
+        let n = self#stream_read s 0 n in
+        s, n)
+  in
+  let _, c, _ = Mad.get_output_format f in
+  (* TODO: we should decode a frame in order to get the real number of
+     channels... *)
+  let c = 2 in
+  mf <- Some f;
+  channels <- c;
+  rb <- Audio.Ringbuffer_ext.create channels 0
 
   method private decode = Mad.decode_frame_float self#mf
 
