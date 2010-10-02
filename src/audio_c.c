@@ -48,9 +48,9 @@ static inline int16_t clip(double s)
     return (s * 32767);
 }
 
-#define u8tof(x)  (((double)x-127)/127)
+#define u8tof(x)  (((double)x-INT8_MAX)/INT8_MAX)
 #define get_u8(src,offset,nc,c,i)    u8tof(((uint8_t*)src)[offset+i*nc+c])
-#define s16tof(x) (((double)x)/32768)
+#define s16tof(x) (((double)x)/INT16_MAX)
 #ifdef BIGENDIAN
 #define get_s16le(src,offset,nc,c,i) s16tof(bswap_16(((int16_t*)src)[offset/2+i*nc+c]))
 #else
