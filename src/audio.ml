@@ -745,6 +745,8 @@ let clear = iterp Mono.clear
 
 let clip = iterp Mono.clip
 
+let copy b = Array.init (Array.length b) (fun i -> Mono.copy b.(i))
+
 let blit b1 o1 b2 o2 len =
   iter2 (fun b1 b2 -> Mono.blit b1 o1 b2 o2 len) b1 b2
 

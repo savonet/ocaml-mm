@@ -35,17 +35,17 @@ static inline int16_t clip(double s)
 #ifdef DEBUG
     printf("Wrong sample: %f\n", s);
 #endif
-    return -32768;
+    return INT16_MIN;
   }
   else if (s > 1)
   {
 #ifdef DEBUG
     printf("Wrong sample: %f\n", s);
 #endif
-    return 32767;
+    return INT16_MAX;
   }
   else
-    return (s * 32767);
+    return (s * INT16_MAX);
 }
 
 #define u8tof(x)  (((double)x-INT8_MAX)/INT8_MAX)

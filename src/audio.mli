@@ -231,6 +231,9 @@ val create_same : buffer -> buffer
 (** Clear the buffer (sets all the samples to zero). *)
 val clear : buffer -> int -> int -> unit
 
+(** Copy the given buffer. *)
+val copy : buffer -> buffer
+
 val channels : buffer -> int
 
 (** Duration of a buffer in samples. *)
