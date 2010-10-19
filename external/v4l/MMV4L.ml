@@ -1,14 +1,26 @@
 module G = Image.Generic
 
-module V4L = struct
-  type device
+module V4L1 = struct
+  type device = Unix.file_descr
 
-  external opendev : string -> int -> int -> int -> device = "caml_v4l_open"
+  external opendev : string -> int -> int -> int -> device = "caml_v4l1_open"
 
-  external grab : device -> G.data -> unit = "caml_v4l_grab"
+  external grab : device -> G.data -> unit = "caml_v4l1_grab"
 
-  external close : device -> unit = "caml_v4l_close"
+  external close : device -> unit = "caml_v4l1_close"
 end
+
+module V4L2 = struct
+  type device = Unix.file_descr
+
+  external opendev : string -> int -> int -> int -> device = "caml_v4l2_open"
+
+  external grab : device -> G.data -> unit = "caml_v4l2_grab"
+
+  external close : device -> unit = "caml_v4l2_close"
+end
+
+module V4L = V4L1
 
 class reader device width height =
 object (self)
