@@ -36,10 +36,10 @@ module YUV420 = struct
 
   let internal img = img.data
 
-  let create w h = 
+  let create w h =
     let len = w * h in
-    let create len = 
-      Bigarray.Array1.create kind Bigarray.c_layout len 
+    let create len =
+      Bigarray.Array1.create kind Bigarray.c_layout len
     in
     let y = create len in
     let u = create (len/4) in
@@ -48,7 +48,7 @@ module YUV420 = struct
 
   external blank : data -> unit = "caml_yuv_blank"
 
-  let blank_all x = 
+  let blank_all x =
     let (y,_),(u,v,_) = x.data in
     blank y ; blank u ; blank v
 end
