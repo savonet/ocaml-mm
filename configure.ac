@@ -79,6 +79,16 @@ fi
 
 AC_SUBST(W_OSS)
 
+########## v4l ##########
+
+AC_ARG_ENABLE([v4l],AC_HELP_STRING([--disable-v4l],["don't use video4linux"]))
+
+if test "x$enable_v4l" != "xno" ; then
+  AC_CHECK_HEADERS([linux/videodev.h],[W_V4L="yes"],[W_V4L="no"])
+fi
+
+AC_SUBST(W_V4L)
+
 
 
 
@@ -127,5 +137,6 @@ Supported external libraries:
   - OSS   : $W_OSS
   - SDL   : $OCAML_HAS_sdl
   - Theora: $OCAML_HAS_theora
+  - V4L   : $W_V4L
 
 EOMSG
