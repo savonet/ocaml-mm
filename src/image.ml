@@ -530,6 +530,8 @@ module Generic = struct
 
   external rgba32_to_bgr32 : data -> int -> data -> int -> int * int -> unit = "caml_RGBA32_to_BGR32"
 
+  external rgb24_to_rgba32 : data -> int -> data -> int -> int * int -> unit = "caml_RGB24_to_RGBA32"
+
   let convert ?(copy=false) ?(proportional=true) ?scale_kind src dst =
     match src.data, dst.data with
       | RGB s, RGB d when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.RGBA32 ->
@@ -549,6 +551,11 @@ module Generic = struct
       | RGB s, RGB d when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.BGR32 ->
         if src.width = dst.width && src.height = dst.height then
           rgba32_to_bgr32 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride (src.width,src.height)
+        else
+          raise Not_implemented
+      | RGB s, RGB d when s.rgb_pixel = Pixel.RGB24 && d.rgb_pixel = Pixel.RGBA32 ->
+        if src.width = dst.width && src.height = dst.height then
+          rgb24_to_rgba32 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride (src.width,src.height)
         else
           raise Not_implemented
       | _ -> raise Not_implemented
