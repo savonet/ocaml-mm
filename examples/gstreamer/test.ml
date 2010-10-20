@@ -1,14 +1,18 @@
 open Gstreamer
 
 let channels = 2
+let freq = 44100
+
+let src = "audiotestsrc"
+let src = "filesrc location=../test.wav"
 
 let () =
   Gstreamer.init ();
   Printf.printf "%s\n%!" (version_string ());
-  let bin = Pipeline.parse_launch "audiotestsrc ! decodebin ! audio/x-raw-int ! appsink name=sink sync=False" in
+  let bin = Pipeline.parse_launch (src ^ " ! decodebin ! audioresample ! audio/x-raw-int,channels=2,rate=44100 ! appsink name=sink") in
   let sink = Bin.get_by_name (Bin.of_element bin) "sink" in
 
-  let oss = new MMOSS.writer channels 22050 in
+  let oss = new MMOSS.writer channels freq in
 
   ignore (Element.set_state bin State_playing);
   while true do
