@@ -9,4 +9,7 @@ all: pnc
 test: all
 	OCAMLRUNPARAM=b ./test
 
+gstest:
+	gst-launch -v videotestsrc ! ffmpegcolorspace ! videoscale ! video/x-raw-rgb,width=320,height=240,framerate='(fraction)'10/1,bpp=32,depth=24 ! ximagesink
+
 include OCamlMakefile
