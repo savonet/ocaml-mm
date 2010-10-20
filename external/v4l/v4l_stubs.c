@@ -11,6 +11,11 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/select.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/mman.h>
 #include <linux/videodev.h>
 #include <linux/videodev2.h>
 #include <libv4l2.h>
@@ -56,6 +61,7 @@ CAMLprim value caml_v4l2_open(value device, value w, value h, value stride)
   CAMLreturn(Val_int(fd));
 }
 
+/*
 CAMLprim value caml_v4l2_grab(value fd, value data)
 {
   CAMLparam1(data);
@@ -68,6 +74,78 @@ CAMLprim value caml_v4l2_grab(value fd, value data)
   if (ret < 0)
     printf("error: %d\n", errno);
   assert(ret == len);
+
+  CAMLreturn(Val_unit);
+}
+*/
+
+CAMLprim value caml_v4l2_grab(value _fd, value data)
+{
+  CAMLparam1(data);
+  int fd = Int_val(_fd);
+  int len = caml_ba_byte_size(Caml_ba_array_val(data));
+  char *buf = Caml_ba_data_val(data);
+  char *mbuf;
+  int mbuflen;
+  struct v4l2_buffer vbuf;
+  struct v4l2_requestbuffers req;
+  enum v4l2_buf_type type;
+  struct timeval tv;
+  fd_set fds;
+  int ret;
+
+  caml_enter_blocking_section();
+
+  req.count = 1;
+  req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  req.memory = V4L2_MEMORY_MMAP;
+  xioctl(fd, VIDIOC_REQBUFS, &req);
+
+  memset(&vbuf, 0, sizeof(vbuf));
+  vbuf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  vbuf.memory = V4L2_MEMORY_MMAP;
+  vbuf.index  = 0;
+  xioctl(fd, VIDIOC_QUERYBUF, &vbuf);
+
+  mbuflen = vbuf.length;
+  mbuf = v4l2_mmap(NULL, mbuflen, PROT_READ | PROT_WRITE, MAP_SHARED, fd, vbuf.m.offset);
+  assert(mbuf != MAP_FAILED);
+
+  memset(&vbuf, 0, sizeof(vbuf));
+  vbuf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  vbuf.memory = V4L2_MEMORY_MMAP;
+  vbuf.index = 0;
+  xioctl(fd, VIDIOC_QBUF, &vbuf);
+
+  type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  xioctl(fd, VIDIOC_STREAMON, &type);
+
+  do {
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+
+    /* Timeout. */
+    tv.tv_sec = 2;
+    tv.tv_usec = 0;
+
+    ret = select(fd + 1, &fds, NULL, NULL, &tv);
+  } while ((ret == -1 && (errno == EINTR)));
+  assert(ret != -1);
+
+  memset(&vbuf, 0, sizeof(vbuf));
+  vbuf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  vbuf.memory = V4L2_MEMORY_MMAP;
+  xioctl(fd, VIDIOC_DQBUF, &vbuf);
+
+  memcpy(buf, mbuf, vbuf.bytesused);
+
+  xioctl(fd, VIDIOC_QBUF, &vbuf);
+
+  type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  xioctl(fd, VIDIOC_STREAMOFF, &type);
+
+  v4l2_munmap(mbuf, mbuflen);
+  caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);
 }

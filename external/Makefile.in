@@ -5,6 +5,9 @@ endif
 ifeq "@OCAML_HAS_ao@" "yes"
     LIBS += ao
 endif
+ifeq "@OCAML_HAS_gstreamer@" "yes"
+    LIBS += gstreamer
+endif
 ifeq "@OCAML_HAS_mad@" "yes"
     LIBS += mad
 endif

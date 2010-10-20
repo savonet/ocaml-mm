@@ -20,7 +20,7 @@ module V4L2 = struct
   external close : device -> unit = "caml_v4l2_close"
 end
 
-module V4L = V4L1
+module V4L = V4L2
 
 class reader device width height =
 object (self)

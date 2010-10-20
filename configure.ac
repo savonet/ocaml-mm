@@ -53,6 +53,10 @@ AC_CHECK_OCAML_PKG([ao])
 INCDIRS="$INCDIRS $OCAML_DIR_ao"
 AC_SUBST(OCAML_HAS_ao)
 
+AC_CHECK_OCAML_PKG([gstreamer])
+INCDIRS="$INCDIRS $OCAML_DIR_gstreamer"
+AC_SUBST(OCAML_HAS_gstreamer)
+
 AC_CHECK_OCAML_PKG([mad])
 INCDIRS="$INCDIRS $OCAML_DIR_mad"
 AC_SUBST(OCAML_HAS_mad)
@@ -130,13 +134,14 @@ cat <<EOMSG
 
 
 Supported external libraries:
-  - Alsa  : $OCAML_HAS_alsa
-  - AO    : $OCAML_HAS_ao
-  - Mad   : $OCAML_HAS_mad
-  - ogg   : $OCAML_HAS_ogg
-  - OSS   : $W_OSS
-  - SDL   : $OCAML_HAS_sdl
-  - Theora: $OCAML_HAS_theora
-  - V4L   : $W_V4L
+  - Alsa      : $OCAML_HAS_alsa
+  - AO        : $OCAML_HAS_ao
+  - Gstreamer : $OCAML_HAS_gstreamer
+  - Mad       : $OCAML_HAS_mad
+  - ogg       : $OCAML_HAS_ogg
+  - OSS       : $W_OSS
+  - SDL       : $OCAML_HAS_sdl
+  - Theora    : $OCAML_HAS_theora
+  - V4L       : $W_V4L
 
 EOMSG
