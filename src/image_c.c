@@ -1276,9 +1276,12 @@ CAMLprim value caml_RGB32_to_RGBA32(value _src, value _src_stride, value _dst, v
 
   caml_enter_blocking_section();
   if (src_stride == dst_stride)
-    for (j=0; j<height; j++)
-      for (i=0; i<width; i++)
-        dst[j*dst_stride+i*4+3]=0xff;
+    {
+      memcpy(dst, src, width*src_stride);
+      for (j=0; j<height; j++)
+        for (i=0; i<width; i++)
+          dst[j*dst_stride+i*4+3]=0xff;
+    }
   else
     for (j=0; j<height; j++)
       for (i=0; i<width; i++)
