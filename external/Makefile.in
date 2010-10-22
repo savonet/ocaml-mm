@@ -21,7 +21,7 @@ ifeq "@OCAML_HAS_theora@" "yes"
 #    LIBS += theora
 endif
 ifeq "@W_V4L@" "yes"
-    LIBS += v4l
+#    LIBS += v4l
 endif
 
 all clean doc:
