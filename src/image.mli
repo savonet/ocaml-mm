@@ -1,4 +1,4 @@
-(** Operations on images. Mostly only the RGBA8 format is supported for now. *)
+(** Operations on images. Mostly only the RGBA32 format is supported for now. *)
 
 (** Operations on images stored in RGB8 format, ie RGB channels, one byte each. *)
 module RGB8 : sig
@@ -36,9 +36,9 @@ module YUV420 : sig
   val internal : t -> (data * int) * (data * data * int)
 end
 
-(** Operations on images stored in RGBA8 format (ie RGB channels + an alpha
+(** Operations on images stored in RGBA32 format (ie RGB channels + an alpha
     channel, one byte for each). *)
-module RGBA8 : sig
+module RGBA32 : sig
   module Color : sig
     type t = int * int * int * int
   end
@@ -76,9 +76,9 @@ module RGBA8 : sig
 
   (** {2 Conversions from/to other formats} *)
 
-  val of_RGB8_string : string -> int -> t
+  val of_RGB24_string : string -> int -> t
 
-  val to_RGB8_string : t -> string
+  val to_RGB24_string : t -> string
 
   val of_YUV420 : YUV420.t -> t
 
@@ -183,25 +183,36 @@ module Generic : sig
     val string_of_format : format -> string
   end
 
+  (** Data contents of an image. *)
   type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
+  (** An image. *)
   type t
 
+  (** Width of an image. *)
   val width : t -> int
 
+  (** Height of an image. *)
   val height : t -> int
 
+  (** Pixel format of an image. *)
   val pixel_format : t -> Pixel.format
 
+  (** Create a new image of RGB format. *)
   val make_rgb : Pixel.rgb_format -> ?stride:int -> int -> int -> data -> t
 
+  (** Data and stride of an RGB image. *)
   val rgb_data : t -> data * int
 
+  (** Data of a YUV image. *)
   val yuv_data : t -> (data * int) * (data * data * int)
 
-  val of_RGBA8 : RGBA8.t -> t
+  (** Create a generic image from an RGBA32 image. *)
+  val of_RGBA32 : RGBA32.t -> t
 
+  (** Create a generic image from a YUV420 image. *)
   val of_YUV420 : YUV420.t -> t
 
-  val convert : ?copy:bool -> ?proportional:bool -> ?scale_kind:RGBA8.Scale.kind -> t -> t -> unit
+  (** Convert a generic image from a format to another. *)
+  val convert : ?copy:bool -> ?proportional:bool -> ?scale_kind:RGBA32.Scale.kind -> t -> t -> unit
 end

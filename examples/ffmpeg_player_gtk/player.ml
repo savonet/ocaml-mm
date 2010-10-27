@@ -15,10 +15,10 @@ let play (d:GDraw.drawable) () =
     tot := !tot + r;
     Printf.printf "got: %d\n%!" !tot;
     if r = 0 then loop := false;
-    let img = Image.RGBA8.create width height in
-    Image.RGBA8.Scale.onto vid.(0) img;
-    Image.RGBA8.Effect.rotate img 3.1416;
-    let img = Image.RGBA8.to_RGB8_string img in
+    let img = Image.RGBA32.create width height in
+    Image.RGBA32.Scale.onto vid.(0) img;
+    Image.RGBA32.Effect.rotate img 3.1416;
+    let img = Image.RGBA32.to_RGB24_string img in
     d#put_rgb_data ~width ~height (Gpointer.region_of_string img)
   done;
   f#close

@@ -85,7 +85,7 @@ object (self)
 
   method private get_rgba8 =
     let yuv = self#get_yuv in
-    Image.RGBA8.of_YUV420 (Image.YUV420.make yuv.Theora.y yuv.Theora.y_stride yuv.Theora.u yuv.Theora.v yuv.Theora.u_stride)
+    Image.RGBA32.of_YUV420 (Image.YUV420.make yuv.Theora.y yuv.Theora.y_stride yuv.Theora.u yuv.Theora.v yuv.Theora.u_stride)
 
   method read buf ofs len =
     let n = ref 0 in

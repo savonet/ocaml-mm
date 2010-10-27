@@ -1,4 +1,4 @@
-module Frame = Image.RGBA8
+module Frame = Image.RGBA32
 
 type frame = Frame.t
 
@@ -192,7 +192,7 @@ module IO = struct
 
       method write buf ofs len =
         for i = ofs to ofs + len - 1 do
-          let s = Image.RGBA8.to_RGB8_string buf.(i) in
+          let s = Image.RGBA32.to_RGB24_string buf.(i) in
           self#output s;
           datalen <- datalen + String.length s;
         done;

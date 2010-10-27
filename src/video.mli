@@ -1,7 +1,7 @@
 (** Operations on video data. *)
 
 (** A frame. *)
-type frame = Image.RGBA8.t
+type frame = Image.RGBA32.t
 
 (** A video buffer. *)
 type buffer = frame array

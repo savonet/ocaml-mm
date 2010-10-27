@@ -1,4 +1,4 @@
-module Img = Image.RGBA8
+module Img = Image.RGBA32
 
 let read_PPM ?alpha fname =
   let ic = open_in_bin fname in

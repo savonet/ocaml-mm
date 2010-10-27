@@ -1,7 +1,7 @@
 let init () =
   Sdl.init [`VIDEO]
 
-module I = Image.RGBA8
+module I = Image.RGBA32
 
 (*
 (** 8bit surfaces always use a palette *)

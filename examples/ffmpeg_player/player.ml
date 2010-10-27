@@ -26,11 +26,11 @@ let () =
     Video.map_all
       vid
       (fun f ->
-        let img = Image.RGBA8.create width height in
-        Image.RGBA8.Scale.onto f img;
+        let img = Image.RGBA32.create width height in
+        Image.RGBA32.Scale.onto f img;
         img
       );
-    (* Video.iter_all vid Image.RGBA8.Effect.invert; *)
+    (* Video.iter_all vid Image.RGBA32.Effect.invert; *)
     out#write vid 0 r;
     sdl#write vid 0 r;
     (* if !tot >= 200 then
@@ -41,7 +41,7 @@ let () =
       ); *)
     (*
     let img = vid.(0) in
-    let img = Image.RGBA8.to_int_image img in
+    let img = Image.RGBA32.to_int_image img in
     let img = Graphics.make_image img in
     Graphics.draw_image img 0 0;
     *)

@@ -707,7 +707,7 @@ CAMLprim value caml_rgb_to_bmp(value _rgb)
 }
 
 /* TODO: share code with to_bmp */
-CAMLprim value caml_image_to_rgb8(value _rgb)
+CAMLprim value caml_image_to_rgb24(value _rgb)
 {
   CAMLparam1(_rgb);
   CAMLlocal1(ans);

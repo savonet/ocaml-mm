@@ -53,7 +53,7 @@ module YUV420 = struct
     blank y ; blank u ; blank v
 end
 
-module RGBA8 = struct
+module RGBA32 = struct
   module Color = struct
     type t = int * int * int * int
   end
@@ -133,12 +133,12 @@ module RGBA8 = struct
 
   external blank_all : t -> unit = "caml_rgb_blank" "noalloc"
 
-  external of_RGB8_string : t -> string -> unit = "caml_rgb_of_rgb8_string"
+  external of_RGB24_string : t -> string -> unit = "caml_rgb_of_rgb8_string"
 
-  let of_RGB8_string data width =
+  let of_RGB24_string data width =
     let height = (String.length data / 3) / width in
     let ans = create width height in
-    of_RGB8_string ans data;
+    of_RGB24_string ans data;
     ans
 
   external of_YUV420 : YUV420.yuv_data -> t -> unit = "caml_rgb_of_YUV420"
@@ -206,7 +206,7 @@ module RGBA8 = struct
 
   external to_BMP : t -> string = "caml_rgb_to_bmp"
 
-  external to_RGB8_string : t -> string = "caml_image_to_rgb8"
+  external to_RGB24_string : t -> string = "caml_image_to_rgb24"
 
   exception Invalid_format of string
 
@@ -466,22 +466,21 @@ module Generic = struct
       height = height;
     }
 
-  (* TODO: naming RGB8 vs RGBA32 *)
-  let of_RGBA8 img =
+  let of_RGBA32 img =
     let rgb_data =
       {
         rgb_pixel = Pixel.RGBA32;
-        rgb_data = img.RGBA8.data;
-        rgb_stride = img.RGBA8.stride;
+        rgb_data = img.RGBA32.data;
+        rgb_stride = img.RGBA32.stride;
       }
     in
       {
         data = RGB rgb_data;
-        width = img.RGBA8.width;
-        height = img.RGBA8.height;
+        width = img.RGBA32.width;
+        height = img.RGBA32.height;
       }
 
-  let to_RGBA8 img =
+  let to_RGBA32 img =
     let rgb_data =
       match img.data with
         | RGB d -> d
@@ -489,7 +488,7 @@ module Generic = struct
     in
     assert (rgb_data.rgb_pixel = Pixel.RGBA32);
     {
-      RGBA8.
+      RGBA32.
       data = rgb_data.rgb_data;
       width = img.width;
       height = img.height;
@@ -537,19 +536,19 @@ module Generic = struct
   let convert ?(copy=false) ?(proportional=true) ?scale_kind src dst =
     match src.data, dst.data with
       | RGB s, RGB d when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.RGBA32 ->
-        let src = to_RGBA8 src in
-        let dst = to_RGBA8 dst in
-        RGBA8.Scale.onto ?kind:scale_kind ~proportional src dst
+        let src = to_RGBA32 src in
+        let dst = to_RGBA32 dst in
+        RGBA32.Scale.onto ?kind:scale_kind ~proportional src dst
       | YUV s, RGB d when s.yuv_pixel = Pixel.YUVJ420 && d.rgb_pixel = Pixel.RGBA32 ->
         let src = to_YUV420 src in
-        let src = RGBA8.of_YUV420 src in
-        let dst = to_RGBA8 dst in
-        RGBA8.Scale.onto ?kind:scale_kind ~proportional src dst
+        let src = RGBA32.of_YUV420 src in
+        let dst = to_RGBA32 dst in
+        RGBA32.Scale.onto ?kind:scale_kind ~proportional src dst
       | RGB s, YUV d when s.rgb_pixel = Pixel.RGBA32 && d.yuv_pixel = Pixel.YUVJ420 ->
-        let src = to_RGBA8 src in
-        let src = RGBA8.Scale.create ?kind:scale_kind ~proportional ~copy:false src dst.width dst.height in
+        let src = to_RGBA32 src in
+        let src = RGBA32.Scale.create ?kind:scale_kind ~proportional ~copy:false src dst.width dst.height in
         let dst = to_YUV420 dst in
-        RGBA8.to_YUV420 src dst
+        RGBA32.to_YUV420 src dst
       | RGB s, RGB d when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.BGR32 ->
         if src.width = dst.width && src.height = dst.height then
           rgba32_to_bgr32 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride (src.width,src.height)

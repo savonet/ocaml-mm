@@ -34,7 +34,7 @@ module FFmpeg = struct
 
     external dump_format : t -> string -> unit = "caml_ffmpeg_enc_dump_format"
 
-    external write_frame : t -> Image.RGBA8.t -> unit = "caml_ffmpeg_enc_write_frame"
+    external write_frame : t -> Image.RGBA32.t -> unit = "caml_ffmpeg_enc_write_frame"
 
     external close : t -> unit = "caml_ffmpeg_enc_close"
   end
@@ -75,7 +75,7 @@ object (self)
   *)
 
   method private read_frame =
-    let img = Image.RGBA8.create width height in
+    let img = Image.RGBA32.create width height in
     D.read_frame ff img;
     img
 
