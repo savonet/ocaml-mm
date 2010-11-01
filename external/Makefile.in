@@ -5,6 +5,9 @@ endif
 ifeq "@OCAML_HAS_ao@" "yes"
     LIBS += ao
 endif
+ifeq "@W_FFMPEG@" "yes"
+    LIBS += ffmpeg
+endif
 ifeq "@OCAML_HAS_gstreamer@" "yes"
     LIBS += gstreamer
 endif

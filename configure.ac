@@ -83,6 +83,16 @@ fi
 
 AC_SUBST(W_OSS)
 
+########## FFmpeg ##########
+
+AC_ARG_ENABLE([ffmpeg],AC_HELP_STRING([--disable-ffmpeg],["don't use FFmpeg"]))
+
+if test "x$enable_ffmpeg" != "xno" ; then
+  AC_CHECK_HEADERS([libavcodec/avcodec.h],[W_FFMPEG="yes"],[W_FFMPEG="no"])
+fi
+
+AC_SUBST(W_FFMPEG)
+
 ########## v4l ##########
 
 AC_ARG_ENABLE([v4l],AC_HELP_STRING([--disable-v4l],["don't use video4linux"]))
@@ -136,6 +146,7 @@ cat <<EOMSG
 Supported external libraries:
   - Alsa      : $OCAML_HAS_alsa
   - AO        : $OCAML_HAS_ao
+  - FFmpeg    : $W_FFMPEG
   - Gstreamer : $OCAML_HAS_gstreamer
   - Mad       : $OCAML_HAS_mad
   - ogg       : $OCAML_HAS_ogg
