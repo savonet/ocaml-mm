@@ -14,13 +14,16 @@ let () =
   let w,h = Img.dimensions img in
   Printf.printf "Dimensions: %d %d\n%!" w h;
   let img2 = Img.copy img in
-  Img.Effect.translate img2 3 3;
+  Img.Effect.translate img2 3 5;
   Img.Effect.box_blur img2;
-  let vect = Img.Motion.compute 8 img img2 in
-  (* Img.Motion.median_denoise vect; *)
-  let mx, my = Img.Motion.mean vect in
+  (*
+  let vect = Img.Motion.Multi.compute 8 img img2 in
+  (* Img.Motion.Multi.median_denoise vect; *)
+  let mx, my = Img.Motion.Multi.mean vect in
+  *)
+  let mx, my = Img.Motion.compute 8 img img2 in
   Printf.printf "Motion: %d %d\n%!" mx my;
-  Img.Motion.arrows vect img2;
+  (* Img.Motion.Multi.arrows vect img2; *)
   (* let img = Img.Scale.create ~kind:Img.Scale.Bilinear img 500 500 in *)
   Graphics.open_graph "";
   Graphics.resize_window w h;

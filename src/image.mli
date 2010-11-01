@@ -146,15 +146,19 @@ module RGBA32 : sig
   end
 
   module Motion : sig
-    type vectors
+    val compute : int -> t -> t -> int * int
 
-    val compute : int -> t -> t -> vectors
+    module Multi : sig
+      type vectors
 
-    val median_denoise : vectors -> unit
+      val compute : int -> t -> t -> vectors
 
-    val mean : vectors -> int * int
+      val median_denoise : vectors -> unit
 
-    val arrows : vectors -> t -> unit
+      val mean : vectors -> int * int
+
+      val arrows : vectors -> t -> unit
+    end
   end
 end
 

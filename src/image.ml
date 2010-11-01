@@ -1,4 +1,4 @@
-module Motion = struct
+module Motion_multi = struct
   type vectors_data = (int, Bigarray.nativeint_elt, Bigarray.c_layout) Bigarray.Array1.t
 
   type vectors =
@@ -8,11 +8,11 @@ module Motion = struct
         block_size: int;
       }
 
-  external median_denoise : int -> vectors_data -> unit = "caml_rgb_motion_median_denoise"
+  external median_denoise : int -> vectors_data -> unit = "caml_rgb_motion_multi_median_denoise"
 
   let median_denoise v = median_denoise v.vectors_width v.vectors
 
-  external mean : int -> vectors_data -> int * int = "caml_rgb_motion_mean"
+  external mean : int -> vectors_data -> int * int = "caml_rgb_motion_multi_mean"
 
   let mean v = mean v.vectors_width v.vectors
 end
@@ -46,16 +46,22 @@ module Gray8 = struct
     make w (Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.c_layout (w*h))
 
   module Motion = struct
-    include Motion
+    external compute : int -> int -> data -> data -> int * int = "caml_mm_Gray8_motion_compute"
 
-    external compute : int -> int -> data -> data -> vectors_data = "caml_mm_Gray8_motion_compute"
+    let compute bs o n = compute bs n.width o.data n.data
 
-    let compute bs o n =
-      {
-        vectors = compute bs n.width o.data n.data;
-        vectors_width = n.width / bs;
-        block_size = bs;
-      }
+    module Multi = struct
+      include Motion_multi
+
+      external compute : int -> int -> data -> data -> vectors_data = "caml_mm_Gray8_motion_multi_compute"
+
+      let compute bs o n =
+        {
+          vectors = compute bs n.width o.data n.data;
+          vectors_width = n.width / bs;
+          block_size = bs;
+        }
+    end
   end
 end
 
@@ -401,16 +407,20 @@ module RGBA32 = struct
   end
 
   module Motion = struct
-    include Motion
-
     (* TODO: compute old only once? *)
-    let compute bs o n =
-      Gray8.Motion.compute bs (to_Gray8_create o) (to_Gray8_create n)
+    let compute bs o n = Gray8.Motion.compute bs (to_Gray8_create o) (to_Gray8_create n)
 
-    external arrows : int -> vectors_data -> t -> unit = "caml_rgb_motion_arrows"
+    module Multi = struct
+      include Motion_multi
 
-    let arrows v img =
-      arrows v.block_size v.vectors img
+      let compute bs o n =
+        Gray8.Motion.Multi.compute bs (to_Gray8_create o) (to_Gray8_create n)
+
+      external arrows : int -> vectors_data -> t -> unit = "caml_rgb_motion_multi_arrows"
+
+      let arrows v img =
+        arrows v.block_size v.vectors img
+    end
   end
 end
 

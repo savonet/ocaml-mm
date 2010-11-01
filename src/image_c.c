@@ -1241,6 +1241,95 @@ CAMLprim value caml_rgb_blur_alpha(value _rgb)
   CAMLreturn(Val_unit);
 }
 
+static inline int compare_images(int width, int height, uint8 *old, uint8 *new, int dx, int dy)
+{
+  int s = 0;
+  int i, j;
+  int adx = abs(dx);
+  int ady = abs(dy);
+
+  for(j = adx; j < height-adx; j++)
+    for(i = ady; i < width-ady; i++)
+      s += abs((int)new[j*width+i] - (int)old[(j-dy)*width+(i-dx)]);
+
+  return s;
+}
+
+CAMLprim value caml_mm_Gray8_motion_compute(value _bs, value _width, value _old, value _new)
+{
+  CAMLparam2(_old, _new);
+  // Block size
+  int bs = Int_val(_bs);
+  // Previous and current image
+  int len = Caml_ba_array_val(_new)->dim[0];
+  uint8 *old = Caml_ba_data_val(_old);
+  uint8 *new = Caml_ba_data_val(_new);
+  // Dimensions of the image
+  int w = Int_val(_width);
+  int h = len / w;
+  // Offsets of blocks
+  int dx, dy;
+  // Iterators over offsets: radius, angle (parametrize a diamond)
+  int dr, da;
+  // Scores
+  int s00, s10, s01, s11;
+  // Best score
+  int best;
+  // Motion
+  int mx, my;
+
+  caml_enter_blocking_section();
+  best = INT_MAX;
+  for (dr = 0; dr <= bs; dr++)
+    {
+      if (best == 0)
+        break;
+      for (da = 0; da <= dr; da++)
+        {
+          if (best == 0)
+            break;
+          dx = da;
+          dy = dr-da;
+          s00 = compare_images(w, h, old, new, dx,  dy);
+          s01 = compare_images(w, h, old, new, dx, -dy);
+          s10 = compare_images(w, h, old, new, -dx,  dy);
+          s11 = compare_images(w, h, old, new, -dx, -dy);
+
+          if (s00 < best)
+            {
+              mx = dx;
+              my = dy;
+              best = s00;
+            }
+          if (s01 < best)
+            {
+              mx = dx;
+              my = -dy;
+              best = s01;
+            }
+          if (s10 < best)
+            {
+              mx = -dx;
+              my = dy;
+              best = s10;
+            }
+          if (s11 < best)
+            {
+              mx = -dx;
+              my = -dy;
+              best = s11;
+            }
+        }
+    }
+  caml_leave_blocking_section();
+
+  CAMLlocal1(ans);
+  ans = caml_alloc_tuple(2);
+  Store_field(ans, 0, Val_int(mx));
+  Store_field(ans, 1, Val_int(my));
+  CAMLreturn(ans);
+}
+
 static inline int compare_blocks(int width, int height, uint8 *old, uint8 *new, int bs, int x, int y, int dx, int dy)
 {
   int s = 0;
@@ -1253,7 +1342,7 @@ static inline int compare_blocks(int width, int height, uint8 *old, uint8 *new, 
   return s;
 }
 
-CAMLprim value caml_mm_Gray8_motion_compute(value _bs, value _width, value _old, value _new)
+CAMLprim value caml_mm_Gray8_motion_multi_compute(value _bs, value _width, value _old, value _new)
 {
   CAMLparam2(_old, _new);
   // Block size
@@ -1289,7 +1378,7 @@ CAMLprim value caml_mm_Gray8_motion_compute(value _bs, value _width, value _old,
     for (i = 1; i < vw-1; i++)
       {
         best = INT_MAX;
-        for (dr = 0; dr <= 2*bs; dr++)
+        for (dr = 0; dr <= bs; dr++)
           {
             if (best == 0)
               break;
@@ -1339,7 +1428,7 @@ CAMLprim value caml_mm_Gray8_motion_compute(value _bs, value _width, value _old,
   CAMLreturn(ans);
 }
 
-CAMLprim value caml_rgb_motion_median_denoise(value _vw, value _v)
+CAMLprim value caml_rgb_motion_multi_median_denoise(value _vw, value _v)
 {
   CAMLparam1(_v);
   int *v = Caml_ba_data_val(_v);
@@ -1369,7 +1458,7 @@ CAMLprim value caml_rgb_motion_median_denoise(value _vw, value _v)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_rgb_motion_mean(value _width, value _v)
+CAMLprim value caml_rgb_motion_multi_mean(value _width, value _v)
 {
   CAMLparam1(_v);
   CAMLlocal1(ans);
@@ -1454,7 +1543,7 @@ static inline void motion_besenham(frame* img, int sx, int sy, int dx, int dy)
     }
 }
 
-CAMLprim value caml_rgb_motion_arrows(value _bs, value _v, value _img)
+CAMLprim value caml_rgb_motion_multi_arrows(value _bs, value _v, value _img)
 {
   CAMLparam2(_v, _img);
   int bs = Int_val(_bs);
