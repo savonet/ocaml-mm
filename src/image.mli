@@ -130,6 +130,8 @@ module RGBA32 : sig
 
     val mask : t -> t -> unit
 
+    val box_blur : t -> unit
+
     (** Effects on alpha channel. *)
     module Alpha : sig
       val blur : t -> unit

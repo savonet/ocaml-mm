@@ -791,6 +791,26 @@ CAMLprim value caml_rgb_to_color_array(value _rgb)
   CAMLreturn(ans);
 }
 
+CAMLprim value caml_mm_RGBA8_box_blur(value _rgb)
+{
+  CAMLparam1(_rgb);
+  frame rgb;
+  frame_of_value(_rgb, &rgb);
+  int i, j;
+
+  caml_enter_blocking_section();
+  for (j = 1; j < rgb.height - 1; j++)
+    for (i = 1; i < rgb.width - 1; i++)
+      {
+        Red(&rgb,i,j) = (Red(&rgb,i-1,j) + Red(&rgb,i+1,j) + Red(&rgb,i,j-1) + Red(&rgb,i,j+1)) / 4;
+        Green(&rgb,i,j) = (Green(&rgb,i-1,j) + Green(&rgb,i+1,j) + Green(&rgb,i,j-1) + Green(&rgb,i,j+1)) / 4;
+        Blue(&rgb,i,j) = (Blue(&rgb,i-1,j) + Blue(&rgb,i+1,j) + Blue(&rgb,i,j-1) + Blue(&rgb,i,j+1)) / 4;
+      }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value caml_rgb_greyscale(value _rgb, value _sepia)
 {
   CAMLparam1(_rgb);
@@ -1269,7 +1289,7 @@ CAMLprim value caml_mm_Gray8_motion_compute(value _bs, value _width, value _old,
     for (i = 1; i < vw-1; i++)
       {
         best = INT_MAX;
-        for (dr = 0; dr <= bs; dr++)
+        for (dr = 0; dr <= 2*bs; dr++)
           {
             if (best == 0)
               break;
@@ -1310,14 +1330,9 @@ CAMLprim value caml_mm_Gray8_motion_compute(value _bs, value _width, value _old,
                   }
               }
           }
-        //if (best)
+        //if (!best)
         //  printf("found %03d %03d: %03d %03d @ %d\n",i,j,v[2*(j*vw+i)],v[2*(j*vw+i)+1],best);
       }
-  // TODO: remove
-  for (j = 0; j < vh; j++)
-    for (i = 0; i < vw; i++)
-      if(v[2*(j*vw+i)] < -bs || v[2*(j*vw+i)] > bs)
-        printf("failure %d %d = %d (%d %d)\n",i,j,v[2*(j*vw+i)],w,h);
   caml_leave_blocking_section();
 
   value ans = caml_ba_alloc(CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_NATIVE_INT, 1, v, &vlen);
@@ -1370,10 +1385,13 @@ CAMLprim value caml_rgb_motion_mean(value _width, value _v)
     for (i = 1; i < w-1; i++)
       {
         mx += v[2*(j*w+i)];
-        my += v[2*(j*w+i)];
+        my += v[2*(j*w+i)+1];
       }
-  mx /= (w-2)*(h-2);
-  my /= (w-2)*(h-2);
+  len = (w-2)*(h-2);
+  mx += len/2;
+  my += len/2;
+  mx /= len;
+  my /= len;
   caml_leave_blocking_section();
 
   ans = caml_alloc_tuple(2);

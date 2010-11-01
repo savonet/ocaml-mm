@@ -15,8 +15,8 @@ let motion img =
       | Some prev -> prev
   in
   prev := Some img;
-  let vect = I.Motion.compute 8 p img in
-  (* I.Motion.median_denoise vect; *)
+  let vect = I.Motion.compute 5 p img in
+  I.Motion.median_denoise vect;
   let mx, my = I.Motion.mean vect in
   Printf.printf "Motion: %d %d\n%!" mx my;
   I.Motion.arrows vect img;

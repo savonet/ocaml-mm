@@ -384,6 +384,8 @@ module RGBA32 = struct
 
     external lomo : t -> unit = "caml_rgb_lomo"
 
+    external box_blur : t -> unit = "caml_mm_RGBA8_box_blur"
+
     module Alpha = struct
       external scale : t -> float -> unit = "caml_rgb_scale_opacity"
 
