@@ -23,6 +23,9 @@ let motion img =
   *)
   let mx, my = I.Motion.compute 8 p img in
   Printf.printf "Motion: %d %d\n%!" mx my;
+  let w, h = I.dimensions img in
+  let a = 10 in
+  I.Draw.line img (255,255,255) (w/2,h/2) (w/2+a*mx,h/2+a*my);
   img
 
 let () =

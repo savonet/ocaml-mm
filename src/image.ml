@@ -406,6 +406,10 @@ module RGBA32 = struct
     end
   end
 
+  module Draw = struct
+    external line : t -> int * int * int -> int * int -> int * int -> unit = "caml_mm_RGBA8_draw_line"
+  end
+
   module Motion = struct
     (* TODO: compute old only once? *)
     let compute bs o n = Gray8.Motion.compute bs (to_Gray8_create o) (to_Gray8_create n)

@@ -1276,7 +1276,7 @@ CAMLprim value caml_mm_Gray8_motion_compute(value _bs, value _width, value _old,
   // Best score
   int best;
   // Motion
-  int mx, my;
+  int mx = 0, my = 0;
 
   caml_enter_blocking_section();
   best = INT_MAX;
@@ -1290,6 +1290,7 @@ CAMLprim value caml_mm_Gray8_motion_compute(value _bs, value _width, value _old,
             break;
           dx = da;
           dy = dr-da;
+          // TODO: compute only once for dx = dy = 0
           s00 = compare_images(w, h, old, new, dx,  dy);
           s01 = compare_images(w, h, old, new, dx, -dy);
           s10 = compare_images(w, h, old, new, -dx,  dy);
@@ -1340,6 +1341,73 @@ static inline int compare_blocks(int width, int height, uint8 *old, uint8 *new, 
       s += abs((int)new[(y+j)*width+(x+i)] - (int)old[(y+j-dy)*width+(x+i-dx)]);
 
   return s;
+}
+
+static inline void swap_int(int *x, int *y)
+{
+  int t;
+  t = *x;
+  *x = *y;
+  *y = t;
+}
+
+CAMLprim value caml_mm_RGBA8_draw_line(value _img, value c, value src, value dst)
+{
+  CAMLparam1(_img);
+  frame img;
+  frame_of_value(_img,&img);
+  int sx = Int_val(Field(src,0));
+  int sy = Int_val(Field(src,1));
+  int dx = Int_val(Field(dst,0));
+  int dy = Int_val(Field(dst,1));
+  uint8 cr = Int_val(Field(c,0));
+  uint8 cg = Int_val(Field(c,1));
+  uint8 cb = Int_val(Field(c,2));
+
+  int i, j;
+
+  caml_enter_blocking_section();
+  int steep = (abs(dy - sy) > abs(dx - sx));
+  if (steep)
+    {
+      swap_int(&sx, &sy);
+      swap_int(&dx, &dy);
+    }
+  if (sx > dx)
+    {
+      swap_int(&sx, &dx);
+      swap_int(&sy, &dy);
+    }
+
+  int deltax = dx - sx;
+  int deltay = abs(dy - sy);
+  int error = deltax / 2;
+  int ystep = (sy < dy)?1:-1;
+  j = sy;
+  for (i = sx; i < dx; i++)
+    {
+      if (steep)
+        {
+          Red(&img,j,i) = cr;
+          Green(&img,j,i) = cg;
+          Blue(&img,j,i) = cb;
+        }
+      else
+        {
+          Red(&img,i,j) = cr;
+          Green(&img,i,j) = cg;
+          Blue(&img,i,j) = cb;
+        }
+      error -= deltay;
+      if (error < 0)
+        {
+          j += ystep;
+          error += deltax;
+        }
+    }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_mm_Gray8_motion_multi_compute(value _bs, value _width, value _old, value _new)
@@ -1489,14 +1557,6 @@ CAMLprim value caml_rgb_motion_multi_mean(value _width, value _v)
   CAMLreturn(ans);
 }
 
-static inline void motion_swap(int *x, int *y)
-{
-  int t;
-  t = *x;
-  *x = *y;
-  *y = t;
-}
-
 static inline void motion_plot(frame *img, int i, int j)
 {
   //Int_pixel(img, i, j) = 0xffffffff;
@@ -1514,13 +1574,13 @@ static inline void motion_besenham(frame* img, int sx, int sy, int dx, int dy)
 
   if (steep)
     {
-      motion_swap(&sx, &sy);
-      motion_swap(&dx, &dy);
+      swap_int(&sx, &sy);
+      swap_int(&dx, &dy);
     }
   if (sx > dx)
     {
-      motion_swap(&sx, &dx);
-      motion_swap(&sy, &dy);
+      swap_int(&sx, &dx);
+      swap_int(&sy, &dy);
     }
 
   int deltax = dx - sx;
