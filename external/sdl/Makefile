@@ -3,7 +3,7 @@ RESULT = mm.sdl
 INCDIRS = ../../src
 OCAMLFLAGS = -g
 OCAMLNCFLAGS = -g
-CFLAGS = -g
+CFLAGS = -g -Wall -O3
 
 all: ncl
 

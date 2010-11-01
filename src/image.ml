@@ -1,3 +1,22 @@
+module Motion = struct
+  type vectors_data = (int, Bigarray.nativeint_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+  type vectors =
+      {
+        vectors : vectors_data;
+        vectors_width : int;
+        block_size: int;
+      }
+
+  external median_denoise : int -> vectors_data -> unit = "caml_rgb_motion_median_denoise"
+
+  let median_denoise v = median_denoise v.vectors_width v.vectors
+
+  external mean : int -> vectors_data -> int * int = "caml_rgb_motion_mean"
+
+  let mean v = mean v.vectors_width v.vectors
+end
+
 module RGB8 = struct
   module Color = struct
     type t = int * int * int
@@ -7,6 +26,39 @@ module RGB8 = struct
       (n lsr 16) land 0xff, (n lsr 8) land 0xff, n land 0xff
   end
 end
+
+module Gray8 = struct
+  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+  type t =
+      {
+        data : data;
+        width : int;
+      }
+
+  let make w d =
+    {
+      data = d;
+      width = w;
+    }
+
+  let create w h =
+    make w (Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.c_layout (w*h))
+
+  module Motion = struct
+    include Motion
+
+    external compute : int -> int -> data -> data -> vectors_data = "caml_mm_Gray8_motion_compute"
+
+    let compute bs o n =
+      {
+        vectors = compute bs n.width o.data n.data;
+        vectors_width = n.width / bs;
+        block_size = bs;
+      }
+  end
+end
+
 
 module YUV420 = struct
   (* TODO: also store width and height? *)
@@ -153,6 +205,15 @@ module RGBA32 = struct
   external to_YUV420 : t -> YUV420.yuv_data -> unit = "caml_rgb_to_YUV420"
 
   let to_YUV420 x y = to_YUV420 x y.YUV420.data
+
+  external to_Gray8 : t -> Gray8.data -> unit = "caml_mm_RGBA8_to_Gray8"
+
+  let to_Gray8 rgb gray = to_Gray8 rgb gray.Gray8.data
+
+  let to_Gray8_create rgb =
+    let gray = Gray8.create (width rgb) (height rgb) in
+    to_Gray8 rgb gray;
+    gray
 
   external get_pixel : t -> int -> int -> Color.t = "caml_rgb_get_pixel"
 
@@ -335,6 +396,19 @@ module RGBA32 = struct
       external of_color : t -> int * int * int -> float -> float -> unit = "caml_rgb_color_to_alpha"
       let of_color = of_color_simple
     end
+  end
+
+  module Motion = struct
+    include Motion
+
+    (* TODO: compute old only once? *)
+    let compute bs o n =
+      Gray8.Motion.compute bs (to_Gray8_create o) (to_Gray8_create n)
+
+    external arrows : int -> vectors_data -> t -> unit = "caml_rgb_motion_arrows"
+
+    let arrows v img =
+      arrows v.block_size v.vectors img
   end
 end
 

@@ -12,6 +12,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <math.h>
+#include <limits.h>
+#include <arpa/inet.h>
 
 // MMX invert is broken at the moment..
 #undef HAVE_MMX
@@ -40,7 +42,7 @@
    little-endian... */
 static inline int int_rgb8_of_pixel(frame *rgb, int i, int j)
 {
-  int p = *Int_pixel(rgb,i,j);
+  int p = Int_pixel(rgb,i,j);
   /* Endianness... */
   p = ntohl(p);
   unsigned char a = p & 0xff;
@@ -425,6 +427,28 @@ CAMLprim value caml_rgb_to_YUV420(value f, value yuv)
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value caml_mm_RGBA8_to_Gray8(value _rgb, value _gray)
+{
+  CAMLparam2(_rgb,_gray);
+  frame rgb;
+  frame_of_value(_rgb, &rgb);
+  uint8 *gray = Caml_ba_data_val(_gray);
+  int i, j;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < rgb.height; j++)
+    for (i = 0; i < rgb.width; i++)
+      gray[j*rgb.width+i] =
+        (
+         (int)Red(&rgb,i,j) +
+         Green(&rgb,i,j) +
+         Blue(&rgb,i,j)
+        )/3;
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value caml_rgb_of_rgb8_string(value _rgb, value _data)
 {
   CAMLparam2(_rgb, _data);
@@ -514,7 +538,7 @@ CAMLprim value caml_rgb_scale(value _src, value _dst, value xscale, value yscale
   frame src,dst;
   frame_of_value(_src, &src);
   frame_of_value(_dst, &dst);
-  int i, j, c;
+  int i, j;
   int xn = Int_val(Field(xscale, 0)),
       xd = Int_val(Field(xscale, 1)),
       yn = Int_val(Field(yscale, 0)),
@@ -1142,7 +1166,7 @@ CAMLprim value caml_rgb_color_to_alpha(value _rgb, value color, value _prec, val
       g = Int_val(Field(color, 1)),
       b = Int_val(Field(color, 2));
   float prec = Double_val(_prec);
-  float sharp = Double_val(_sharp);
+  //float sharp = Double_val(_sharp);
   int i, j;
   double rr, gg, bb, aa;
   double d;
@@ -1192,6 +1216,261 @@ CAMLprim value caml_rgb_blur_alpha(value _rgb)
       Alpha(&rgb, i, j) = a / ((2*w+1)*(2*w+1));
     }
   rgb_free(&old);
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
+static inline int compare_blocks(int width, int height, uint8 *old, uint8 *new, int bs, int x, int y, int dx, int dy)
+{
+  int s = 0;
+  int i, j;
+
+  for(j = 0; j < bs; j++)
+    for(i = 0; i < bs; i++)
+      s += abs((int)new[(y+j)*width+(x+i)] - (int)old[(y+j-dy)*width+(x+i-dx)]);
+
+  return s;
+}
+
+CAMLprim value caml_mm_Gray8_motion_compute(value _bs, value _width, value _old, value _new)
+{
+  CAMLparam2(_old, _new);
+  // Block size
+  int bs = Int_val(_bs);
+  // Previous and current image
+  int len = Caml_ba_array_val(_new)->dim[0];
+  uint8 *old = Caml_ba_data_val(_old);
+  uint8 *new = Caml_ba_data_val(_new);
+  // Iterators over blocks
+  int i, j;
+  // Dimensions of the image
+  int w = Int_val(_width);
+  int h = len / w;
+  // Offsets of blocks
+  int dx, dy;
+  // Iterators over offsets: radius, angle (parametrize a diamond)
+  int dr, da;
+  // Vector table width and height
+  int vw = w/bs;
+  int vh = h/bs;
+  // Size of vector table
+  intnat vlen = vw*vh*2;
+  // Vector table of size vw*vh
+  int *v = malloc(vlen*sizeof(int));
+  // Current score
+  int s00, s10, s01, s11;
+  // Best score
+  int best;
+
+  caml_enter_blocking_section();
+  memset(v,0,vlen*sizeof(int));
+  for (j = 1; j < vh-1; j++)
+    for (i = 1; i < vw-1; i++)
+      {
+        best = INT_MAX;
+        for (dr = 0; dr <= bs; dr++)
+          {
+            if (best == 0)
+              break;
+            for (da = 0; da <= dr; da++)
+              {
+                if (best == 0)
+                  break;
+                dx = da;
+                dy = dr-da;
+                s00 = compare_blocks(w, h, old, new, bs, i*bs, j*bs,  dx,  dy);
+                s01 = compare_blocks(w, h, old, new, bs, i*bs, j*bs,  dx, -dy);
+                s10 = compare_blocks(w, h, old, new, bs, i*bs, j*bs, -dx,  dy);
+                s11 = compare_blocks(w, h, old, new, bs, i*bs, j*bs, -dx, -dy);
+
+                if (s00 < best)
+                  {
+                    v[2*(j*vw+i)] = dx;
+                    v[2*(j*vw+i)+1] = dy;
+                    best = s00;
+                  }
+                if (s01 < best)
+                  {
+                    v[2*(j*vw+i)] = dx;
+                    v[2*(j*vw+i)+1] = -dy;
+                    best = s01;
+                  }
+                if (s10 < best)
+                  {
+                    v[2*(j*vw+i)] = -dx;
+                    v[2*(j*vw+i)+1] = dy;
+                    best = s10;
+                  }
+                if (s11 < best)
+                  {
+                    v[2*(j*vw+i)] = -dx;
+                    v[2*(j*vw+i)+1] = -dy;
+                    best = s11;
+                  }
+              }
+          }
+        //if (best)
+        //  printf("found %03d %03d: %03d %03d @ %d\n",i,j,v[2*(j*vw+i)],v[2*(j*vw+i)+1],best);
+      }
+  // TODO: remove
+  for (j = 0; j < vh; j++)
+    for (i = 0; i < vw; i++)
+      if(v[2*(j*vw+i)] < -bs || v[2*(j*vw+i)] > bs)
+        printf("failure %d %d = %d (%d %d)\n",i,j,v[2*(j*vw+i)],w,h);
+  caml_leave_blocking_section();
+
+  value ans = caml_ba_alloc(CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_NATIVE_INT, 1, v, &vlen);
+  CAMLreturn(ans);
+}
+
+CAMLprim value caml_rgb_motion_median_denoise(value _vw, value _v)
+{
+  CAMLparam1(_v);
+  int *v = Caml_ba_data_val(_v);
+  int len = Caml_ba_array_val(_v)->dim[0] / 2;
+  int vw = Int_val(_vw);
+  int vh = len / vw;
+  int i, j, c;
+  int *oldv;
+
+  caml_enter_blocking_section();
+  oldv = malloc(len * 2 * sizeof(int));
+  memcpy(oldv, v, len * 2 * sizeof(int));
+  for (j = 1; j < vh - 1; j++)
+    for (i = 1; i < vw - 1; i++)
+      for (c = 0; c < 2; c++)
+        {
+          v[2*(j*vw+i)+c] =
+            (oldv[2*(j*vw+i)+c] +
+             oldv[2*(j*vw+i-1)+c] +
+             oldv[2*(j*vw+i+1)+c] +
+             oldv[2*((j-1)*vw+i)+c] +
+             oldv[2*((j+1)*vw+i)+c]) / 5;
+        }
+  free(oldv);
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_rgb_motion_mean(value _width, value _v)
+{
+  CAMLparam1(_v);
+  CAMLlocal1(ans);
+  int *v = Caml_ba_data_val(_v);
+  int len = Caml_ba_array_val(_v)->dim[0] / 2;
+  int w = Int_val(_width);
+  int h = len / w;
+  int mx = 0, my = 0;
+  int i, j;
+
+  caml_enter_blocking_section();
+  for (j = 1; j < h-1; j++)
+    for (i = 1; i < w-1; i++)
+      {
+        mx += v[2*(j*w+i)];
+        my += v[2*(j*w+i)];
+      }
+  mx /= (w-2)*(h-2);
+  my /= (w-2)*(h-2);
+  caml_leave_blocking_section();
+
+  ans = caml_alloc_tuple(2);
+  Store_field(ans, 0, Val_int(mx));
+  Store_field(ans, 1, Val_int(my));
+  CAMLreturn(ans);
+}
+
+static inline void motion_swap(int *x, int *y)
+{
+  int t;
+  t = *x;
+  *x = *y;
+  *y = t;
+}
+
+static inline void motion_plot(frame *img, int i, int j)
+{
+  //Int_pixel(img, i, j) = 0xffffffff;
+  Red(img, i, j) = 255;
+  /*
+  Green(img, i, j) = 255;
+  Blue(img, i, j) = 255;
+  */
+}
+
+static inline void motion_besenham(frame* img, int sx, int sy, int dx, int dy)
+{
+  int i, j;
+  int steep = (abs(dy - sy) > abs(dx - sx));
+
+  if (steep)
+    {
+      motion_swap(&sx, &sy);
+      motion_swap(&dx, &dy);
+    }
+  if (sx > dx)
+    {
+      motion_swap(&sx, &dx);
+      motion_swap(&sy, &dy);
+    }
+
+  int deltax = dx - sx;
+  int deltay = abs(dy - sy);
+  int error = deltax / 2;
+  int ystep = (sy < dy)?1:-1;
+  j = sy;
+  for (i = sx; i < dx; i++)
+    {
+      if (steep)
+        motion_plot(img, j, i);
+      else
+        motion_plot(img, i, j);
+      error -= deltay;
+      if (error < 0)
+        {
+          j += ystep;
+          error += deltax;
+        }
+    }
+}
+
+CAMLprim value caml_rgb_motion_arrows(value _bs, value _v, value _img)
+{
+  CAMLparam2(_v, _img);
+  int bs = Int_val(_bs);
+  frame img;
+  frame_of_value(_img, &img);
+  int i, j;
+  int w = img.width;
+  int h = img.height;
+  int vw = w/bs;
+  int vh = h/bs;
+  int x, y;
+  int dx, dy;
+  int ax, ay;
+  int *v = Caml_ba_data_val(_v);
+
+  caml_enter_blocking_section();
+  for (j = 0; j < vh-1; j++)
+    for (i = 0; i < vw-1; i++)
+      {
+        x = i * bs + bs / 2;
+        y = j * bs + bs / 2;
+        dx = v[2*(j*vw+i)];
+        dy = v[2*(j*vw+i+1)];
+        ax = x+dx;
+        ay = y+dy;
+        /*
+        ax = max(0,ax);
+        ay = max(0,ay);
+        ax = min(w,ax);
+        ay = min(h,ay);
+        */
+        motion_besenham(&img, x, y, ax, ay);
+        Green(&img,x,y)=0xff;
+      }
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);

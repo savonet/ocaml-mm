@@ -142,6 +142,18 @@ module RGBA32 : sig
       val of_color : t -> RGB8.Color.t -> int -> unit
     end
   end
+
+  module Motion : sig
+    type vectors
+
+    val compute : int -> t -> t -> vectors
+
+    val median_denoise : vectors -> unit
+
+    val mean : vectors -> int * int
+
+    val arrows : vectors -> t -> unit
+  end
 end
 
 (** Operations on images in generic formats (many formats are supported). *)
