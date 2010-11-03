@@ -1418,9 +1418,6 @@ module IO = struct
       (* byt_per_samp *) ignore (self#input_short);
       sample_size <- self#input_short;
 
-      (* TODO: handle this *)
-      (* signed *) assert (sample_size <> 8);
-
       let section = self#really_input 4 in
       if section <> "data" then
 	(
@@ -1441,7 +1438,12 @@ module IO = struct
         let sbuf = self#input sbuflen in
         let sbuflen = String.length sbuf in
         let len = sbuflen / (channels * 2) in
-        S16LE.to_audio sbuf 0 buf ofs len;
+        begin
+          match sample_size with
+            | 16 -> S16LE.to_audio sbuf 0 buf ofs len
+            | 8 -> U8.to_audio sbuf 0 buf ofs len
+            | _ -> assert false
+        end ;
         len
 
       method seek n =
