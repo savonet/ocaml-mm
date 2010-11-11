@@ -177,8 +177,6 @@ module Mono : sig
       val dead : state -> bool
 
       val process : t -> state -> buffer -> int -> int -> state
-
-      class adsr : int -> float * float * float * float -> t
     end
   end
 
@@ -215,6 +213,8 @@ module Mono : sig
     class saw : int -> ?volume:float -> ?phase:float -> float -> t
 
     class white_noise : ?volume:float -> int -> t
+
+    class chain : t -> Effect.t -> t
 
     (** Apply an ADSR envlope on a generator. *)
     class adsr : Effect.ADSR.t -> t -> t

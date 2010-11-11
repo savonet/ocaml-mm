@@ -547,15 +547,6 @@ module Mono = struct
             clear buf ofs len;
             st
           | _ -> assert false
-
-      class adsr sr a =
-        let a = make sr a in
-      object
-        val mutable state = init ()
-
-        method process buf ofs len =
-          state <- process a state buf ofs len
-      end
     end
   end
 
@@ -699,6 +690,25 @@ module Mono = struct
 
       method fill buf ofs len =
 	assert false
+    end
+
+    class chain (g : t) (e : Effect.t) : t =
+    object
+      method fill buf ofs len =
+        g#fill buf ofs len;
+        e#process buf ofs len
+
+      val tmpbuf = Buffer_ext.create 0
+
+      method fill_add buf ofs len =
+        let tmpbuf = Buffer_ext.prepare tmpbuf len in
+        g#fill tmpbuf 0 len;
+        add buf ofs tmpbuf 0 len
+
+      method set_volume = g#set_volume
+      method set_frequency = g#set_frequency
+      method release = g#release
+      method dead = g#dead
     end
 
     class adsr (adsr:Effect.ADSR.t) (g:t) =
