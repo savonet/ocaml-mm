@@ -164,3 +164,73 @@ object (self)
   method close =
     Sdl.quit ()
 end
+
+class midi_keyboard : MIDI.IO.Reader.t =
+  let knotes2 =
+    [|'&'; 'a'; '\233'; 'z'; '"'; 'e'; 'r'; '('; 't';
+      '-'; 'y'; '\232'; 'u'; 'i'; '\231'; 'o'; '\224'; 'p'|]
+  in
+  let knotes1 =
+    [|'q'; 'w'; 's'; 'x'; 'd'; 'c'; 'v'; 'g'; 'b';
+      'h'; 'n'; 'j'; ','; ';'; 'l'; ':'; 'm'; '!'|]
+  in
+  let array_index a x =
+    let ans = ref None in
+    for i = 0 to Array.length a - 1 do
+      if a.(i) = x then ans := Some i
+    done;
+    match !ans with
+      | Some i -> i
+      | None -> raise Not_found
+  in
+  let note_of_char c =
+    try
+      array_index knotes2 c + 71
+    with
+      | Not_found ->
+        array_index knotes1 c + 59
+  in
+object (self)
+  initializer
+    Sdl.init [`EVENTTHREAD; `VIDEO];
+    Sdlevent.disable_events (Sdlevent.all_events_mask);
+    Sdlevent.enable_events
+      (Sdlevent.make_mask
+         [Sdlevent.KEYDOWN_EVENT; Sdlevent.KEYUP_EVENT; Sdlevent.QUIT_EVENT]);
+    ignore (Sdlvideo.set_video_mode ~w:640 ~h:480 ~bpp:16 [])
+
+  val mutable velocity = 1.
+
+  val channel = 0
+
+  method read sr buf ofs len =
+    MIDI.Multitrack.clear buf ofs len;
+    Sdlevent.pump ();
+    while Sdlevent.has_event () do
+      try
+        match Sdlevent.poll () with
+          | Some (Sdlevent.KEYDOWN k) ->
+            let c = Sdlkey.char_of_key k.Sdlevent.keysym in
+            if c = '+' || c = '*' then
+              velocity <- min 1. (velocity +. 0.1)
+            else if c = '-' || c = '/' then
+              velocity <- max 0. (velocity -. 0.1)
+            else
+              let n = note_of_char c in
+              (* Printf.printf "Playing note %d.\n%!" n; *)
+              MIDI.insert buf.(channel) (ofs, MIDI.Note_on (n, velocity))
+          | Some (Sdlevent.KEYUP k) ->
+            let c = Sdlkey.char_of_key k.Sdlevent.keysym in
+            let n = note_of_char c in
+            (* Printf.printf "Stopping note %d.\n%!" n; *)
+            MIDI.insert buf.(channel) (ofs, MIDI.Note_off (n, velocity))
+          | _ -> ()
+      with
+        | Not_found
+        | Invalid_argument _ -> ()
+    done;
+    len
+
+method close =
+  Sdl.quit ()
+end
