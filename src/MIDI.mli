@@ -61,6 +61,8 @@ module Multitrack : sig
 
   val duration : buffer -> int
 
+  (** Create a multitrack MIDI buffer with given number of channels and length
+      in samples. *)
   val create : int -> int -> buffer
 
   val clear : ?channel:int -> buffer -> int -> int -> unit

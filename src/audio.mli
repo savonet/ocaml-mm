@@ -177,6 +177,8 @@ module Mono : sig
       val dead : state -> bool
 
       val process : t -> state -> buffer -> int -> int -> state
+
+      class adsr : int -> float * float * float * float -> t
     end
   end
 
@@ -211,6 +213,8 @@ module Mono : sig
 
     (** Generate a saw waveform. *)
     class saw : int -> ?volume:float -> ?phase:float -> float -> t
+
+    class white_noise : ?volume:float -> int -> t
 
     (** Apply an ADSR envlope on a generator. *)
     class adsr : Effect.ADSR.t -> t -> t
@@ -289,11 +293,15 @@ val add_coeff : buffer -> int -> float -> buffer -> int -> int -> unit
 module Buffer_ext : sig
   type t
 
+  (** Create an extensible buffer of given channels and initial size in
+      samples. *)
   val create : int -> int -> t
 
+  (** Current duration (in samples) of the buffer. *)
   val duration : t -> int
 
-  val prepare : t -> int -> buffer
+  (** Make sure that the buffer can hold at least a given number of samples. *)
+  val prepare : t -> ?channels:int -> int -> buffer
 end
 
 (** Circular ringbuffers. *)
@@ -420,6 +428,8 @@ module Generator : sig
   end
 
   class of_mono : Mono.Generator.t -> t
+
+  class chain : t -> Effect.t -> t
 end
 
 (** Operation for reading and writing audio data from files, streams or

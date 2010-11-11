@@ -547,6 +547,15 @@ module Mono = struct
             clear buf ofs len;
             st
           | _ -> assert false
+
+      class adsr sr a =
+        let a = make sr a in
+      object
+        val mutable state = init ()
+
+        method process buf ofs len =
+          state <- process a state buf ofs len
+      end
     end
   end
 
@@ -600,6 +609,17 @@ module Mono = struct
 	let tmp = create len in
 	self#fill tmp 0 len;
 	add buf ofs tmp 0 len
+    end
+
+    class white_noise ?volume sr =
+    object (self)
+      inherit base sr ?volume 0.
+
+      method fill buf ofs len =
+        let volume = self#volume in
+        for i = ofs to ofs + len - 1 do
+          buf.(i) <- volume *. (Random.float 2. -. 1.)
+        done
     end
 
     class sine sr ?volume ?(phase=0.) freq =
@@ -830,22 +850,29 @@ module Buffer_ext = struct
         mutable buffer : buffer
       }
 
-  let prepare buf len =
-    if duration buf.buffer >= len then
-      buf.buffer
-    else
-      (* TODO: optionally blit the old buffer onto the new one. *)
-      let oldbuf = buf.buffer in
-      let newbuf = create (channels oldbuf) len in
-      buf.buffer <- newbuf;
-      newbuf
+  let chans = channels
+  let prepare buf ?channels len =
+    match channels with
+      | Some channels when chans buf.buffer <> channels ->
+        let newbuf = create channels len in
+        buf.buffer <- newbuf;
+        newbuf
+      | _ ->
+        if duration buf.buffer >= len then
+          buf.buffer
+        else
+          (* TODO: optionally blit the old buffer onto the new one. *)
+          let oldbuf = buf.buffer in
+          let newbuf = create (chans oldbuf) len in
+          buf.buffer <- newbuf;
+          newbuf
+
+  let duration buf = duration buf.buffer
 
   let create chans len =
     {
       buffer = create chans len
     }
-
-  let duration buf = duration buf.buffer
 end
 
 (* TODO: share code with ringbuffer module! *)
@@ -1329,6 +1356,25 @@ module Generator = struct
 
     method release = g#release
 
+    method dead = g#dead
+  end
+
+  class chain (g : t) (e : Effect.t) : t =
+  object
+    method fill buf ofs len =
+      g#fill buf ofs len;
+      e#process buf ofs len
+
+    val tmpbuf = Buffer_ext.create 0 0
+
+    method fill_add buf ofs len =
+      let tmpbuf = Buffer_ext.prepare tmpbuf ~channels:(channels buf) len in
+      g#fill tmpbuf 0 len;
+      add buf ofs tmpbuf 0 len
+
+    method set_volume = g#set_volume
+    method set_frequency = g#set_frequency
+    method release = g#release
     method dead = g#dead
   end
 end
