@@ -251,6 +251,8 @@ val to_mono : buffer -> Mono.buffer
 val of_mono : Mono.buffer -> buffer
 
 module U8 : sig
+  val of_audio : buffer -> int -> string -> int -> int -> unit
+
   val to_audio : string -> int -> buffer -> int -> int -> unit
 
   val convert_to_audio : string -> int -> int -> ?resample:float -> buffer -> int -> int

@@ -48,6 +48,26 @@ static inline int16_t clip(double s)
     return (s * INT16_MAX);
 }
 
+static inline uint8_t u8_clip(double s)
+{
+  if (s < -1)
+  {
+#ifdef DEBUG
+    printf("Wrong sample: %f\n", s);
+#endif
+    return 0;
+  }
+  else if (s > 1)
+  {
+#ifdef DEBUG
+    printf("Wrong sample: %f\n", s);
+#endif
+    return 255;
+  }
+  else
+    return (s * 127. + 128.);
+}
+
 #define u8tof(x)  (((double)x-INT8_MAX)/INT8_MAX)
 #define get_u8(src,offset,nc,c,i)    u8tof(((uint8_t*)src)[offset+i*nc+c])
 #define s16tof(x) (((double)x)/INT16_MAX)
@@ -81,6 +101,34 @@ CAMLprim value caml_float_pcm_to_s16le(value a, value _offs, value _dst, value _
 #ifdef BIGENDIAN
       dst[i*nc+c] = bswap_16(dst[i*nc+c]);
 #endif
+    }
+   }
+
+  CAMLreturn(Val_int(dst_len));
+}
+
+CAMLprim value caml_float_pcm_to_u8(value a, value _offs,
+                                    value _dst, value _dst_offs, value _len)
+{
+  CAMLparam2(a, _dst);
+  int c, i;
+  int offs = Int_val(_offs);
+  int dst_offs = Int_val(_dst_offs);
+  int len = Int_val(_len);
+  int nc = Wosize_val(a);
+  int dst_len = len * nc;
+  value src;
+  uint8_t *dst = (uint8_t*)String_val(_dst);
+
+  if (caml_string_length(_dst) < dst_offs + dst_len)
+    caml_invalid_argument("pcm_to_u8: destination buffer too short");
+
+  for (c = 0; c < nc; c++)
+  {
+    src = Field(a, c);
+    for (i = 0; i < len; i++)
+    {
+      dst[i*nc+c] = u8_clip(Double_field(src, i + offs));
     }
    }
 

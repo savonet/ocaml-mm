@@ -802,12 +802,20 @@ let resample ratio buf ofs len =
   map (fun buf -> Mono.resample ratio buf ofs len) buf
 
 module U8 = struct
-  external resample_to_audio : string -> int -> int -> float -> buffer -> int -> int = "caml_float_pcm_of_u8_resample_byte" "caml_float_pcm_of_u8_resample_native"
+  external resample_to_audio :
+    string -> int -> int -> float -> buffer -> int -> int
+    = "caml_float_pcm_of_u8_resample_byte"
+      "caml_float_pcm_of_u8_resample_native"
+
+  external of_audio :
+    float array array -> int -> string -> int -> int -> unit
+    = "caml_float_pcm_to_u8"
 
   let convert_to_audio s sofs slen ?(resample=1.) buf bofs =
     resample_to_audio s sofs slen resample buf bofs
 
-  let to_audio s sofs buf bofs len = ignore (resample_to_audio s sofs len 1. buf bofs)
+  let to_audio s sofs buf bofs len =
+    ignore (resample_to_audio s sofs len 1. buf bofs)
 end
 
 module S16LE = struct
@@ -815,7 +823,9 @@ module S16LE = struct
 
   let duration channels len = len / (2 * channels)
 
-  external of_audio : float array array -> int -> string -> int -> int -> unit = "caml_float_pcm_to_s16le"
+  external of_audio :
+    float array array -> int -> string -> int -> int -> unit
+    = "caml_float_pcm_to_s16le"
 
   let make buf ofs len =
     let slen = length (channels buf) len in
