@@ -41,6 +41,8 @@ module Note : sig
   val modulo : t -> int * int
 
   val to_string : t -> string
+
+  val of_string : string -> t
 end
 
 (** Operations on mono buffers (with only one channel). *)
@@ -56,6 +58,8 @@ module Mono : sig
 
   val duration : buffer -> int
 
+  val append : buffer -> buffer -> buffer
+
   (** Clear a portion of a buffer (fill it with zeroes). *)
   val clear : buffer -> int -> int -> unit
 
@@ -66,6 +70,8 @@ module Mono : sig
   (** [add b1 o1 b2 o2 len] adds [len] samples of contents of [b2] starting at
       [o2] to [b1] starting at [o1]. *)
   val add : buffer -> int -> buffer -> int -> int -> unit
+
+  val mult : buffer -> int -> buffer -> int -> int -> unit
 
   module Ringbuffer_ext : Ringbuffer.R with type elt = float
 
@@ -153,6 +159,10 @@ module Mono : sig
       method process : buffer -> int -> int -> unit
     end
 
+    class amplify : float -> t
+
+    class clip : float -> t
+
     class biquad_filter : int -> [ `Band_pass | `High_pass | `Low_pass | `Notch | `All_pass | `Peaking | `Low_shelf | `High_shelf ] -> ?gain:float -> float -> float -> t
 
     (** ADSR (Attack/Decay/Sustain/Release) envelopes. *)
@@ -216,6 +226,10 @@ module Mono : sig
 
     class chain : t -> Effect.t -> t
 
+    class add : t -> t -> t
+
+    class mult : t -> t -> t
+
     (** Apply an ADSR envlope on a generator. *)
     class adsr : Effect.ADSR.t -> t -> t
   end
@@ -237,6 +251,8 @@ val clear : buffer -> int -> int -> unit
 
 (** Copy the given buffer. *)
 val copy : buffer -> buffer
+
+val append : buffer -> buffer -> buffer
 
 val channels : buffer -> int
 
@@ -484,6 +500,8 @@ module IO : sig
       method close : unit
     end
 
+    (** Create a writer to a file in WAV format with given number of channels,
+        sample rate and file name.*)
     class to_wav_file : int -> int -> string -> t
   end
 

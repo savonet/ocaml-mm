@@ -76,6 +76,23 @@ module Note = struct
       | _ -> assert false
     ) ^ " " ^ string_of_int o
 
+  (* TODO: sharps and flats *)
+  let of_string s =
+    assert (String.length s >= 2);
+    let note = String.sub s 0 (String.length s - 1) in
+    let oct = int_of_char s.[String.length s - 1] - int_of_char '0' in
+    let off =
+      match note with
+        | "a" | "A" -> 0
+        | "b" | "B" -> 2
+        | "c" | "C" -> 3
+        | "d" | "D" -> 5
+        | "e" | "E" -> 7
+        | "f" | "F" -> 8
+        | "g" | "G" -> 10
+        | _ -> raise Not_found
+    in
+    64 + 12 * (oct - 4) + off
 end
 
 module Sample = struct
@@ -105,6 +122,8 @@ module Mono = struct
     blit buf 0 ans 0 len;
     ans
 
+  let append b1 b2 = Array.append b1 b2
+
   let add b1 o1 b2 o2 len =
     for i = 0 to len - 1 do
       b1.(o1 + i) <- b1.(o1 + i) +. b2.(o2 + i)
@@ -122,6 +141,11 @@ module Mono = struct
       add b1 o1 b2 o2 len
     else
       add_coeff b1 o1 k b2 o2 len
+
+  let mult b1 o1 b2 o2 len =
+    for i = 0 to len - 1 do
+      b1.(o1 + i) <- b1.(o1 + i) *. b2.(o2 + i)
+    done
 
   let amplify k b ofs len =
     for i = ofs to ofs + len - 1 do
@@ -393,6 +417,19 @@ module Mono = struct
     class type t =
     object
       method process : buffer -> int -> int -> unit
+    end
+
+    class amplify k : t =
+    object
+      method process = amplify k
+    end
+
+    class clip c : t =
+    object
+      method process buf ofs len =
+        for i = ofs to ofs + len - 1 do
+          buf.(i) <- max (-.c) (min c buf.(i))
+        done
     end
 
     (* Digital filter based on "Cookbook formulae for audio EQ biquad filter
@@ -692,7 +729,7 @@ module Mono = struct
 	assert false
     end
 
-    class chain (g : t) (e : Effect.t) : t =
+    class chain (g:t) (e:Effect.t) : t =
     object
       method fill buf ofs len =
         g#fill buf ofs len;
@@ -709,6 +746,50 @@ module Mono = struct
       method set_frequency = g#set_frequency
       method release = g#release
       method dead = g#dead
+    end
+
+    class combine f (g1:t) (g2:t) : t =
+    object
+      val tmpbuf = Buffer_ext.create 0
+      val tmpbuf2 = Buffer_ext.create 0
+
+      method fill buf ofs len =
+        g1#fill buf ofs len;
+        let tmpbuf = Buffer_ext.prepare tmpbuf len in
+        g2#fill tmpbuf 0 len;
+        f buf ofs tmpbuf 0 len
+
+      method fill_add buf ofs len =
+        let tmpbuf = Buffer_ext.prepare tmpbuf len in
+        g1#fill tmpbuf 0 len;
+        let tmpbuf2 = Buffer_ext.prepare tmpbuf2 len in
+        g2#fill tmpbuf2 0 len;
+        f tmpbuf 0 tmpbuf2 0 len;
+        add buf ofs tmpbuf 0 len
+
+      method set_volume v =
+        g1#set_volume v;
+        g2#set_volume v
+
+      method set_frequency v =
+        g1#set_frequency v;
+        g2#set_frequency v
+
+      method release =
+        g1#release;
+        g2#release
+
+      method dead = g1#dead && g2#dead
+    end
+
+    class add g1 g2 =
+    object
+      inherit combine add g1 g2
+    end
+
+    class mult g1 g2 =
+    object
+      inherit combine mult g1 g2
     end
 
     class adsr (adsr:Effect.ADSR.t) (g:t) =
@@ -770,6 +851,9 @@ let duration buf =
 
 let create_same buf =
   create (channels buf) (duration buf)
+
+let append b1 b2 =
+  Array.mapi (fun i b1 -> Mono.append b1 b2.(i)) b1
 
 let clear = iterp Mono.clear
 
@@ -1554,11 +1638,11 @@ module IO = struct
 
       initializer
       let bits_per_sample = 16 in
-    (* RIFF *)
+      (* RIFF *)
       self#output "RIFF";
       self#output_int 0;
       self#output "WAVE";
-    (* Format *)
+      (* Format *)
       self#output "fmt ";
       self#output_int 16;
       self#output_short 1;
@@ -1567,9 +1651,11 @@ module IO = struct
       self#output_int (self#sample_rate * self#channels * bits_per_sample / 8);
       self#output_short (self#channels * bits_per_sample / 8);
       self#output_short bits_per_sample;
-    (* Data *)
+      (* Data *)
       self#output "data";
-      self#output_int 0 (* size of the data, to be updated afterwards *)
+      (* size of the data, to be updated afterwards *)
+      self#output_short 0xffff;
+      self#output_short 0xffff
 
       val mutable datalen = 0
 

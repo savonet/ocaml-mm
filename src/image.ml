@@ -470,7 +470,7 @@ module Generic = struct
         begin
           match x with
             | RGB24  -> "RGB24"
-            | BGR24  -> "BGR32"
+            | BGR24  -> "BGR24"
             | RGB32  -> "RGB32"
             | BGR32  -> "BGR32"
             | RGBA32 -> "RGBA32"
