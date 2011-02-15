@@ -6,13 +6,13 @@ let () =
   let buf = Audio.create f#channels blen in
   Printf.printf "Opened WAV file with %d channels at %dHz.\n%!" f#channels f#sample_rate;
   let delay = Audio.Effect.delay f#channels f#sample_rate 0.2 ~ping_pong:true 0.5 in
-  let bqf = Audio.Effect.biquad_filter f#channels f#sample_rate `High_pass 400. 1. in
+  let bqf = new Audio.Effect.biquad_filter f#channels f#sample_rate `High_pass 400. 1. in
   let loop = ref true in
   while !loop do
     let r = f#read buf 0 blen in
     loop := r <> 0;
-    (* delay#process buf 0 n; *)
-    (* bqf#process buf 0 n; *)
+    (* delay#process buf 0 r; *)
+    (* bqf#process buf 0 r; *)
     oss#write buf 0 r
   done;
   oss#close;

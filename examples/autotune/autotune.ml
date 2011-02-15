@@ -11,7 +11,7 @@ let () =
   let alsa_out = MMAlsa.rw channels sample_rate ~playback:true ~blocking:false ~buffer_size:(periods*blen) ~periods () in
   let buf = Audio.create channels blen in
   (* let agc = Audio.Effect.auto_gain_control channels sample_rate ~rms_target:2. () in *)
-  let gen = Audio.Generator.of_mono (Audio.Mono.Generator.saw sample_rate 440.) in
+  let gen = new Audio.Generator.of_mono (new Audio.Mono.Generator.saw sample_rate 440.) in
   let loop = ref true in
   Printf.printf "Using Alsa %s (delay: %d samples).\n" alsa_out#version alsa_out#delay;
   (* alsa#prepare; *)
