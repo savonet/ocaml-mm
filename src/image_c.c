@@ -37,6 +37,38 @@
 
 #define max(a,b) (a>b)?a:b
 #define min(a,b) (a<b)?a:b
+#define ALIGNMENT_BYTES 16
+#define roundup(x) ((((x) - 1) / ALIGNMENT_BYTES + 1) * ALIGNMENT_BYTES)
+
+/* This function creates a 16 bytes 
+ * alligned plane. It returns a big array 
+ * along with the new stride. */
+CAMLprim value caml_rgb_alligned_plane(value _height, value _stride)
+{
+  CAMLparam0();
+  CAMLlocal2(v,ans);
+  long height = Long_val(_height);
+  long stride = Long_val(_stride);
+
+  // round up values..
+  stride = roundup(stride);
+  long rlen = roundup(height*stride);
+  long len = height*stride;  
+
+  // Init plane..
+  void *data = malloc(rlen);
+  if (data == NULL) 
+    caml_raise_out_of_memory();
+  // We pass len and not rlen since ocaml code expects len = height*stride
+  v = caml_ba_alloc(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8,1,data,&len);
+
+
+  // We return
+  ans = caml_alloc_tuple(2);
+  Store_field(ans,0,Val_int(stride));
+  Store_field(ans,1,v);
+  CAMLreturn(ans);
+}
 
 /* Remark, this returns an integer, which means that it might be ordered in
    little-endian... */

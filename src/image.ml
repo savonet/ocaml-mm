@@ -1,3 +1,7 @@
+
+(* Creates an 16-bytes alligned plane. Returns (stride*plane). *)
+external create_rounded_plane : int -> int -> int*((int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t) = "caml_rgb_alligned_plane"
+
 module Motion_multi = struct
   type vectors_data = (int, Bigarray.nativeint_elt, Bigarray.c_layout) Bigarray.Array1.t
 
@@ -30,6 +34,7 @@ end
 module Gray8 = struct
   type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
+  (* TODO: stride ? *)
   type t =
       {
         data : data;
@@ -42,6 +47,7 @@ module Gray8 = struct
       width = w;
     }
 
+  (* Don't use create_rounded_plane here since there is not stride.. *)
   let create w h =
     make w (Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.c_layout (w*h))
 
@@ -95,14 +101,11 @@ module YUV420 = struct
   let internal img = img.data
 
   let create w h =
-    let len = w * h in
-    let create len =
-      Bigarray.Array1.create kind Bigarray.c_layout len
-    in
-    let y = create len in
-    let u = create (len/4) in
-    let v = create (len/4) in
-    make w h y w u v (w/2)
+    let (ys,y) = create_rounded_plane h w in
+    let (uvs,u) = create_rounded_plane (h/2) (w/2) in
+    (* Stride should be the same in this case.. *)
+    let (_,v) = create_rounded_plane (h/2) (w/2) in
+    make w h y ys u v uvs
 
   external blank : data -> unit = "caml_yuv_blank"
 
@@ -156,10 +159,8 @@ module RGBA32 = struct
 	| Some v -> v
 	| None -> 4*width
     in
-    let data =
-      Bigarray.Array1.create
-	Bigarray.int8_unsigned Bigarray.c_layout
-	(stride*height)
+    let (stride,data) = 
+      create_rounded_plane height stride 
     in
     make ~stride width height data
 
