@@ -15,6 +15,8 @@
 #include <limits.h>
 #include <arpa/inet.h>
 
+#include "config.h"
+
 // MMX invert is broken at the moment..
 #undef HAVE_MMX
 
@@ -37,8 +39,20 @@
 
 #define max(a,b) (a>b)?a:b
 #define min(a,b) (a<b)?a:b
+
+// Stolen from gavl,
+// Stolen from a52dec..
+
+#ifdef HAVE_MEMALIGN
+/* some systems have memalign() but no declaration for it */
+void * memalign (size_t align, size_t size);
+#else
+/* assume malloc alignment is sufficient */
+#define memalign(align,size) malloc (size)
+#endif
+
 #define ALIGNMENT_BYTES 16
-#define roundup(x) ((((x) - 1) / ALIGNMENT_BYTES + 1) * ALIGNMENT_BYTES)
+#define ALIGN(a) a=((a+ALIGNMENT_BYTES-1)/ALIGNMENT_BYTES)*ALIGNMENT_BYTES
 
 /* This function creates a 16 bytes 
  * alligned plane. It returns a big array 
@@ -51,12 +65,11 @@ CAMLprim value caml_rgb_alligned_plane(value _height, value _stride)
   long stride = Long_val(_stride);
 
   // round up values..
-  stride = roundup(stride);
-  long rlen = roundup(height*stride);
+  ALIGN(stride);
   long len = height*stride;  
 
   // Init plane..
-  void *data = malloc(rlen);
+  void *data = memalign(ALIGNMENT_BYTES,len);
   if (data == NULL) 
     caml_raise_out_of_memory();
   // We pass len and not rlen since ocaml code expects len = height*stride
