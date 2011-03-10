@@ -40,6 +40,8 @@ if test "x$enable_profiling" = "xyes" ; then
   OCAMLNCFLAGS="$OCAMLNCFLAGS -p"
 fi
 
+AC_CHECK_FUNCS([memalign])
+
 # Check endianess
 AC_C_BIGENDIAN(AC_DEFINE([BIGENDIAN], [1], [The target is big endian]),[])
 

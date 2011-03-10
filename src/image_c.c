@@ -15,6 +15,8 @@
 #include <limits.h>
 #include <arpa/inet.h>
 
+#include "config.h"
+
 // MMX invert is broken at the moment..
 #undef HAVE_MMX
 
@@ -37,6 +39,48 @@
 
 #define max(a,b) (a>b)?a:b
 #define min(a,b) (a<b)?a:b
+
+// Stolen from gavl,
+// Stolen from a52dec..
+
+#ifdef HAVE_MEMALIGN
+/* some systems have memalign() but no declaration for it */
+void * memalign (size_t align, size_t size);
+#else
+/* assume malloc alignment is sufficient */
+#define memalign(align,size) malloc (size)
+#endif
+
+#define ALIGNMENT_BYTES 16
+#define ALIGN(a) a=((a+ALIGNMENT_BYTES-1)/ALIGNMENT_BYTES)*ALIGNMENT_BYTES
+
+/* This function creates a 16 bytes 
+ * alligned plane. It returns a big array 
+ * along with the new stride. */
+CAMLprim value caml_rgb_alligned_plane(value _height, value _stride)
+{
+  CAMLparam0();
+  CAMLlocal2(v,ans);
+  long height = Long_val(_height);
+  long stride = Long_val(_stride);
+
+  // round up values..
+  ALIGN(stride);
+  long len = height*stride;  
+
+  // Init plane..
+  void *data = memalign(ALIGNMENT_BYTES,len);
+  if (data == NULL) 
+    caml_raise_out_of_memory();
+  v = caml_ba_alloc(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8,1,data,&len);
+
+
+  // We return
+  ans = caml_alloc_tuple(2);
+  Store_field(ans,0,Val_int(stride));
+  Store_field(ans,1,v);
+  CAMLreturn(ans);
+}
 
 /* Remark, this returns an integer, which means that it might be ordered in
    little-endian... */
