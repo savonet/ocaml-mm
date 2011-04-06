@@ -188,6 +188,7 @@ export CFLAGS
 export CXXFLAGS
 export LDFLAGS
 export CPPFLAGS
+export AR
 
 ifndef RPATH_FLAG
   ifdef ELF_RPATH_FLAG

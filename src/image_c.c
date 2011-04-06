@@ -13,7 +13,11 @@
 #include <stdio.h>
 #include <math.h>
 #include <limits.h>
+#ifdef WIN32
+#include <winsock2.h>
+#else
 #include <arpa/inet.h>
+#endif
 
 #include "config.h"
 
@@ -37,8 +41,10 @@
 
 #include "image_c.h"
 
+#ifndef WIN32
 #define max(a,b) (a>b)?a:b
 #define min(a,b) (a<b)?a:b
+#endif
 
 // Stolen from gavl,
 // Stolen from a52dec..
