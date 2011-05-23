@@ -2,6 +2,7 @@ SOURCES = ringbuffer.mli ringbuffer.ml IO.ml audio_c.c audio.mli audio.ml	\
 image_c.h image_c.c image.mli image.ml video.mli video.ml MIDI.mli MIDI.ml	\
 synth.mli synth.ml
 RESULT = mm
+LIBINSTALL_FILES := *.cm* *.mli *.so *.a
 OCAMLFLAGS = @OCAMLFLAGS@
 OCAMLNCFLAGS = @OCAMLNCFLAGS@
 OCAMLLDFLAGS = -linkall
@@ -10,7 +11,6 @@ INCDIRS = @INCDIRS@
 NO_CUSTOM = yes
 OCAMLDOCFLAGS = -sort -stars
 
-OCAMLMAKEFILE = OCamlMakefile
 OCAMLFIND = @OCAMLFIND@
 OCAMLFIND_LDCONF = @OCAMLFIND_LDCONF@
 OCAMLC = @OCAMLC@
@@ -42,4 +42,4 @@ uninstall: libuninstall
 
 update: uninstall install
 
-include $(OCAMLMAKEFILE)
+include OCamlMakefile

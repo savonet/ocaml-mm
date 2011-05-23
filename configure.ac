@@ -79,10 +79,11 @@ if test "x$enable_v4l" != "xno" ; then
 fi
 
 AC_SUBST(W_V4L)
-
+AC_SUBST(VERSION)
 AC_SUBST(INCDIRS)
 
 # Finally create the Makefile
+AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile],[chmod a-w src/Makefile])
 AC_CONFIG_FILES([external/Makefile],[chmod a-w external/Makefile])
 AC_CONFIG_FILES([external/Makefile.defs],[chmod a-w external/Makefile.defs])
