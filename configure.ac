@@ -1,19 +1,15 @@
-AC_INIT(ocaml-mm, 0.1.0, savonet-users@lists.sourceforge.net)
+AC_INIT([ocaml-mm],[0.1.0],[savonet-users@lists.sourceforge.net])
 VERSION=$PACKAGE_VERSION
 AC_MSG_RESULT(configuring $PACKAGE_STRING)
 
-AC_PROG_CC()
-AC_CHECK_TOOL([AR],[ar],no)
-AC_SUBST(AR)
-
-AC_CHECK_OCAML_COMPILERS()
+AC_BASE_CHECKS()
 
 # Include a config.h
 AC_CONFIG_HEADERS([config.h:config.h.in])
 # Include it
-CFLAGS="$CFLAGS -I`pwd`/`dirname $0`"
+CFLAGS="$CFLAGS -I.."
 
-INCDIRS="$INCDIRS `pwd`/src"
+INCDIRS="$INCDIRS .."
 
 AC_CHECK_FUNCS([memalign])
 
@@ -52,7 +48,7 @@ AC_SUBST(OCAML_HAS_theora)
 
 ########## OSS ##########
 
-AC_ARG_ENABLE([oss],AC_HELP_STRING([--disable-oss],["don't use OSS"]))
+AC_ARG_ENABLE([oss],AS_HELP_STRING([--disable-oss],["don't use OSS"]))
 
 if test "x$enable_oss" != "xno" ; then
   AC_CHECK_HEADERS([sys/soundcard.h],[W_OSS="yes"],[W_OSS="no"])
@@ -62,7 +58,7 @@ AC_SUBST(W_OSS)
 
 ########## FFmpeg ##########
 
-AC_ARG_ENABLE([ffmpeg],AC_HELP_STRING([--disable-ffmpeg],["don't use FFmpeg"]))
+AC_ARG_ENABLE([ffmpeg],AS_HELP_STRING([--disable-ffmpeg],["don't use FFmpeg"]))
 
 if test "x$enable_ffmpeg" != "xno" ; then
   AC_CHECK_HEADERS([libavcodec/avcodec.h],[W_FFMPEG="yes"],[W_FFMPEG="no"])
@@ -72,7 +68,7 @@ AC_SUBST(W_FFMPEG)
 
 ########## v4l ##########
 
-AC_ARG_ENABLE([v4l],AC_HELP_STRING([--disable-v4l],["don't use video4linux"]))
+AC_ARG_ENABLE([v4l],AS_HELP_STRING([--disable-v4l],["don't use video4linux"]))
 
 if test "x$enable_v4l" != "xno" ; then
   AC_CHECK_HEADERS([linux/videodev.h],[W_V4L="yes"],[W_V4L="no"])

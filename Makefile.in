@@ -1,8 +1,8 @@
 # $Id: Makefile.in 2660 2006-07-18 17:23:31Z dbaelde $
 
 PROGNAME := ocaml-mm
-DISTFILES := CHANGES COPYING Makefile.in README \
-	bootstrap configure configure.ac m4/*.m4 \
+DISTFILES := @AUTOCONF_INSTALL_FILES@ CHANGES COPYING Makefile.in README \
+	bootstrap configure configure.ac  \
 	src/*.ml src/*.mli src/*.c src/Makefile.in src/META.in \
 	src/OCamlMakefile src/*.h examples/* external/* config.h.in
 	
@@ -24,7 +24,7 @@ doc:
 dist: clean
 	rm -rf $(PROGNAME)-$(VERSION)
 	mkdir $(PROGNAME)-$(VERSION)
-	cp -r --parents $(DISTFILES) $(PROGNAME)-$(VERSION)
+	cp -R -L --parents $(DISTFILES) $(PROGNAME)-$(VERSION)
 	tar zcvf ../$(PROGNAME)-$(VERSION).tar.gz $(PROGNAME)-$(VERSION)
 	rm -rf $(PROGNAME)-$(VERSION)
 
