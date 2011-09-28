@@ -441,7 +441,7 @@ module RGBA32 = struct
   end
 
   module Draw = struct
-    external line : t -> int * int * int -> int * int -> int * int -> unit = "caml_mm_RGBA8_draw_line"
+    external line : t -> int * int * int * int -> int * int -> int * int -> unit = "caml_mm_RGBA8_draw_line"
   end
 
   module Motion = struct

@@ -1446,6 +1446,7 @@ CAMLprim value caml_mm_RGBA8_draw_line(value _img, value c, value src, value dst
   uint8 cr = Int_val(Field(c,0));
   uint8 cg = Int_val(Field(c,1));
   uint8 cb = Int_val(Field(c,2));
+  uint8 ca = Int_val(Field(c,3));
 
   int i, j;
 
@@ -1474,12 +1475,14 @@ CAMLprim value caml_mm_RGBA8_draw_line(value _img, value c, value src, value dst
           Red(&img,j,i) = cr;
           Green(&img,j,i) = cg;
           Blue(&img,j,i) = cb;
+          Alpha(&img,j,i) = ca;
         }
       else
         {
           Red(&img,i,j) = cr;
           Green(&img,i,j) = cg;
           Blue(&img,i,j) = cb;
+          Alpha(&img,i,j) = ca;
         }
       error -= deltay;
       if (error < 0)

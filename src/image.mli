@@ -179,7 +179,7 @@ module RGBA32 : sig
   end
 
   module Draw : sig
-    val line : t -> RGB8.Color.t -> int * int -> int * int -> unit
+    val line : t -> Color.t -> int * int -> int * int -> unit
   end
 
   module Motion : sig
