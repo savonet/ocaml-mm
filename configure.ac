@@ -1,4 +1,4 @@
-AC_INIT([ocaml-mm],[0.1.0],[savonet-users@lists.sourceforge.net])
+AC_INIT([ocaml-mm],[0.2.0],[savonet-users@lists.sourceforge.net])
 VERSION=$PACKAGE_VERSION
 AC_MSG_RESULT(configuring $PACKAGE_STRING)
 
