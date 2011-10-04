@@ -1,3 +1,8 @@
+0.2.0 (2011-10-04)
+=====
+* Add alpha channel for drawn lines.
+* Improved autoconf.
+
 0.1.0 (2011-06-30)
 =====
 * Initial release.
