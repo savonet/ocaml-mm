@@ -1,6 +1,5 @@
 SOURCES = ffmpeg_stubs.c MMFFmpeg.mli MMFFmpeg.ml
 RESULT = mm.ffmpeg
-INCDIRS = ../../src
 OCAMLFLAGS = -g
 OCAMLLDFLAGS = -g
 OCAMLNCFLAGS = -p
@@ -11,3 +10,4 @@ all: ncl
 
 include OCamlMakefile
 include ../Makefile.defs
+INCDIRS += ../../src
