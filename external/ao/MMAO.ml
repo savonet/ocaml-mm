@@ -32,9 +32,9 @@
  *)
 
 (* unit argument because we might put optional arguments for parameters *)
-class writer () =
+class writer channels rate =
 object (self)
-  val dev = Ao.open_live ()
+  val dev = Ao.open_live ~channels ~rate ~byte_format:`LITTLE_ENDIAN ()
 
   method write buf ofs len =
     let s = Audio.S16LE.make buf ofs len in
