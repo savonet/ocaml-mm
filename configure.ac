@@ -26,6 +26,10 @@ AC_CHECK_OCAML_PKG([ao])
 INCDIRS="$INCDIRS $OCAML_DIR_ao"
 AC_SUBST(OCAML_HAS_ao)
 
+AC_CHECK_OCAML_PKG([pulseaudio])
+INCDIRS="$INCDIRS $OCAML_DIR_pulseaudio"
+AC_SUBST(OCAML_HAS_pulseaudio)
+
 AC_CHECK_OCAML_PKG([gstreamer])
 INCDIRS="$INCDIRS $OCAML_DIR_gstreamer"
 AC_SUBST(OCAML_HAS_gstreamer)
@@ -97,6 +101,7 @@ Supported external libraries:
   - Mad       : $OCAML_HAS_mad
   - ogg       : $OCAML_HAS_ogg
   - OSS       : $W_OSS
+  - Pulseaudio: $OCAML_HAS_pulseaudio
   - SDL       : $OCAML_HAS_sdl
   - Theora    : $OCAML_HAS_theora
   - V4L       : $W_V4L
