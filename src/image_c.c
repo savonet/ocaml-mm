@@ -84,7 +84,7 @@
 
 #ifdef HAVE_MEMALIGN
 /* some systems have memalign() but no declaration for it */
-void * memalign (size_t align, size_t size);
+void * memalign(size_t align, size_t size);
 #else
 /* assume malloc alignment is sufficient */
 #define memalign(align,size) malloc (size)
@@ -108,11 +108,15 @@ CAMLprim value caml_rgb_aligned_plane(value _height, value _stride)
   long len = height*stride;  
 
   // Init plane..
-  void *data = memalign(ALIGNMENT_BYTES,len);
-  if (data == NULL) 
-    caml_raise_out_of_memory();
+  void *data;
+#ifdef HAVE_MEMALIGN
+  data = memalign(ALIGNMENT_BYTES,len);
+  if (data == NULL) caml_raise_out_of_memory();
   v = caml_ba_alloc(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8,1,data,&len);
-
+#else
+  v = caml_ba_alloc(CAML_BA_C_LAYOUT|CAML_BA_UINT8,1,NULL,&len);
+  data = Caml_ba_data_val(v);
+#endif
 
   // We return
   ans = caml_alloc_tuple(2);
