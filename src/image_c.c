@@ -94,9 +94,9 @@ void * memalign (size_t align, size_t size);
 #define ALIGN(a) a=((a+ALIGNMENT_BYTES-1)/ALIGNMENT_BYTES)*ALIGNMENT_BYTES
 
 /* This function creates a 16 bytes 
- * alligned plane. It returns a big array 
+ * aligned plane. It returns a big array 
  * along with the new stride. */
-CAMLprim value caml_rgb_alligned_plane(value _height, value _stride)
+CAMLprim value caml_rgb_aligned_plane(value _height, value _stride)
 {
   CAMLparam0();
   CAMLlocal2(v,ans);

@@ -32,8 +32,8 @@
  *)
 
 
-(* Creates an 16-bytes alligned plane. Returns (stride*plane). *)
-external create_rounded_plane : int -> int -> int*((int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t) = "caml_rgb_alligned_plane"
+(* Creates an 16-bytes aligned plane. Returns (stride*plane). *)
+external create_rounded_plane : int -> int -> int*((int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t) = "caml_rgb_aligned_plane"
 
 module Motion_multi = struct
   type vectors_data = (int, Bigarray.nativeint_elt, Bigarray.c_layout) Bigarray.Array1.t
