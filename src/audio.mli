@@ -303,8 +303,6 @@ module U8 : sig
   val of_audio : buffer -> int -> string -> int -> int -> unit
 
   val to_audio : string -> int -> buffer -> int -> int -> unit
-
-  val convert_to_audio : string -> int -> int -> ?resample:float -> buffer -> int -> int
 end
 
 module S16LE : sig
@@ -317,8 +315,6 @@ module S16LE : sig
   val make : buffer -> int -> int -> string
 
   val to_audio : string -> int -> buffer -> int -> int -> unit
-
-  val convert_to_audio : string -> int -> int -> ?resample:float -> buffer -> int -> int
 end
 
 val resample : ?mode:[`Nearest | `Linear] -> float -> buffer -> int -> int -> buffer

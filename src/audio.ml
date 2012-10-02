@@ -932,20 +932,14 @@ let resample ?mode ratio buf ofs len =
   map (fun buf -> Mono.resample ?mode ratio buf ofs len) buf
 
 module U8 = struct
-  external resample_to_audio :
-    string -> int -> int -> float -> buffer -> int -> int
-    = "caml_float_pcm_of_u8_resample_byte"
-      "caml_float_pcm_of_u8_resample_native"
+  external to_audio :
+    string -> int -> buffer -> int -> int -> unit
+    = "caml_float_pcm_of_u8_byte"
+      "caml_float_pcm_of_u8_native"
 
   external of_audio :
     float array array -> int -> string -> int -> int -> unit
     = "caml_float_pcm_to_u8"
-
-  let convert_to_audio s sofs slen ?(resample=1.) buf bofs =
-    resample_to_audio s sofs slen resample buf bofs
-
-  let to_audio s sofs buf bofs len =
-    ignore (resample_to_audio s sofs len 1. buf bofs)
 end
 
 module S16LE = struct
@@ -963,13 +957,7 @@ module S16LE = struct
     of_audio buf ofs sbuf 0 len;
     sbuf
 
-  external resample_to_audio : string -> int -> int -> float -> float array array -> int -> int = "caml_float_pcm_convert_s16le_byte" "caml_float_pcm_convert_s16le_native"
-
-  let convert_to_audio s sofs slen ?(resample=1.) buf bofs =
-    resample_to_audio s sofs slen resample buf bofs
-
-  (* TODO: unify the parameters.. *)
-  let to_audio s sofs buf bofs len = ignore(resample_to_audio s sofs len 1. buf bofs)
+  external to_audio : string -> int -> float array array -> int -> int -> unit = "caml_float_pcm_convert_s16le_byte" "caml_float_pcm_convert_s16le_native"
 end
 
 let add b1 o1 b2 o2 len = iter2 (fun b1 b2 -> Mono.add b1 o1 b2 o2 len) b1 b2
