@@ -16,3 +16,13 @@ src/*.a
 src/*.cm*
 src/*.o
 src/*.so
+config.h
+config.h.in
+external/Makefile.defs
+src/IO.annot
+src/MIDI.annot
+src/audio.annot
+src/image.annot
+src/ringbuffer.annot
+src/synth.annot
+src/video.annot
