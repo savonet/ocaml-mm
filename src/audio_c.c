@@ -168,87 +168,65 @@ CAMLprim value caml_float_pcm_to_u8(value a, value _offs,
   CAMLreturn(Val_int(dst_len));
 }
 
-CAMLprim value caml_float_pcm_of_u8_resample_native(
-    value _src, value _offset, value _length,
-    value _ratio, value _dst, value _dst_off)
+CAMLprim value caml_float_pcm_of_u8_native(
+    value _src, value _offset,
+    value _dst, value _dst_off, value _length)
 {
   CAMLparam2(_src, _dst) ;
   CAMLlocal1(dstc) ;
   char* src = String_val(_src) ;
   int offset = Int_val(_offset) ;
   int len = Int_val(_length) ;
-  double ratio = Double_val(_ratio) ;
   int dst_off = Int_val(_dst_off) ;
   int dst_len = Wosize_val(Field(_dst, 0)) / Double_wosize ;
-  int newlen = (int)(ratio*len) ;
   int i,c ;
   int nc = Wosize_val(_dst) ;
 
-  if (dst_off + newlen > dst_len)
+  if (dst_off + len > dst_len)
     caml_invalid_argument("convert_native: output buffer too small");
 
-  if (ratio==1) {
-    for (c=0 ; c<nc ; c++) {
-      dstc = Field(_dst,c) ;
-      for (i=0 ; i<newlen; i++) {
-        Store_double_field(dstc, dst_off+i, get_u8(src,offset,nc,c,i)) ;
-      }
-    }
-  }else{
-    for (c=0 ; c<nc ; c++) {
-      dstc = Field(_dst,c) ;
-      for (i=0 ; i<newlen; i++) {
-        Store_double_field(dstc, dst_off+i, get_u8(src,offset,nc,c,((int)(i/ratio)))) ;
-      }
+  for (c=0 ; c<nc ; c++) {
+    dstc = Field(_dst,c) ;
+    for (i=0 ; i<len; i++) {
+      Store_double_field(dstc, dst_off+i, get_u8(src,offset,nc,c,i)) ;
     }
   }
 
-  CAMLreturn(Val_int(dst_off+newlen)) ;
+  CAMLreturn(Val_unit) ;
 }
 
-CAMLprim value caml_float_pcm_of_u8_resample_byte(value* argv, int argn)
+CAMLprim value caml_float_pcm_of_u8_byte(value* argv, int argn)
 {
-  return caml_float_pcm_of_u8_resample_native(argv[0],argv[1],argv[2],argv[3],argv[4],argv[5]);
+  return caml_float_pcm_of_u8_native(argv[0],argv[1],argv[2],argv[3],argv[4]);
 }
 
 
-CAMLprim value caml_float_pcm_convert_s16le_native(value _src, value _offset, value _length, value _ratio, value _dst, value _dst_off)
+CAMLprim value caml_float_pcm_convert_s16le_native(value _src, value _offset, value _dst, value _dst_off, value _length)
 {
   CAMLparam2(_src, _dst) ;
   CAMLlocal1(dstc) ;
   char* src = String_val(_src) ;
   int offset = Int_val(_offset) ;
   int len = Int_val(_length) ;
-  double ratio = Double_val(_ratio) ;
   int dst_off = Int_val(_dst_off) ;
   int dst_len = Wosize_val(Field(_dst, 0)) / Double_wosize ;
-  int newlen = (int)(ratio*len) ;
   int i,c ;
   int nc = Wosize_val(_dst) ;
 
-  if (dst_off + newlen > dst_len)
+  if (dst_off + len > dst_len)
     caml_invalid_argument("convert_native: output buffer too small");
 
-  if (ratio==1) {
-    for (c=0 ; c<nc ; c++) {
-      dstc = Field(_dst,c) ;
-      for (i=0 ; i<newlen; i++) {
-        Store_double_field(dstc, dst_off+i, get_s16le(src,offset,nc,c,i)) ;
-      }
-    }
-  }else{
-    for (c=0 ; c<nc ; c++) {
-      dstc = Field(_dst,c) ;
-      for (i=0 ; i<newlen; i++) {
-        Store_double_field(dstc, dst_off+i, get_s16le(src,offset,nc,c,((int)(i/ratio)))) ;
-      }
+  for (c=0 ; c<nc ; c++) {
+    dstc = Field(_dst,c) ;
+    for (i=0 ; i<len; i++) {
+      Store_double_field(dstc, dst_off+i, get_s16le(src,offset,nc,c,i)) ;
     }
   }
 
-  CAMLreturn(Val_int(dst_off+newlen)) ;
+  CAMLreturn(Val_unit) ;
 }
 
 CAMLprim value caml_float_pcm_convert_s16le_byte(value* argv, int argn)
 {
-  return caml_float_pcm_convert_s16le_native(argv[0],argv[1],argv[2],argv[3],argv[4],argv[5]);
+  return caml_float_pcm_convert_s16le_native(argv[0],argv[1],argv[2],argv[3],argv[4]);
 }

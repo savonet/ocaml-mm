@@ -96,7 +96,7 @@ module Mono : sig
   (** Clear a portion of a buffer (fill it with zeroes). *)
   val clear : buffer -> int -> int -> unit
 
-  val resample : float -> buffer -> int -> int -> buffer
+  val resample : ?mode:[`Nearest | `Linear] -> float -> buffer -> int -> int -> buffer
 
   val clip : buffer -> int -> int -> unit
 
@@ -303,8 +303,6 @@ module U8 : sig
   val of_audio : buffer -> int -> string -> int -> int -> unit
 
   val to_audio : string -> int -> buffer -> int -> int -> unit
-
-  val convert_to_audio : string -> int -> int -> ?resample:float -> buffer -> int -> int
 end
 
 module S16LE : sig
@@ -317,11 +315,9 @@ module S16LE : sig
   val make : buffer -> int -> int -> string
 
   val to_audio : string -> int -> buffer -> int -> int -> unit
-
-  val convert_to_audio : string -> int -> int -> ?resample:float -> buffer -> int -> int
 end
 
-val resample : float -> buffer -> int -> int -> buffer
+val resample : ?mode:[`Nearest | `Linear] -> float -> buffer -> int -> int -> buffer
 
 (** Same as [Array.blit] for audio data. *)
 val blit : buffer -> int -> buffer -> int -> int -> unit
