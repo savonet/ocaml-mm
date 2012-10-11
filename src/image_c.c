@@ -165,7 +165,7 @@ static frame *rgb_copy(frame *src, frame *dst)
   dst->width = src->width;
   dst->height = src->height;
   dst->stride = src->stride;
-  dst->data = malloc(Rgb_data_size(src));
+  dst->data = memalign(ALIGNMENT_BYTES, Rgb_data_size(src));
   memcpy(dst->data, src->data, Rgb_data_size(src));
 
   return dst;
