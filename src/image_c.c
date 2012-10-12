@@ -109,14 +109,9 @@ CAMLprim value caml_rgb_aligned_plane(value _height, value _stride)
 
   // Init plane..
   void *data;
-#ifdef HAVE_MEMALIGN
   data = memalign(ALIGNMENT_BYTES,len);
   if (data == NULL) caml_raise_out_of_memory();
   v = caml_ba_alloc(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8,1,data,&len);
-#else
-  v = caml_ba_alloc(CAML_BA_C_LAYOUT|CAML_BA_UINT8,1,NULL,&len);
-  data = Caml_ba_data_val(v);
-#endif
 
   // We return
   ans = caml_alloc_tuple(2);
@@ -166,6 +161,7 @@ static frame *rgb_copy(frame *src, frame *dst)
   dst->height = src->height;
   dst->stride = src->stride;
   dst->data = memalign(ALIGNMENT_BYTES, Rgb_data_size(src));
+  if (dst->data == NULL) caml_raise_out_of_memory();
   memcpy(dst->data, src->data, Rgb_data_size(src));
 
   return dst;
@@ -542,7 +538,8 @@ CAMLprim value caml_rgb_of_rgb8_string(value _rgb, value _data)
   frame rgb;
   frame_of_value(_rgb, &rgb);
   int datalen = rgb.height * rgb.width * 3;
-  char *data = (char*)malloc(datalen);
+  char *data = (char*)memalign(ALIGNMENT_BYTES, datalen);
+  if (data == NULL) caml_raise_out_of_memory();
 
   int i, j;
 
@@ -778,6 +775,7 @@ CAMLprim value caml_rgb_to_bmp(value _rgb)
   frame_of_value(_rgb,&rgb);
   int len = Rgb_num_pix(&rgb);
   char *bmp = malloc(54 + 3 * len);
+  if (bmp == NULL) caml_raise_out_of_memory(); 
   int i, j;
   unsigned char a;
 
@@ -826,6 +824,7 @@ CAMLprim value caml_image_to_rgb24(value _rgb)
   frame_of_value(_rgb,&rgb);
   int len = Rgb_num_pix(&rgb);
   char *bmp = malloc(3 * len);
+  if (bmp == NULL) caml_raise_out_of_memory();
   int i, j;
   unsigned char a;
 
@@ -1525,6 +1524,7 @@ CAMLprim value caml_mm_Gray8_motion_multi_compute(value _bs, value _width, value
   intnat vlen = vw*vh*2;
   // Vector table of size vw*vh
   int *v = malloc(vlen*sizeof(int));
+  if (v == NULL) caml_raise_out_of_memory();
   // Current score
   int s00, s10, s01, s11;
   // Best score
@@ -1598,6 +1598,7 @@ CAMLprim value caml_rgb_motion_multi_median_denoise(value _vw, value _v)
 
   caml_enter_blocking_section();
   oldv = malloc(len * 2 * sizeof(int));
+  if (oldv == NULL) caml_raise_out_of_memory();
   memcpy(oldv, v, len * 2 * sizeof(int));
   for (j = 1; j < vh - 1; j++)
     for (i = 1; i < vw - 1; i++)
