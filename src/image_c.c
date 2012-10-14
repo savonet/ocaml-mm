@@ -1181,24 +1181,22 @@ CAMLprim value caml_rgb_affine(value _rgb, value _ax, value _ay, value _ox, valu
   int i, j, i2, j2, c;
   int ox = Int_val(_ox),
       oy = Int_val(_oy);
-  int dx = rgb.width / 2,  /* Center of scaling */
-      dy = rgb.height / 2;
-  int istart = max(0, (ox - dx) * ax + dx),
-      iend = min(rgb.width, (rgb.width + ox + dx) * ax + dx),
-      jstart = max(0, (oy - dy) * ay + dy),
-      jend = min(rgb.height, (rgb.height + ox + dx) * ax + dx);
+  int istart = max(0, ox),
+      iend = min(rgb.width, rgb.width*ax+ox),
+      jstart = max(0, oy),
+      jend = min(rgb.height, rgb.height*ay+oy);
 
   caml_enter_blocking_section();
   rgb_blank(&rgb);
   for (j = jstart; j < jend; j++)
     for (i = istart; i < iend; i++)
     {
-      i2 = (i - dx) / ax + dx - ox;
-      j2 = (j - dy) / ay + dy - oy;
+      i2 = (i-ox)/ax;
+      j2 = (j-oy)/ay;
       /* TODO: this test shouldn't be needed */
-      if (!Is_outside(&old, i2, j2))
-        for (c = 0; c < Rgb_elems_per_pixel; c++)
-          Color(&rgb, c, i, j) = Color(&old, c, i2, j2);
+      /* if (!Is_outside(&old, i2, j2)) */
+      for (c = 0; c < Rgb_elems_per_pixel; c++)
+        Color(&rgb, c, i, j) = Color(&old, c, i2, j2);
     }
   caml_leave_blocking_section();
 
