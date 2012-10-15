@@ -543,8 +543,6 @@ CAMLprim value caml_rgb_of_rgb8_string(value _rgb, value _data)
 
   int i, j;
 
-  if (!data) caml_raise_out_of_memory();
-
   caml_enter_blocking_section();
   for (j = 0; j < rgb.height; j++)
     for (i = 0; i < rgb.width; i++)
@@ -777,11 +775,10 @@ CAMLprim value caml_rgb_to_bmp(value _rgb)
   frame_of_value(_rgb,&rgb);
   int len = Rgb_num_pix(&rgb);
   char *bmp = malloc(54 + 3 * len);
-  if (bmp == NULL) caml_raise_out_of_memory(); 
+  if (bmp == NULL) caml_raise_out_of_memory();
   int i, j;
   unsigned char a;
 
-  if (!bmp) caml_raise_out_of_memory();
   caml_enter_blocking_section();
   bmp[0]='B';                       /* Magic number */
   bmp[1]='M';
@@ -831,7 +828,6 @@ CAMLprim value caml_image_to_rgb24(value _rgb)
   int i, j;
   unsigned char a;
 
-  if (!bmp) caml_raise_out_of_memory();
   caml_enter_blocking_section();
   for(j = 0; j < rgb.height; j++)
     for(i = 0; i < rgb.width; i++)
