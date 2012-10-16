@@ -147,6 +147,42 @@ module YUV420 = struct
     blank y ; blank u ; blank v
 end
 
+module BGRA = struct
+  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+  type t =
+    {
+      data : data;
+      width : int;
+      height : int;
+      stride : int;
+    }
+
+  let make ?stride width height data =
+    let stride =
+      match stride with
+      | Some v -> v
+      | None -> 4*width
+    in
+    {
+      data   = data;
+      width  = width;
+      height = height;
+      stride = stride;
+    }
+
+  let create ?stride width height =
+    let stride =
+      match stride with
+      | Some v -> v
+      | None -> 4*width
+    in
+    let stride, data = create_rounded_plane height stride in
+    make ~stride width height data
+
+  let data img = img.data
+end
+
 module RGBA32 = struct
   module Color = struct
     type t = int * int * int * int
@@ -226,12 +262,23 @@ module RGBA32 = struct
   external blank_all : t -> unit = "caml_rgb_blank" "noalloc"
 
   external of_RGB24_string : t -> string -> unit = "caml_rgb_of_rgb8_string"
-
   let of_RGB24_string data width =
     let height = (String.length data / 3) / width in
     let ans = create width height in
     of_RGB24_string ans data;
     ans
+
+  external of_BGRA : t -> BGRA.t -> unit = "caml_rgba_of_bgra"
+  let of_BGRA bgra =
+    let img = create bgra.BGRA.width bgra.BGRA.height in
+    of_BGRA img bgra;
+    img
+
+  external to_BGRA : BGRA.t -> t -> unit = "caml_rgba_of_bgra"
+  let to_BGRA img =
+    let bgra = BGRA.create img.width img.height in
+    to_BGRA bgra img;
+    bgra
 
   external of_YUV420 : YUV420.yuv_data -> t -> unit = "caml_rgb_of_YUV420"
 
@@ -403,6 +450,8 @@ module RGBA32 = struct
           add_off src dst x y
       | Some w, Some h -> add_off_scale src dst (x,y) (w,h)
       | _, _ -> assert false
+
+  external swap_rb : t -> unit = "caml_rgba_swap_rb"
 
   module Effect = struct
     external greyscale : t -> bool -> unit = "caml_rgb_greyscale"

@@ -69,6 +69,14 @@ module YUV420 : sig
   val internal : t -> (data * int) * (data * data * int)
 end
 
+module BGRA : sig
+  type t
+
+  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+  val data : t -> data
+end
+
 (** Operations on images stored in RGBA32 format (ie RGB channels + an alpha
     channel, one byte for each). *)
 module RGBA32 : sig
@@ -113,6 +121,10 @@ module RGBA32 : sig
 
   val to_RGB24_string : t -> string
 
+  val of_BGRA : BGRA.t -> t
+
+  val to_BGRA : t -> BGRA.t
+
   val of_YUV420 : YUV420.t -> t
 
   val to_int_image : t -> int array array
@@ -120,6 +132,9 @@ module RGBA32 : sig
   val to_BMP : t -> string
 
   val of_PPM : ?alpha:RGB8.Color.t -> string -> t
+
+  (** Swap red and blue channels. Useful for quickly handling BGRA formats. *)
+  val swap_rb : t -> unit
 
   (** {2 Manipulation of images} *)
 

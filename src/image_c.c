@@ -559,6 +559,28 @@ CAMLprim value caml_rgb_of_rgb8_string(value _rgb, value _data)
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value caml_rgba_of_bgra(value _rgba, value _bgra)
+{
+  CAMLparam2(_rgba, _bgra);
+  frame rgba, bgra;
+  frame_of_value(_rgba, &rgba);
+  frame_of_value(_bgra, &bgra);
+  int i,j;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < bgra.height; j++)
+    for (i = 0; i < bgra.width; i++)
+      {
+        Red(&rgba,i,j) = Color(&bgra,2,i,j);
+        Green(&rgba,i,j) = Color(&bgra,1,i,j);
+        Blue(&rgba,i,j) = Color(&bgra,0,i,j);
+        Alpha(&rgba,i,j) = Color(&bgra,3,i,j);
+      }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value caml_rgb_get_pixel(value f, value _x, value _y)
 {
   CAMLparam1(f);
@@ -927,6 +949,27 @@ CAMLprim value caml_rgb_greyscale(value _rgb, value _sepia)
         Blue(&rgb,i,j)  = c;
       }
     }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_rgba_swap_rb(value _rgba)
+{
+  CAMLparam1(_rgba);
+  frame rgba;
+  frame_of_value(_rgba, &rgba);
+  int i, j;
+  unsigned char c;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < rgba.height; j++)
+    for (i = 0; i < rgba.width; i++)
+      {
+        c = Red(&rgba,i,j);
+        Red(&rgba,i,j) = Blue(&rgba,i,j);
+        Blue(&rgba,i,j) = c;
+      }
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);
