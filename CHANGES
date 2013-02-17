@@ -1,3 +1,14 @@
+0.2.1 (2013-02-18)
+=====
+* Add pulseaudio backend.
+* Add channel and rate parameters for AO.
+* Add resampling mode (`Nearest or `Linear).
+* Remove on-the-fly samplerate conversions which were of bad quality (please
+  use a proper resampler such as ocaml-samplerate instead).
+* Handle BGRA format.
+* Check for memory allocation failures.
+* Add a video player example.
+
 0.2.0 (2011-10-04)
 =====
 * Add alpha channel for drawn lines.
