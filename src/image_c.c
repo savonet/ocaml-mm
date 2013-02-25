@@ -796,42 +796,48 @@ CAMLprim value caml_rgb_to_bmp(value _rgb)
   frame rgb;
   frame_of_value(_rgb,&rgb);
   int len = Rgb_num_pix(&rgb);
-  char *bmp = malloc(54 + 3 * len);
+  char *bmp = malloc(122 + 4 * len);
   if (bmp == NULL) caml_raise_out_of_memory();
   int i, j;
-  unsigned char a;
 
   caml_enter_blocking_section();
   bmp[0]='B';                       /* Magic number */
   bmp[1]='M';
-  bmp_pint32(bmp+2 , 54 + 3 * len); /* File size */
+  bmp_pint32(bmp+2 , 122 + 4 * len);/* File size */
   bmp_pint16(bmp+6 , 0);            /* Reserved */
   bmp_pint16(bmp+8 , 0);            /* Reserved */
-  bmp_pint32(bmp+10, 54);           /* Data offset */
-  bmp_pint32(bmp+14, 40);           /* Second header size */
-  bmp_pint32(bmp+18, rgb.width);   /* Width */
-  bmp_pint32(bmp+22, rgb.height);  /* Height */
+  bmp_pint32(bmp+10, 122);          /* Data offset */
+  bmp_pint32(bmp+14, 108);           /* Second header size */
+  bmp_pint32(bmp+18, rgb.width);    /* Width */
+  bmp_pint32(bmp+22, rgb.height);   /* Height */
   bmp_pint16(bmp+26, 1);            /* Nb of color planes */
-  bmp_pint16(bmp+28, 24);           /* BPP */
-  bmp_pint32(bmp+30, 0);            /* Compression */
-  bmp_pint32(bmp+34, 3 * len);      /* Image size */
-  bmp_pint32(bmp+38, 2834);         /* Horizontal resolution */
-  bmp_pint32(bmp+42, 2834);         /* Vertical resolution */
+  bmp_pint16(bmp+28, 32);           /* BPP */
+  bmp_pint32(bmp+30, 3);            /* Compression: bitfields */
+  bmp_pint32(bmp+34, 4 * len);      /* Image size */
+  bmp_pint32(bmp+38, 2835);         /* Horizontal resolution */
+  bmp_pint32(bmp+42, 2835);         /* Vertical resolution */
   bmp_pint32(bmp+46, 0);            /* Number of colors */
   bmp_pint32(bmp+50, 0);            /* Number of important colors */
+  bmp_pint32(bmp+54, 0x00ff0000);   /* Red mask */
+  bmp_pint32(bmp+58, 0x0000ff00);   /* Green mask */
+  bmp_pint32(bmp+62, 0x000000ff);   /* Blue mask */
+  bmp_pint32(bmp+66, 0xff000000);   /* Alpha mask */
+  bmp_pint32(bmp+70, 0x57696e20);   /* Type of color space */
+  for(i = 0; i < 12; i++)
+    bmp_pint32(bmp+74+4*i, 0);      /* Unused */
 
   for(j = 0; j < rgb.height; j++)
     for(i = 0; i < rgb.width; i++)
     {
-      a = Alpha(&rgb, i, j);
-      bmp[3 * ((rgb.height - j - 1) * rgb.width + i) + 0 + 54] = Blue(&rgb, i, j) * a / 0xff;
-      bmp[3 * ((rgb.height - j - 1) * rgb.width + i) + 1 + 54] = Green(&rgb, i, j) * a / 0xff;
-      bmp[3 * ((rgb.height - j - 1) * rgb.width + i) + 2 + 54] = Red(&rgb, i, j) * a / 0xff;
+      bmp[4 * ((rgb.height - j - 1) * rgb.width + i) + 0 + 122] = Blue(&rgb, i, j);
+      bmp[4 * ((rgb.height - j - 1) * rgb.width + i) + 1 + 122] = Green(&rgb, i, j);
+      bmp[4 * ((rgb.height - j - 1) * rgb.width + i) + 2 + 122] = Red(&rgb, i, j);
+      bmp[4 * ((rgb.height - j - 1) * rgb.width + i) + 3 + 122] = Alpha(&rgb, i, j);
     }
   caml_leave_blocking_section();
 
-  ans = caml_alloc_string(54 + 3 * len);
-  memcpy(String_val(ans), bmp, 54 + 3 * len);
+  ans = caml_alloc_string(122 + 4 * len);
+  memcpy(String_val(ans), bmp, 122 + 4 * len);
   free(bmp);
 
   CAMLreturn(ans);
