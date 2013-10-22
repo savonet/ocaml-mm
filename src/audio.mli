@@ -317,6 +317,18 @@ module S16LE : sig
   val to_audio : string -> int -> buffer -> int -> int -> unit
 end
 
+module S16BE : sig
+  val length : int -> int -> int
+
+  val duration : int -> int -> int
+
+  val of_audio : buffer -> int -> string -> int -> int -> unit
+
+  val make : buffer -> int -> int -> string
+
+  val to_audio : string -> int -> buffer -> int -> int -> unit
+end
+
 val resample : ?mode:[`Nearest | `Linear] -> float -> buffer -> int -> int -> buffer
 
 (** Same as [Array.blit] for audio data. *)
