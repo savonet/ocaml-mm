@@ -960,6 +960,24 @@ module S16LE = struct
   external to_audio : string -> int -> float array array -> int -> int -> unit = "caml_float_pcm_convert_s16le_byte" "caml_float_pcm_convert_s16le_native"
 end
 
+module S16BE = struct
+  let length channels samples = channels * samples * 2
+
+  let duration channels len = len / (2 * channels)
+
+  external of_audio :
+    float array array -> int -> string -> int -> int -> unit
+    = "caml_float_pcm_to_s16be"
+
+  let make buf ofs len =
+    let slen = length (channels buf) len in
+    let sbuf = String.create slen in
+    of_audio buf ofs sbuf 0 len;
+    sbuf
+
+  external to_audio : string -> int -> float array array -> int -> int -> unit = "caml_float_pcm_convert_s16be_byte" "caml_float_pcm_convert_s16be_native"
+end
+
 let add b1 o1 b2 o2 len = iter2 (fun b1 b2 -> Mono.add b1 o1 b2 o2 len) b1 b2
 
 let add_coeff b1 o1 k b2 o2 len = iter2 (fun b1 b2 -> Mono.add_coeff b1 o1 k b2 o2 len) b1 b2

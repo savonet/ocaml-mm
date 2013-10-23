@@ -106,11 +106,13 @@ static inline uint8_t u8_clip(double s)
 #define s16tof(x) (((double)x)/INT16_MAX)
 #ifdef BIGENDIAN
 #define get_s16le(src,offset,nc,c,i) s16tof(bswap_16(((int16_t*)src)[offset/2+i*nc+c]))
+#define get_s16be(src,offset,nc,c,i) s16tof(((int16_t*)src)[offset/2+i*nc+c])
 #else
 #define get_s16le(src,offset,nc,c,i) s16tof(((int16_t*)src)[offset/2+i*nc+c])
+#define get_s16be(src,offset,nc,c,i) s16tof(bswap_16(((int16_t*)src)[offset/2+i*nc+c]))
 #endif
 
-CAMLprim value caml_float_pcm_to_s16le(value a, value _offs, value _dst, value _dst_offs, value _len)
+CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _dst_offs, value _len, int little_endian)
 {
   CAMLparam2(a, _dst);
   int c, i;
@@ -125,19 +127,42 @@ CAMLprim value caml_float_pcm_to_s16le(value a, value _offs, value _dst, value _
   if (caml_string_length(_dst) < dst_offs + dst_len)
     caml_invalid_argument("pcm_to_16le: destination buffer too short");
 
-  for (c = 0; c < nc; c++)
-  {
-    src = Field(a, c);
-    for (i = 0; i < len; i++)
+  if (little_endian == 1)
+    for (c = 0; c < nc; c++)
     {
-      dst[i*nc+c] = clip(Double_field(src, i + offs));
+      src = Field(a, c);
+      for (i = 0; i < len; i++)
+      {
+        dst[i*nc+c] = clip(Double_field(src, i + offs));
 #ifdef BIGENDIAN
-      dst[i*nc+c] = bswap_16(dst[i*nc+c]);
+        dst[i*nc+c] = bswap_16(dst[i*nc+c]);
+#endif
+      }
+    }
+  else
+    for (c = 0; c < nc; c++)
+    {
+      src = Field(a, c);
+      for (i = 0; i < len; i++)
+      {
+        dst[i*nc+c] = clip(Double_field(src, i + offs));
+#ifndef BIGENDIAN
+        dst[i*nc+c] = bswap_16(dst[i*nc+c]);
 #endif
     }
    }
 
   CAMLreturn(Val_int(dst_len));
+}
+
+CAMLprim value caml_float_pcm_to_s16le(value a, value _offs, value _dst, value _dst_offs, value _len)
+{
+  return caml_float_pcm_to_s16(a, _offs, _dst, _dst_offs, _len, 1);
+}
+
+CAMLprim value caml_float_pcm_to_s16be(value a, value _offs, value _dst, value _dst_offs, value _len)
+{
+  return caml_float_pcm_to_s16(a, _offs, _dst, _dst_offs, _len, 0);
 }
 
 CAMLprim value caml_float_pcm_to_u8(value a, value _offs,
@@ -201,7 +226,7 @@ CAMLprim value caml_float_pcm_of_u8_byte(value* argv, int argn)
 }
 
 
-CAMLprim value caml_float_pcm_convert_s16le_native(value _src, value _offset, value _dst, value _dst_off, value _length)
+CAMLprim value caml_float_pcm_convert_s16_native(value _src, value _offset, value _dst, value _dst_off, value _length, int little_endian)
 {
   CAMLparam2(_src, _dst) ;
   CAMLlocal1(dstc) ;
@@ -216,17 +241,38 @@ CAMLprim value caml_float_pcm_convert_s16le_native(value _src, value _offset, va
   if (dst_off + len > dst_len)
     caml_invalid_argument("convert_native: output buffer too small");
 
-  for (c=0 ; c<nc ; c++) {
-    dstc = Field(_dst,c) ;
-    for (i=0 ; i<len; i++) {
-      Store_double_field(dstc, dst_off+i, get_s16le(src,offset,nc,c,i)) ;
+  if (little_endian == 1)
+    for (c=0 ; c<nc ; c++) {
+      dstc = Field(_dst,c) ;
+      for (i=0 ; i<len; i++)
+        Store_double_field(dstc, dst_off+i, get_s16le(src,offset,nc,c,i)) ;
     }
+  else
+    for (c=0 ; c<nc ; c++) {
+      dstc = Field(_dst,c) ;
+      for (i=0 ; i<len; i++)
+        Store_double_field(dstc, dst_off+i, get_s16be(src,offset,nc,c,i)) ;
   }
 
   CAMLreturn(Val_unit) ;
 }
 
+CAMLprim value caml_float_pcm_convert_s16le_native(value _src, value _offset, value _dst, value _dst_off, value _length)
+{
+  return caml_float_pcm_convert_s16_native(_src, _offset, _dst, _dst_off, _length, 1);
+}
+
 CAMLprim value caml_float_pcm_convert_s16le_byte(value* argv, int argn)
 {
   return caml_float_pcm_convert_s16le_native(argv[0],argv[1],argv[2],argv[3],argv[4]);
+}
+
+CAMLprim value caml_float_pcm_convert_s16be_native(value _src, value _offset, value _dst, value _dst_off, value _length)
+{
+  return caml_float_pcm_convert_s16_native(_src, _offset, _dst, _dst_off, _length, 0);
+}
+
+CAMLprim value caml_float_pcm_convert_s16be_byte(value* argv, int argn)
+{
+  return caml_float_pcm_convert_s16be_native(argv[0],argv[1],argv[2],argv[3],argv[4]);
 }
