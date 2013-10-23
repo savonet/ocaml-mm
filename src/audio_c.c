@@ -127,21 +127,28 @@ CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _ds
   if (caml_string_length(_dst) < dst_offs + dst_len)
     caml_invalid_argument("pcm_to_16le: destination buffer too short");
 
-  for (c = 0; c < nc; c++)
-  {
-    src = Field(a, c);
-    for (i = 0; i < len; i++)
+  if (little_endian == 1)
+    for (c = 0; c < nc; c++)
     {
-      dst[i*nc+c] = clip(Double_field(src, i + offs));
+      src = Field(a, c);
+      for (i = 0; i < len; i++)
+      {
+        dst[i*nc+c] = clip(Double_field(src, i + offs));
 #ifdef BIGENDIAN
-      if (little_endian == 1)
         dst[i*nc+c] = bswap_16(dst[i*nc+c]);
 #endif
+      }
+    }
+  else
+    for (c = 0; c < nc; c++)
+    {
+      src = Field(a, c);
+      for (i = 0; i < len; i++)
+      {
+        dst[i*nc+c] = clip(Double_field(src, i + offs));
 #ifndef BIGENDIAN
-      if (little_endian != 1)
         dst[i*nc+c] = bswap_16(dst[i*nc+c]);
 #endif
-
     }
    }
 
@@ -234,14 +241,17 @@ CAMLprim value caml_float_pcm_convert_s16_native(value _src, value _offset, valu
   if (dst_off + len > dst_len)
     caml_invalid_argument("convert_native: output buffer too small");
 
-  for (c=0 ; c<nc ; c++) {
-    dstc = Field(_dst,c) ;
-    for (i=0 ; i<len; i++) {
-      if (little_endian == 1)
+  if (little_endian == 1)
+    for (c=0 ; c<nc ; c++) {
+      dstc = Field(_dst,c) ;
+      for (i=0 ; i<len; i++)
         Store_double_field(dstc, dst_off+i, get_s16le(src,offset,nc,c,i)) ;
-      else
-        Store_double_field(dstc, dst_off+i, get_s16be(src,offset,nc,c,i)) ;
     }
+  else
+    for (c=0 ; c<nc ; c++) {
+      dstc = Field(_dst,c) ;
+      for (i=0 ; i<len; i++)
+        Store_double_field(dstc, dst_off+i, get_s16be(src,offset,nc,c,i)) ;
   }
 
   CAMLreturn(Val_unit) ;
