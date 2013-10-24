@@ -33,8 +33,10 @@
 
 (** Operations on audio data. *)
 
+(** At given sample rate, number of samples in given amount of time. *)
 val samples_of_seconds : int -> float -> int
 
+(** At given sample rate, duration of given number of samples. *)
 val seconds_of_samples : int -> int -> float
 
 (** Convert decibels to linear coefficient. *)
