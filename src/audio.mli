@@ -98,6 +98,8 @@ module Mono : sig
   (** Clear a portion of a buffer (fill it with zeroes). *)
   val clear : buffer -> int -> int -> unit
 
+  val amplify : float -> buffer -> int -> int -> unit
+
   val resample : ?mode:[`Nearest | `Linear] -> float -> buffer -> int -> int -> buffer
 
   val clip : buffer -> int -> int -> unit
