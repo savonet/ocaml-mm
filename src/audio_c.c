@@ -124,6 +124,8 @@ CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _ds
   value src;
   int16_t *dst = (int16_t*)String_val(_dst);
 
+  if (nc == 0) CAMLreturn(Val_int(0));
+
   if (caml_string_length(_dst) < dst_offs + dst_len)
     caml_invalid_argument("pcm_to_16le: destination buffer too short");
 
@@ -178,6 +180,8 @@ CAMLprim value caml_float_pcm_to_u8(value a, value _offs,
   value src;
   uint8_t *dst = (uint8_t*)String_val(_dst);
 
+  if (nc == 0) CAMLreturn(Val_int(0));
+
   if (caml_string_length(_dst) < dst_offs + dst_len)
     caml_invalid_argument("pcm_to_u8: destination buffer too short");
 
@@ -203,9 +207,12 @@ CAMLprim value caml_float_pcm_of_u8_native(
   int offset = Int_val(_offset) ;
   int len = Int_val(_length) ;
   int dst_off = Int_val(_dst_off) ;
-  int dst_len = Wosize_val(Field(_dst, 0)) / Double_wosize ;
-  int i,c ;
   int nc = Wosize_val(_dst) ;
+  int dst_len ;
+  int i,c ;
+
+  if (nc == 0) CAMLreturn(Val_unit);
+  dst_len = Wosize_val(Field(_dst, 0)) / Double_wosize ;
 
   if (dst_off + len > dst_len)
     caml_invalid_argument("convert_native: output buffer too small");
@@ -234,9 +241,12 @@ CAMLprim value caml_float_pcm_convert_s16_native(value _src, value _offset, valu
   int offset = Int_val(_offset) ;
   int len = Int_val(_length) ;
   int dst_off = Int_val(_dst_off) ;
-  int dst_len = Wosize_val(Field(_dst, 0)) / Double_wosize ;
-  int i,c ;
   int nc = Wosize_val(_dst) ;
+  int dst_len ;
+  int i,c ;
+
+  if (nc == 0) CAMLreturn(Val_unit);
+  dst_len = Wosize_val(Field(_dst, 0)) / Double_wosize ;
 
   if (dst_off + len > dst_len)
     caml_invalid_argument("convert_native: output buffer too small");
