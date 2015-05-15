@@ -56,7 +56,7 @@ object (self)
   let f =
     Mad.openstream
       (fun n ->
-        let s = String.create n in
+        let s = Bytes.create n in
         let n = self#stream_read s 0 n in
         s, n)
   in

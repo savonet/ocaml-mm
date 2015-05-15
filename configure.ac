@@ -78,6 +78,10 @@ if test "x$enable_v4l" != "xno" ; then
   AC_CHECK_HEADERS([linux/videodev.h],[W_V4L="yes"],[W_V4L="no"])
 fi
 
+# Bytes
+AC_CHECK_OCAML_BINDING([bytes],[],[],[1])
+INCDIRS="$INCDIRS `$OCAMLFIND query bytes`"
+
 AC_SUBST(W_V4L)
 AC_SUBST(VERSION)
 AC_SUBST(INCDIRS)

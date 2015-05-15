@@ -98,7 +98,7 @@ let byte_of_float x =
   char_of_int (clip (int_of_float (x *. 127.)))
 
 let encode_event chan e =
-  let s = String.create 3 in
+  let s = Bytes.create 3 in
   let coi = char_of_int in
   let bof = byte_of_float in
   (
@@ -150,7 +150,7 @@ let clear buf ofs len =
 (* complement of clear *)
 let extract buf ofs len =
   if not (ofs = 0 && len = duration buf) then
-    buf.data <- List.filter (fun (t,_) -> ofs <= t & t < ofs + len) buf.data
+    buf.data <- List.filter (fun (t,_) -> ofs <= t && t < ofs + len) buf.data
 
 let cmp te1 te2 = fst te1 - fst te2
 
@@ -286,7 +286,7 @@ module IO = struct
 	    data.(!pos - 1)
 	  in
 	  let get_text len =
-	    let ans = String.create len in
+	    let ans = Bytes.create len in
             if !pos + len >= Array.length data then raise Invalid_data;
             for i = 0 to len - 1 do
               ans.[i] <- char_of_int data.(!pos + i)

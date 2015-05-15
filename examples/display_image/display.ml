@@ -3,7 +3,7 @@ module Img = Image.RGBA32
 let read_PPM ?alpha fname =
   let ic = open_in_bin fname in
   let len = in_channel_length ic in
-  let data = String.create len in
+  let data = Bytes.create len in
   really_input ic data 0 len;
   close_in ic;
   Img.of_PPM ?alpha data

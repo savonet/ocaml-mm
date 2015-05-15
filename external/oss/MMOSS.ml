@@ -80,7 +80,7 @@ object (self)
 
   method read buf ofs len =
     let slen = Audio.S16LE.length channels len in
-    let s = String.create slen in
+    let s = Bytes.create slen in
     let r = self#stream_read s 0 slen in
     let len = Audio.S16LE.duration channels r in
     Audio.S16LE.to_audio s 0 buf ofs len;

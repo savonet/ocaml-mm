@@ -68,7 +68,7 @@ object (self)
   method virtual private stream_read : string -> int -> int -> int
 
   method private input_once n =
-    let buf = String.create n in
+    let buf = Bytes.create n in
     let n = self#stream_read buf 0 n in
     if n = String.length buf then
       buf
@@ -126,7 +126,7 @@ object (self)
     assert (self#stream_write s 0 len = len)
 
   method private output_num b n =
-    let s = String.create b in
+    let s = Bytes.create b in
     for i = 0 to b - 1 do
       s.[i] <- char_of_int ((n lsr (8 * i)) land 0xff)
     done;
@@ -139,7 +139,7 @@ object (self)
   method private output_int n = self#output_num 4 n
 
   method private output_num_be b n =
-    let s = String.create b in
+    let s = Bytes.create b in
     for i = 0 to b - 1 do
       s.[i] <- char_of_int ((n lsr (8 * (b - i - 1))) land 0xff)
     done;
