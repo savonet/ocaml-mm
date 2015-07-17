@@ -333,6 +333,18 @@ module S16BE : sig
   val to_audio : string -> int -> buffer -> int -> int -> unit
 end
 
+module S24LE : sig
+  val of_audio : buffer -> int -> string -> int -> int -> unit
+
+  val to_audio : string -> int -> buffer -> int -> int -> unit
+end
+
+module S32LE : sig
+  val of_audio : buffer -> int -> string -> int -> int -> unit
+
+  val to_audio : string -> int -> buffer -> int -> int -> unit
+end
+
 val resample : ?mode:[`Nearest | `Linear] -> float -> buffer -> int -> int -> buffer
 
 (** Same as [Array.blit] for audio data. *)

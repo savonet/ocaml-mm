@@ -39,7 +39,46 @@
 #include <caml/mlvalues.h>
 
 #include <stdint.h>
-static inline int16_t bswap_16 (int16_t x) { return ((((x) >> 8) & 0xff) | (((x) & 0xff) << 8)); }
+
+#define INT24_MAX ((1 << 23) - 1)
+#define INT24_MIN (-INT24_MAX)
+
+typedef uint8_t int24_t[3];
+
+static inline void int24_of_int32(int32_t x, int24_t d) {
+  d[0] = x;
+  d[1] = x >> 8;
+  d[2] = x >> 16;
+}
+static inline int32_t int32_of_int24(int24_t x) {
+  int32_t tmp = x[0] | (x[1] << 8) | (x[2] << 16);
+
+  return INT24_MAX < tmp ? (0xff000000 | tmp) : tmp; 
+}
+
+#ifdef __linux__
+  #include <byteswap.h>
+#endif
+
+#if defined(__APPLE__)
+  #include <libkern/OSByteOrder.h>
+  #define bswap_16 OSSwapInt16
+  #define bswap_32 OSSwapInt32
+#endif
+
+#ifndef bswap_16
+  #define bswap_16(x) \
+    ((int16_t)((((int16_t)(x) & 0xff00) >> 8) | \
+               (((int16_t)(x) & 0x00ff) << 8)))
+#endif
+
+#ifndef bswap_32
+  #define bswap_32(x) \
+    ((int32_t)((((int32_t)(x)  & 0xff000000) >> 24) | \
+                (((int32_t)(x) & 0x00ff0000) >>  8) | \
+                (((int32_t)(x) & 0x0000ff00) <<  8) | \
+                (((int32_t)(x) & 0x000000ff) << 24)))
+#endif
 
 #include <assert.h>
 #include <stdio.h>
@@ -81,6 +120,46 @@ static inline int16_t clip(double s)
     return (s * INT16_MAX);
 }
 
+static inline int32_t s32_clip(double s)
+{
+  if (s < -1)
+  {
+#ifdef DEBUG
+    printf("Wrong sample: %f\n", s);
+#endif
+    return INT32_MIN;
+  }
+  else if (s > 1)
+  {
+#ifdef DEBUG
+    printf("Wrong sample: %f\n", s);
+#endif
+    return INT32_MAX;
+  }
+  else
+    return (s * INT32_MAX);
+}
+
+static inline void s24_clip(double s, int24_t x)
+{
+  if (s < -1)
+  {
+#ifdef DEBUG
+    printf("Wrong sample: %f\n", s);
+#endif
+    return int24_of_int32(INT24_MIN, x);
+  }
+  else if (s > 1)
+  {
+#ifdef DEBUG
+    printf("Wrong sample: %f\n", s);
+#endif
+    return int24_of_int32(INT24_MAX, x);
+  }
+  else
+    return int24_of_int32(s * INT24_MAX, x);
+}
+
 static inline uint8_t u8_clip(double s)
 {
   if (s < -1)
@@ -102,15 +181,85 @@ static inline uint8_t u8_clip(double s)
 }
 
 #define u8tof(x)  (((double)x-INT8_MAX)/INT8_MAX)
-#define get_u8(src,offset,nc,c,i)    u8tof(((uint8_t*)src)[offset+i*nc+c])
 #define s16tof(x) (((double)x)/INT16_MAX)
+#define s24tof(x) (((double)int32_of_int24(x))/INT24_MAX)
+#define s32tof(x) (((double)x)/INT32_MAX)
+
+#define get_u8(src,offset,nc,c,i)    u8tof(((uint8_t*)src)[offset+i*nc+c])
+#define get_s24le(src,offset,nc,c,i) s24tof(((int24_t*)src)[offset/3+i*nc+c])
+
 #ifdef BIGENDIAN
 #define get_s16le(src,offset,nc,c,i) s16tof(bswap_16(((int16_t*)src)[offset/2+i*nc+c]))
 #define get_s16be(src,offset,nc,c,i) s16tof(((int16_t*)src)[offset/2+i*nc+c])
+#define get_s32le(src,offset,nc,c,i) s32tof(bswap_32(((int32_t*)src)[offset/4+i*nc+c]))
 #else
 #define get_s16le(src,offset,nc,c,i) s16tof(((int16_t*)src)[offset/2+i*nc+c])
 #define get_s16be(src,offset,nc,c,i) s16tof(bswap_16(((int16_t*)src)[offset/2+i*nc+c]))
+#define get_s32le(src,offset,nc,c,i) s32tof(((int32_t*)src)[offset/4+i*nc+c])
 #endif
+
+CAMLprim value caml_float_pcm_to_s32le(value a, value _offs, value _dst, value _dst_offs, value _len)
+{
+  CAMLparam2(a, _dst);
+  int c, i;
+  int offs = Int_val(_offs);
+  int dst_offs = Int_val(_dst_offs);
+  int len = Int_val(_len);
+  int nc = Wosize_val(a);
+  int dst_len = 4 * len * nc;
+  value src;
+  int32_t *dst = (int32_t*)String_val(_dst);
+
+  if (nc == 0) CAMLreturn(Val_int(0));
+
+  if (caml_string_length(_dst) < dst_offs + dst_len)
+    caml_invalid_argument("pcm_to_s32le: destination buffer too short");
+
+  for (c = 0; c < nc; c++)
+  {
+    src = Field(a, c);
+    for (i = 0; i < len; i++)
+    {
+      dst[i*nc+c] = s32_clip(Double_field(src, i + offs));
+#ifdef BIGENDIAN
+      dst[i*nc+c] = bswap_32(dst[i*nc+c]);
+#endif
+    }
+  }
+
+  CAMLreturn(Val_int(dst_len));
+}
+
+CAMLprim value caml_float_pcm_to_s24le(value a, value _offs, value _dst, value _dst_offs, value _len)
+{
+  CAMLparam2(a, _dst);
+  int c, i;
+  int offs = Int_val(_offs);
+  int dst_offs = Int_val(_dst_offs);
+  int len = Int_val(_len);
+  int nc = Wosize_val(a);
+  int dst_len = 3 * len * nc;
+  int24_t tmp = {0,0,0};
+  value src;
+  int24_t *dst = (int24_t*)String_val(_dst);
+
+  if (nc == 0) CAMLreturn(Val_int(0));
+
+  if (caml_string_length(_dst) < dst_offs + dst_len)
+    caml_invalid_argument("pcm_to_s24le: destination buffer too short");
+
+  for (c = 0; c < nc; c++)
+  {
+    src = Field(a, c);
+    for (i = 0; i < len; i++)
+    {
+      s24_clip(Double_field(src, i + offs), tmp);
+      memcpy(dst[i*nc+c], tmp, sizeof(int24_t));
+    }
+  }
+
+  CAMLreturn(Val_int(dst_len));
+}
 
 CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _dst_offs, value _len, int little_endian)
 {
@@ -127,7 +276,7 @@ CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _ds
   if (nc == 0) CAMLreturn(Val_int(0));
 
   if (caml_string_length(_dst) < dst_offs + dst_len)
-    caml_invalid_argument("pcm_to_16le: destination buffer too short");
+    caml_invalid_argument("pcm_to_s16: destination buffer too short");
 
   if (little_endian == 1)
     for (c = 0; c < nc; c++)
@@ -232,6 +381,69 @@ CAMLprim value caml_float_pcm_of_u8_byte(value* argv, int argn)
   return caml_float_pcm_of_u8_native(argv[0],argv[1],argv[2],argv[3],argv[4]);
 }
 
+CAMLprim value caml_float_pcm_convert_s32le_native(value _src, value _offset, value _dst, value _dst_off, value _length)
+{
+  CAMLparam2(_src, _dst) ;
+  CAMLlocal1(dstc) ;
+  char* src = String_val(_src) ;
+  int offset = Int_val(_offset) ;
+  int len = Int_val(_length) ;
+  int dst_off = Int_val(_dst_off) ;
+  int nc = Wosize_val(_dst) ;
+  int dst_len ;
+  int i,c ;
+
+  if (nc == 0) CAMLreturn(Val_unit);
+  dst_len = Wosize_val(Field(_dst, 0)) / Double_wosize ;
+
+  if (dst_off + len > dst_len)
+    caml_invalid_argument("convert_native: output buffer too small");
+
+  for (c=0 ; c<nc ; c++) {
+    dstc = Field(_dst,c) ;
+    for (i=0 ; i<len; i++)
+      Store_double_field(dstc, dst_off+i, get_s32le(src,offset,nc,c,i)) ;
+  }
+
+  CAMLreturn(Val_unit) ;
+}
+
+CAMLprim value caml_float_pcm_convert_s32le_byte(value* argv, int argn)
+{
+  return caml_float_pcm_convert_s32le_native(argv[0],argv[1],argv[2],argv[3],argv[4]);
+}
+
+CAMLprim value caml_float_pcm_convert_s24le_native(value _src, value _offset, value _dst, value _dst_off, value _length)
+{
+  CAMLparam2(_src, _dst) ;
+  CAMLlocal1(dstc) ;
+  char* src = String_val(_src) ;
+  int offset = Int_val(_offset) ;
+  int len = Int_val(_length) ;
+  int dst_off = Int_val(_dst_off) ;
+  int nc = Wosize_val(_dst) ;
+  int dst_len ;
+  int i,c ;
+
+  if (nc == 0) CAMLreturn(Val_unit);
+  dst_len = Wosize_val(Field(_dst, 0)) / Double_wosize ;
+
+  if (dst_off + len > dst_len)
+    caml_invalid_argument("convert_native: output buffer too small");
+
+  for (c=0 ; c<nc ; c++) {
+    dstc = Field(_dst,c) ;
+    for (i=0 ; i<len; i++)
+      Store_double_field(dstc, dst_off+i, get_s24le(src,offset,nc,c,i)) ;
+  }
+
+  CAMLreturn(Val_unit) ;
+}
+
+CAMLprim value caml_float_pcm_convert_s24le_byte(value* argv, int argn)
+{
+  return caml_float_pcm_convert_s24le_native(argv[0],argv[1],argv[2],argv[3],argv[4]);
+}
 
 CAMLprim value caml_float_pcm_convert_s16_native(value _src, value _offset, value _dst, value _dst_off, value _length, int little_endian)
 {

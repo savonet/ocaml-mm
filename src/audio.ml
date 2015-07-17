@@ -978,6 +978,22 @@ module S16BE = struct
   external to_audio : string -> int -> float array array -> int -> int -> unit = "caml_float_pcm_convert_s16be_byte" "caml_float_pcm_convert_s16be_native"
 end
 
+module S24LE = struct
+  external of_audio :
+    float array array -> int -> string -> int -> int -> unit
+    = "caml_float_pcm_to_s24le"
+
+  external to_audio : string -> int -> float array array -> int -> int -> unit = "caml_float_pcm_convert_s24le_byte" "caml_float_pcm_convert_s24le_native"
+end
+
+module S32LE = struct
+  external of_audio :
+    float array array -> int -> string -> int -> int -> unit
+    = "caml_float_pcm_to_s32le"
+
+  external to_audio : string -> int -> float array array -> int -> int -> unit = "caml_float_pcm_convert_s32le_byte" "caml_float_pcm_convert_s32le_native"
+end
+
 let add b1 o1 b2 o2 len = iter2 (fun b1 b2 -> Mono.add b1 o1 b2 o2 len) b1 b2
 
 let add_coeff b1 o1 k b2 o2 len = iter2 (fun b1 b2 -> Mono.add_coeff b1 o1 k b2 o2 len) b1 b2
