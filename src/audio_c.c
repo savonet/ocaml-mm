@@ -239,7 +239,6 @@ CAMLprim value caml_float_pcm_to_s24le(value a, value _offs, value _dst, value _
   int len = Int_val(_len);
   int nc = Wosize_val(a);
   int dst_len = 3 * len * nc;
-  int24_t tmp = {0,0,0};
   value src;
   int24_t *dst = (int24_t*)String_val(_dst);
 
@@ -252,10 +251,7 @@ CAMLprim value caml_float_pcm_to_s24le(value a, value _offs, value _dst, value _
   {
     src = Field(a, c);
     for (i = 0; i < len; i++)
-    {
-      s24_clip(Double_field(src, i + offs), tmp);
-      memcpy(dst[i*nc+c], tmp, sizeof(int24_t));
-    }
+      s24_clip(Double_field(src, i + offs), dst[i*nc+c]);
   }
 
   CAMLreturn(Val_int(dst_len));
