@@ -1,4 +1,4 @@
-0.3.0 ()
+0.3.0 (03-08-2015)
 =====
 * Add support for S16BE, S24LE and S32LE
 * Fix deprecated APIs
