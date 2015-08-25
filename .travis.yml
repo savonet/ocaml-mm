@@ -2,8 +2,9 @@ language: c
 sudo: false
 addons:
   apt:
+    sources:
+    - avsm
     packages:
-    - ocaml-nox
-    - ocaml-findlib
+    - opam
 
-script: ./bootstrap && ./configure && make
+script: bash -ex .travis-ci.sh
