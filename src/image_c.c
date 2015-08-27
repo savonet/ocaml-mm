@@ -960,6 +960,29 @@ CAMLprim value caml_rgb_greyscale(value _rgb, value _sepia)
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value caml_rgb_flip(value _rgb)
+{
+  CAMLparam1(_rgb);
+  frame rgb;
+  frame_of_value(_rgb,&rgb);
+
+  int i,j,jj;
+  uint32_t p;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < rgb.height / 2; j++)
+    for (i = 0; i < rgb.width; i++)
+      {
+        jj = rgb.height - j - 1;
+        p = Int_pixel(&rgb,i,j);
+        Int_pixel(&rgb,i,j) = Int_pixel(&rgb,i,jj);
+        Int_pixel(&rgb,i,jj) = p;
+      }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value caml_rgba_swap_rb(value _rgba)
 {
   CAMLparam1(_rgba);

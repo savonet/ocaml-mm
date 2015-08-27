@@ -469,6 +469,8 @@ module RGBA32 = struct
     (* TODO: faster implementation? *)
     let translate f x y = affine f 1. 1. x y
 
+    external flip : t -> unit = "caml_rgb_flip"
+
     external mask : t -> t -> unit = "caml_rgb_mask"
 
     external lomo : t -> unit = "caml_rgb_lomo"

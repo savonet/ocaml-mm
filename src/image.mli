@@ -161,6 +161,9 @@ module RGBA32 : sig
     (** Apply an affine transformation to an image. *)
     val affine : t -> float -> float -> int -> int -> unit
 
+    (** Flip (mirror across horizontal axis). *)
+    val flip : t -> unit
+      
     (** Convert to greyscale. *)
     val greyscale : t -> unit
 
