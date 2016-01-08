@@ -540,6 +540,7 @@ CAMLprim value caml_rgb_of_rgb8_string(value _rgb, value _data)
   int datalen = rgb.height * rgb.width * 3;
   char *data = (char*)memalign(ALIGNMENT_BYTES, datalen);
   if (data == NULL) caml_raise_out_of_memory();
+  memcpy(data, String_val(_data), datalen);
 
   int i, j;
 
@@ -553,8 +554,6 @@ CAMLprim value caml_rgb_of_rgb8_string(value _rgb, value _data)
       Alpha(&rgb,i,j) = 0xff;
     }
   caml_leave_blocking_section();
-
-  memcpy(String_val(_data), data, datalen);
 
   CAMLreturn(Val_unit);
 }
