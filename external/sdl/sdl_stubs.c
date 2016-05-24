@@ -55,7 +55,7 @@ CAMLprim value caml_sdl_rgb_to32(value _rgb, value _surf, value shift)
   */
   frame rgb;
   frame_of_value(_rgb, &rgb);
-  uint32 *surf = Caml_ba_data_val(_surf);
+  uint32_t *surf = Caml_ba_data_val(_surf);
   int i, j;
   int w = rgb.width;
   int h = rgb.height;
