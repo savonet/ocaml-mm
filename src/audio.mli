@@ -259,6 +259,9 @@ module Mono : sig
     (** Generate a saw waveform. *)
     class saw : int -> ?volume:float -> ?phase:float -> float -> t
 
+    (** Generate a triangle waveform. *)
+    class triangle : int -> ?volume:float -> ?phase:float -> float -> t
+
     class white_noise : ?volume:float -> int -> t
 
     class chain : t -> Effect.t -> t
