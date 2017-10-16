@@ -953,7 +953,9 @@ module S16LE = struct
 
   let make buf ofs len =
     let slen = length (channels buf) len in
-    let sbuf = Bytes.create slen in
+    let sbuf = Bytes.to_string
+      (Bytes.create slen)
+    in
     of_audio buf ofs sbuf 0 len;
     sbuf
 
@@ -971,7 +973,9 @@ module S16BE = struct
 
   let make buf ofs len =
     let slen = length (channels buf) len in
-    let sbuf = Bytes.create slen in
+    let sbuf = Bytes.to_string
+      (Bytes.create slen)
+    in
     of_audio buf ofs sbuf 0 len;
     sbuf
 

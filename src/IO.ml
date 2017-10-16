@@ -38,7 +38,7 @@ exception Invalid_data
 module Unix = struct
   (** To be inherited to read and write from files. *)
   class virtual rw ?(read=false) ?(write=false) fname =
-  object (self)
+  object
     val fd =
       let flag, perms =
 	match read, write with
@@ -51,7 +51,8 @@ module Unix = struct
 
     method private stream_read buf ofs len = Unix.read fd buf ofs len
 
-    method private stream_write buf ofs len = Unix.write fd buf ofs len
+    method private stream_write buf ofs len =
+      Unix.write fd (Bytes.of_string buf) ofs len
 
     method private stream_close = Unix.close fd
 
@@ -65,18 +66,19 @@ end
 
 class virtual helper =
 object (self)
-  method virtual private stream_read : string -> int -> int -> int
+  method virtual private stream_read : Bytes.t -> int -> int -> int
 
   method private input_once n =
     let buf = Bytes.create n in
     let n = self#stream_read buf 0 n in
-    if n = String.length buf then
+    if n = Bytes.length buf then
       buf
     else
-      String.sub buf 0 n
+      Bytes.sub buf 0 n
 
   method private input n =
     let buf = self#input_once n in
+    let buf = Bytes.to_string buf in
     let buflen = String.length buf in
     if buflen = n || buflen = 0 then
       buf
@@ -128,9 +130,9 @@ object (self)
   method private output_num b n =
     let s = Bytes.create b in
     for i = 0 to b - 1 do
-      s.[i] <- char_of_int ((n lsr (8 * i)) land 0xff)
+      Bytes.set s i (char_of_int ((n lsr (8 * i)) land 0xff))
     done;
-    self#output s
+    self#output (Bytes.to_string s)
 
   method private output_byte n = self#output_num 1 n
 
@@ -141,9 +143,9 @@ object (self)
   method private output_num_be b n =
     let s = Bytes.create b in
     for i = 0 to b - 1 do
-      s.[i] <- char_of_int ((n lsr (8 * (b - i - 1))) land 0xff)
+      Bytes.set s i (char_of_int ((n lsr (8 * (b - i - 1))) land 0xff))
     done;
-    self#output s
+    self#output (Bytes.to_string s)
 
   method private output_short_be n = self#output_num_be 2 n
 

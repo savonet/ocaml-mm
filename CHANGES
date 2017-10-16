@@ -1,3 +1,7 @@
+0.3.1 (16-10-2017)
+=====
+* Fixed compilation with OCaml 4.06
+
 0.3.0 (03-08-2015)
 =====
 * Add support for S16BE, S24LE and S32LE

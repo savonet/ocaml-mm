@@ -115,7 +115,7 @@ let encode_event chan e =
       (* TODO *)
         assert false
   );
-  s
+  Bytes.to_string s
 
 type buffer =
     {
@@ -292,7 +292,7 @@ module IO = struct
               ans.[i] <- char_of_int data.(!pos + i)
             done;
             pos := !pos + len;
-            ans
+            Bytes.to_string ans
 	  in
 	  let advance len =
 	    pos := !pos + len
