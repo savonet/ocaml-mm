@@ -757,7 +757,7 @@ module Mono = struct
         let volume = self#volume in
 	let omega = freq /. sr in
 	for i = 0 to len - 1 do
-	  let t = fracf (float i *. omega +. phase) +. 0.25 in
+	  let t = fracf (float i *. omega +. phase +. 0.25) in
 	  buf.(ofs + i) <- volume *. (if t < 0.5 then 4. *. t -. 1. else 4. *. (1. -. t) -. 1.)
 	done;
 	phase <- mod_float (phase +. float len *. omega) 1.
