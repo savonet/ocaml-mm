@@ -1,3 +1,7 @@
+0.4.0 ()
+=====
+* Use bytes instead of strings whenever appropriate.
+
 0.3.1 (16-10-2017)
 =====
 * Fixed compilation with OCaml 4.06

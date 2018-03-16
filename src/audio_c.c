@@ -43,6 +43,10 @@
 #define INT24_MAX ((1 << 23) - 1)
 #define INT24_MIN (-INT24_MAX)
 
+#ifndef Bytes_val
+#define Bytes_val String_val
+#endif
+
 typedef uint8_t int24_t[3];
 
 static inline void int24_of_int32(int32_t x, int24_t d) {
@@ -208,7 +212,7 @@ CAMLprim value caml_float_pcm_to_s32le(value a, value _offs, value _dst, value _
   int nc = Wosize_val(a);
   int dst_len = 4 * len * nc;
   value src;
-  int32_t *dst = (int32_t*)String_val(_dst);
+  int32_t *dst = (int32_t*)Bytes_val(_dst);
 
   if (nc == 0) CAMLreturn(Val_int(0));
 
@@ -240,7 +244,7 @@ CAMLprim value caml_float_pcm_to_s24le(value a, value _offs, value _dst, value _
   int nc = Wosize_val(a);
   int dst_len = 3 * len * nc;
   value src;
-  int24_t *dst = (int24_t*)String_val(_dst);
+  int24_t *dst = (int24_t*)Bytes_val(_dst);
 
   if (nc == 0) CAMLreturn(Val_int(0));
 
@@ -267,7 +271,7 @@ CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _ds
   int nc = Wosize_val(a);
   int dst_len = 2 * len * nc;
   value src;
-  int16_t *dst = (int16_t*)String_val(_dst);
+  int16_t *dst = (int16_t*)Bytes_val(_dst);
 
   if (nc == 0) CAMLreturn(Val_int(0));
 
@@ -323,7 +327,7 @@ CAMLprim value caml_float_pcm_to_u8(value a, value _offs,
   int nc = Wosize_val(a);
   int dst_len = len * nc;
   value src;
-  uint8_t *dst = (uint8_t*)String_val(_dst);
+  uint8_t *dst = (uint8_t*)Bytes_val(_dst);
 
   if (nc == 0) CAMLreturn(Val_int(0));
 
@@ -348,7 +352,7 @@ CAMLprim value caml_float_pcm_of_u8_native(
 {
   CAMLparam2(_src, _dst) ;
   CAMLlocal1(dstc) ;
-  char* src = String_val(_src) ;
+  const char* src = String_val(_src) ;
   int offset = Int_val(_offset) ;
   int len = Int_val(_length) ;
   int dst_off = Int_val(_dst_off) ;
@@ -381,7 +385,7 @@ CAMLprim value caml_float_pcm_convert_s32le_native(value _src, value _offset, va
 {
   CAMLparam2(_src, _dst) ;
   CAMLlocal1(dstc) ;
-  char* src = String_val(_src) ;
+  const char* src = String_val(_src) ;
   int offset = Int_val(_offset) ;
   int len = Int_val(_length) ;
   int dst_off = Int_val(_dst_off) ;
@@ -413,7 +417,7 @@ CAMLprim value caml_float_pcm_convert_s24le_native(value _src, value _offset, va
 {
   CAMLparam2(_src, _dst) ;
   CAMLlocal1(dstc) ;
-  char* src = String_val(_src) ;
+  const char* src = String_val(_src) ;
   int offset = Int_val(_offset) ;
   int len = Int_val(_length) ;
   int dst_off = Int_val(_dst_off) ;
@@ -445,7 +449,7 @@ CAMLprim value caml_float_pcm_convert_s16_native(value _src, value _offset, valu
 {
   CAMLparam2(_src, _dst) ;
   CAMLlocal1(dstc) ;
-  char* src = String_val(_src) ;
+  const char* src = String_val(_src) ;
   int offset = Int_val(_offset) ;
   int len = Int_val(_length) ;
   int dst_off = Int_val(_dst_off) ;

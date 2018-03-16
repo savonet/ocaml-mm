@@ -307,7 +307,7 @@ val to_mono : buffer -> Mono.buffer
 val of_mono : Mono.buffer -> buffer
 
 module U8 : sig
-  val of_audio : buffer -> int -> string -> int -> int -> unit
+  val of_audio : buffer -> int -> Bytes.t -> int -> int -> unit
 
   val to_audio : string -> int -> buffer -> int -> int -> unit
 end
@@ -317,7 +317,7 @@ module S16LE : sig
 
   val duration : int -> int -> int
 
-  val of_audio : buffer -> int -> string -> int -> int -> unit
+  val of_audio : buffer -> int -> Bytes.t -> int -> int -> unit
 
   val make : buffer -> int -> int -> string
 
@@ -329,7 +329,7 @@ module S16BE : sig
 
   val duration : int -> int -> int
 
-  val of_audio : buffer -> int -> string -> int -> int -> unit
+  val of_audio : buffer -> int -> Bytes.t -> int -> int -> unit
 
   val make : buffer -> int -> int -> string
 
@@ -337,13 +337,13 @@ module S16BE : sig
 end
 
 module S24LE : sig
-  val of_audio : buffer -> int -> string -> int -> int -> unit
+  val of_audio : buffer -> int -> Bytes.t -> int -> int -> unit
 
   val to_audio : string -> int -> buffer -> int -> int -> unit
 end
 
 module S32LE : sig
-  val of_audio : buffer -> int -> string -> int -> int -> unit
+  val of_audio : buffer -> int -> Bytes.t -> int -> int -> unit
 
   val to_audio : string -> int -> buffer -> int -> int -> unit
 end

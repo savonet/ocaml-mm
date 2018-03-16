@@ -938,7 +938,7 @@ module U8 = struct
       "caml_float_pcm_of_u8_native"
 
   external of_audio :
-    float array array -> int -> string -> int -> int -> unit
+    float array array -> int -> Bytes.t -> int -> int -> unit
     = "caml_float_pcm_to_u8"
 end
 
@@ -948,16 +948,14 @@ module S16LE = struct
   let duration channels len = len / (2 * channels)
 
   external of_audio :
-    float array array -> int -> string -> int -> int -> unit
+    float array array -> int -> Bytes.t -> int -> int -> unit
     = "caml_float_pcm_to_s16le"
 
   let make buf ofs len =
     let slen = length (channels buf) len in
-    let sbuf = Bytes.to_string
-      (Bytes.create slen)
-    in
+    let sbuf = Bytes.create slen in
     of_audio buf ofs sbuf 0 len;
-    sbuf
+    Bytes.to_string sbuf
 
   external to_audio : string -> int -> float array array -> int -> int -> unit = "caml_float_pcm_convert_s16le_byte" "caml_float_pcm_convert_s16le_native"
 end
@@ -968,23 +966,21 @@ module S16BE = struct
   let duration channels len = len / (2 * channels)
 
   external of_audio :
-    float array array -> int -> string -> int -> int -> unit
+    float array array -> int -> Bytes.t -> int -> int -> unit
     = "caml_float_pcm_to_s16be"
 
   let make buf ofs len =
     let slen = length (channels buf) len in
-    let sbuf = Bytes.to_string
-      (Bytes.create slen)
-    in
+    let sbuf = Bytes.create slen in
     of_audio buf ofs sbuf 0 len;
-    sbuf
+    Bytes.to_string sbuf
 
   external to_audio : string -> int -> float array array -> int -> int -> unit = "caml_float_pcm_convert_s16be_byte" "caml_float_pcm_convert_s16be_native"
 end
 
 module S24LE = struct
   external of_audio :
-    float array array -> int -> string -> int -> int -> unit
+    float array array -> int -> Bytes.t -> int -> int -> unit
     = "caml_float_pcm_to_s24le"
 
   external to_audio : string -> int -> float array array -> int -> int -> unit = "caml_float_pcm_convert_s24le_byte" "caml_float_pcm_convert_s24le_native"
@@ -992,7 +988,7 @@ end
 
 module S32LE = struct
   external of_audio :
-    float array array -> int -> string -> int -> int -> unit
+    float array array -> int -> Bytes.t -> int -> int -> unit
     = "caml_float_pcm_to_s32le"
 
   external to_audio : string -> int -> float array array -> int -> int -> unit = "caml_float_pcm_convert_s32le_byte" "caml_float_pcm_convert_s32le_native"
