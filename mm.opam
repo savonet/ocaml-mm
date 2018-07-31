@@ -6,6 +6,7 @@ homepage: "https://github.com/savonet/ocaml-mm"
 build: [
   ["./bootstrap"]
   ["./configure" "--prefix" prefix]
+  [make "clean"]
   [make]
 ]
 install: [
