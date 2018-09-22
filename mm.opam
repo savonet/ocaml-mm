@@ -1,29 +1,23 @@
-opam-version: "1.2"
+opam-version: "2.0"
 version: "dev"
 maintainer: "Romain Beauxis <toots@rastageeks.org>"
 authors: "The Savonet Team <savonet-users@lists.sourceforge.net>"
 homepage: "https://github.com/savonet/ocaml-mm"
+bug-reports: "https://github.com/savonet/ocaml-mm/issues"
+depends: ["ocaml" "ocamlfind"]
+depopts: [
+  "alsa" "ao" "pulseaudio" "gstreamer" "mad" "ogg" "ocamlsdl" "theora"
+]
+conflicts: [
+  "ocaml-variants" {= "4.04.2+flambda"}
+]
+flags: light-uninstall
 build: [
   ["./bootstrap"]
   ["./configure" "--prefix" prefix]
   [make "clean"]
   [make]
 ]
-install: [
-  [make "install"]
-]
+install: [make "install"]
 remove: ["ocamlfind" "remove" "mm"]
-depends: ["ocamlfind"]
-depopts: [
-  "alsa"
-  "ao"
-  "pulseaudio"
-  "gstreamer"
-  "mad"
-  "ogg"
-  "ocamlsdl"
-  "theora"
-]
-bug-reports: "https://github.com/savonet/ocaml-mm/issues"
-dev-repo: "https://github.com/savonet/ocaml-mm.git"
-available: [compiler != "4.04.2+flambda"]
+dev-repo: "git+https://github.com/savonet/ocaml-mm.git"
