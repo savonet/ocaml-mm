@@ -1003,7 +1003,7 @@ CAMLprim value caml_rgba_swap_rb(value _rgba)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_rgb_add(value _dst, value _src)
+CAMLprim value caml_rgb_add(value _src, value _dst)
 {
   CAMLparam2(_src,_dst);
   frame src,dst;
