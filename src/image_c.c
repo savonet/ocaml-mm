@@ -555,6 +555,8 @@ CAMLprim value caml_rgb_of_rgb8_string(value _rgb, value _data)
     }
   caml_leave_blocking_section();
 
+  free(data);
+
   CAMLreturn(Val_unit);
 }
 
