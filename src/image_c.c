@@ -463,12 +463,13 @@ void RGB_to_YUV420(frame *rgb,
 CAMLprim value caml_rgb_of_YUV420(value yuv, value dst)
 {
   CAMLparam2(yuv,dst);
+  CAMLlocal2(y_val,uv_val);
   frame rgb;
   frame_of_value(dst, &rgb);
-  value y_val = Field(yuv, 0);
+  y_val = Field(yuv, 0);
   unsigned char *y = Caml_ba_data_val(Field(y_val, 0));
   int y_stride = Int_val(Field(y_val, 1));
-  value uv_val = Field(yuv, 1);
+  uv_val = Field(yuv, 1);
   unsigned char *u = Caml_ba_data_val(Field(uv_val, 0));
   unsigned char *v = Caml_ba_data_val(Field(uv_val, 1));
   int uv_stride = Int_val(Field(uv_val, 2));
@@ -477,6 +478,29 @@ CAMLprim value caml_rgb_of_YUV420(value yuv, value dst)
   caml_enter_blocking_section();
   YUV420_to_RGB(y, y_stride, u, v, uv_stride, &rgb);
   caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_yuv_of_string(value yuv, value s)
+{
+  CAMLparam2(yuv, s);
+  CAMLlocal1(tmp);
+
+  tmp = Field(yuv,0);
+  int width = Int_val(Field(yuv,1));
+  int height = Int_val(Field(yuv,2));
+  unsigned char *y = Caml_ba_data_val(Field(Field(tmp,0),0));
+  //int y_stride = Int_val(Field(Field(tmp,0),1));
+  tmp = Field(tmp,1);
+  unsigned char *u = Caml_ba_data_val(Field(tmp,0));
+  unsigned char *v = Caml_ba_data_val(Field(tmp,1));
+  //int uv_stride = Int_val(Field(tmp,2));
+
+  int datalen = width*height*6/4;
+  memcpy(y, String_val(s), datalen*2/3);
+  memcpy(u, String_val(s)+datalen*2/3, datalen/6);
+  memcpy(v, String_val(s)+datalen*5/6, datalen/6);
 
   CAMLreturn(Val_unit);
 }
@@ -495,9 +519,10 @@ CAMLprim value caml_yuv_blank(value f)
 CAMLprim value caml_rgb_to_YUV420(value f, value yuv)
 {
   CAMLparam2(f,yuv);
+  CAMLlocal1(tmp);
   frame rgb;
   frame_of_value(f, &rgb);
-  value tmp = Field(yuv, 0);
+  tmp = Field(yuv, 0);
   unsigned char *y = Caml_ba_data_val(Field(tmp,0));
   tmp = Field(yuv,1);
   unsigned char *u = Caml_ba_data_val(Field(tmp,0));

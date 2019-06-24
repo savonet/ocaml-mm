@@ -62,10 +62,13 @@ module YUV420 : sig
   (** Create an image of given width and height. *)
   val create : int -> int -> t
 
+  val of_string : string -> int -> t
+
   (** Clear an image (sets it to black). *)
   val blank_all : t -> unit
 
   val make : int -> int -> data -> int -> data -> data -> int -> t
+
   val internal : t -> (data * int) * (data * data * int)
 end
 
@@ -282,6 +285,8 @@ module Generic : sig
 
   (** Create a generic image from an RGBA32 image. *)
   val of_RGBA32 : RGBA32.t -> t
+
+  val to_RGBA32 : t -> RGBA32.t
 
   (** Create a generic image from a YUV420 image. *)
   val of_YUV420 : YUV420.t -> t

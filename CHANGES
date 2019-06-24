@@ -1,6 +1,7 @@
 0.4.1 (unreleased)
 =====
 * Fix memory leak in `RGBA32.of_RGB24_string`.
+* Add `YUV420.of_string`.
 
 0.4.0 (18-08-2018)
 =====

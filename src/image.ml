@@ -104,7 +104,6 @@ module Gray8 = struct
   end
 end
 
-
 module YUV420 = struct
   (* TODO: also store width and height? *)
   type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
@@ -139,6 +138,15 @@ module YUV420 = struct
     (* Stride should be the same in this case.. *)
     let (_,v) = create_rounded_plane (h/2) (w/2) in
     make w h y ys u v uvs
+
+  external of_string : t -> string -> unit = "caml_yuv_of_string"
+
+  let of_string s width =
+    let pixels = String.length s * 4 / 6 in
+    let height = pixels / width in
+    let img = create width height in
+    of_string img s;
+    img
 
   external blank : data -> unit = "caml_yuv_blank"
 
