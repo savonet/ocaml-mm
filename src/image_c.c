@@ -528,6 +528,28 @@ CAMLprim value caml_yuv_blank(value f)
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value caml_ba_of_string(value s)
+{
+  CAMLparam1(s);
+  CAMLlocal1(ans);
+  int len = String_len(s);
+  unsigned char* data = malloc(len);
+  memcpy(data, String_val(s), len);
+  ans = caml_ba_alloc(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8, 1, data, &len);
+  CAMLreturn(ans);
+}
+
+CAMLprim value caml_i420_blank(value yuv)
+{
+  CAMLparam1(yuv);
+  CAMLlocal1(data);
+  data = Field(yuv,0);
+  unsigned char *buf = Caml_ba_data_val(data);
+  int len =  Caml_ba_array_val(data)->dim[0];
+  memset(buf, 0, len);
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value caml_rgb_to_YUV420(value f, value yuv)
 {
   CAMLparam2(f,yuv);

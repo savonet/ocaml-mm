@@ -35,6 +35,8 @@
 (* Creates an 16-bytes aligned plane. Returns (stride*plane). *)
 external create_rounded_plane : int -> int -> int*((int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t) = "caml_rgb_aligned_plane"
 
+external bigarray_of_string : string -> (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t = "caml_ba_of_string"
+
 module Motion_multi = struct
   type vectors_data = (int, Bigarray.nativeint_elt, Bigarray.c_layout) Bigarray.Array1.t
 
@@ -153,6 +155,49 @@ module YUV420 = struct
   let blank_all x =
     let (y,_),(u,v,_) = x.data in
     blank y ; blank u ; blank v
+end
+
+module I420 = struct
+  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+  let kind = Bigarray.int8_unsigned
+
+  type t =
+    {
+      data : data;
+      width : int;
+      height : int;
+      alpha : bool; (** whether there is an alpha channel: in this case y = 0 means transparent *)
+    }
+
+  let width img = img.width
+
+  let height img = img.height
+
+  let alpha img = img.alpha
+
+  let data img = img.data
+
+  let make ?(alpha=false) width height data =
+    {
+      data;
+      width;
+      height;
+      alpha;
+    }
+
+  let create width height =
+    let data = Bigarray.Array1.create kind Bigarray.C_layout (width * height * 6 / 4) in
+    make width height data
+
+  let of_string s width =
+    let len = String.length s in
+    let pixels = len * 4 / 6 in
+    let height = pixels / width in
+    assert (len = width * height * 6 / 4);
+    let data = bigarray_of_string s in
+    make width height data
+
+  external blank : data -> unit = "caml_i420_blank"
 end
 
 module BGRA = struct
