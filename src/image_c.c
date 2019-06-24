@@ -505,16 +505,11 @@ CAMLprim value caml_yuv_of_string(value yuv, value s)
   int i, j;
 
   caml_enter_blocking_section();
-  for (i = 0; i < height; i++) {
-    for (j = 0; j < width; j++) {
-      y[y_stride*i+j] = data[width*i+j];
-    }
-  }
+  for (i = 0; i < height; i++)
+    memcpy(y+i*y_stride, data+i*width, width);
   for (i = 0; i < height/2; i++) {
-    for (j = 0; j < width/2; j++) {
-      u[uv_stride*i+j] = data[datalen*4/6+width/2*i+j];
-      v[uv_stride*i+j] = data[datalen*5/6+width/2*i+j];
-    }
+    memcpy(u+i*uv_stride, data+datalen*4/6+i*width/2, width/2);
+    memcpy(v+i*uv_stride, data+datalen*5/6+i*width/2, width/2);
   }
   caml_leave_blocking_section();
 
