@@ -491,17 +491,34 @@ CAMLprim value caml_yuv_of_string(value yuv, value s)
   int width = Int_val(Field(yuv,1));
   int height = Int_val(Field(yuv,2));
   unsigned char *y = Caml_ba_data_val(Field(Field(tmp,0),0));
-  //int y_stride = Int_val(Field(Field(tmp,0),1));
+  int y_stride = Int_val(Field(Field(tmp,0),1));
   tmp = Field(tmp,1);
   unsigned char *u = Caml_ba_data_val(Field(tmp,0));
   unsigned char *v = Caml_ba_data_val(Field(tmp,1));
-  //int uv_stride = Int_val(Field(tmp,2));
+  int uv_stride = Int_val(Field(tmp,2));
 
   int datalen = width*height*6/4;
-  memcpy(y, String_val(s), datalen*2/3);
-  memcpy(u, String_val(s)+datalen*2/3, datalen/6);
-  memcpy(v, String_val(s)+datalen*5/6, datalen/6);
 
+  unsigned char *data = (unsigned char*)memalign(ALIGNMENT_BYTES, datalen);
+  if (data == NULL) caml_raise_out_of_memory();
+  memcpy(data, String_val(s), datalen);
+  int i, j;
+
+  caml_enter_blocking_section();
+  for (i = 0; i < height; i++) {
+    for (j = 0; j < width; j++) {
+      y[y_stride*i+j] = data[width*i+j];
+    }
+  }
+  for (i = 0; i < height/2; i++) {
+    for (j = 0; j < width/2; j++) {
+      u[uv_stride*i+j] = data[datalen*4/6+width/2*i+j];
+      v[uv_stride*i+j] = data[datalen*5/6+width/2*i+j];
+    }
+  }
+  caml_leave_blocking_section();
+
+  free(data);
   CAMLreturn(Val_unit);
 }
 
