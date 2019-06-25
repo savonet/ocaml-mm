@@ -33,41 +33,101 @@
 
 (** Operations on video data. *)
 
-(** A frame. *)
-type frame = Image.RGBA32.t
+(** Images of videos. *)
+module Image : sig
+  type t = Image.I420.t
+
+  val create : int -> int -> t
+
+  val of_RGB24_string : string -> int -> t
+
+  val of_I420_string : string -> int -> t
+
+  val to_I420 : t -> Image.I420.t
+
+  (** Convert to format useable by [Graphics.make_image]. *)
+  val to_int_image : t -> int array array
+
+  val of_i420 : Image.I420.t -> t
+
+  val to_i420 : t -> Image.I420.t
+
+  val copy : t -> t
+
+  val width : t -> int
+
+  val height : t -> int
+
+  val dimensions : t -> int * int
+
+  (** Size in bytes. *)
+  val size : t -> int
+
+  val blank : t -> unit
+
+  val randomize : t -> unit
+
+  (** [blit_all src dst] blits an entire image. *)
+  val blit : t -> ?blank:bool -> ?x:int -> ?y:int -> t -> unit
+
+  val get_pixel : t -> int -> int -> int * int * int * int
+
+  val set_pixel : t -> int -> int -> (int * int * int * int) -> unit
+
+  (** Add the fist image to the second. *)
+  val add : t -> ?x:int -> ?y:int -> t -> unit
+
+  module Effect : sig
+    val greyscale : t -> unit
+
+    val sepia : t -> unit
+
+    val invert : t -> unit
+
+    val lomo : t -> unit
+
+    val translate : t -> int -> int -> unit
+
+    module Alpha : sig
+      val scale : t -> float -> unit
+    end
+  end
+end
 
 (** A video buffer. *)
-type buffer = frame array
+type t = Image.t array
 
-(** Size of the buffer in frames. *)
-val size : buffer -> int
-
-(** Create a buffer with a given number of frames. The frames themselves should
-    not be read or written to, otherwise use [make]. *)
-val create : int -> buffer
+type buffer = t
 
 (** Create a buffer with a given number of frames of given size. *)
-val make : int -> int -> int -> buffer
+val make : int -> int -> int -> t
+
+(** Video with a single image. *)
+val single : Image.t -> t
+
+val blit : t -> int -> t -> int -> int -> unit
 
 (** Create a fresh copy of a buffer. *)
-val copy : buffer -> buffer
+val copy : t -> t
 
-(** Concatenate two buffers. *)
-val append : buffer -> buffer -> buffer
+(** Length in images. *)
+val length : t -> int
 
-val blit : buffer -> int -> buffer -> int -> int -> unit
+(** Size in bytes. *)
+val size : t -> int
 
-val iter_all : buffer -> (frame -> unit) -> unit
+(** Obtaine the i-th image of a video. *)
+val get : t -> int -> Image.t
 
-val map_all : buffer -> (frame -> frame) -> unit
+val iter : (Image.t -> unit) -> t -> int -> int -> unit
 
-val randomize : buffer -> int -> int -> unit
+val blank : t -> int -> int -> unit
 
-val blank : buffer -> int -> int -> unit
+val randomize : t -> int -> int -> unit
 
-module Ringbuffer_ext : Ringbuffer.R with type elt = frame
+(* module Ringbuffer_ext : Ringbuffer.R with type elt = frame *)
 
-module Ringbuffer : Ringbuffer.R with type elt = frame
+(* module Ringbuffer : Ringbuffer.R with type elt = frame *)
 
 (** Operations on frame rates. *)
 module FPS : sig
@@ -77,6 +137,7 @@ module FPS : sig
   val to_frac : t -> int * int
 end
 
+(*
 module IO : sig
   exception Invalid_file
 
@@ -110,3 +171,4 @@ module IO : sig
     class to_avi_file : string -> FPS.t -> int -> int -> t
   end
 end
+*)

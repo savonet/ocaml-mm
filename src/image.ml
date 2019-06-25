@@ -37,6 +37,8 @@ external create_rounded_plane : int -> int -> int*((int, Bigarray.int8_unsigned_
 
 external bigarray_of_string : string -> (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t = "caml_ba_of_string"
 
+external bigarray_blit_off : (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t -> int -> (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t -> int -> int -> unit= "caml_ba_blit_off"
+
 module Motion_multi = struct
   type vectors_data = (int, Bigarray.nativeint_elt, Bigarray.c_layout) Bigarray.Array1.t
 
@@ -155,49 +157,6 @@ module YUV420 = struct
   let blank_all x =
     let (y,_),(u,v,_) = x.data in
     blank y ; blank u ; blank v
-end
-
-module I420 = struct
-  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
-  let kind = Bigarray.int8_unsigned
-
-  type t =
-    {
-      data : data;
-      width : int;
-      height : int;
-      alpha : bool; (** whether there is an alpha channel: in this case y = 0 means transparent *)
-    }
-
-  let width img = img.width
-
-  let height img = img.height
-
-  let alpha img = img.alpha
-
-  let data img = img.data
-
-  let make ?(alpha=false) width height data =
-    {
-      data;
-      width;
-      height;
-      alpha;
-    }
-
-  let create width height =
-    let data = Bigarray.Array1.create kind Bigarray.C_layout (width * height * 6 / 4) in
-    make width height data
-
-  let of_string s width =
-    let len = String.length s in
-    let pixels = len * 4 / 6 in
-    let height = pixels / width in
-    assert (len = width * height * 6 / 4);
-    let data = bigarray_of_string s in
-    make width height data
-
-  external blank : data -> unit = "caml_i420_blank"
 end
 
 module BGRA = struct
@@ -562,6 +521,163 @@ module RGBA32 = struct
 
       let arrows v img =
         arrows v.block_size v.vectors img
+    end
+  end
+end
+
+module I420 = struct
+  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+  let kind = Bigarray.int8_unsigned
+
+  let alloc n = Bigarray.Array1.create kind Bigarray.C_layout n
+
+  module Pixel = struct
+    type rgba = int * int * int * int
+
+    type yuv = int * int * int
+  end
+
+  type t =
+    {
+      data : data;
+      width : int;
+      height : int;
+      alpha : data option;
+    }
+
+  let width img = img.width
+
+  let height img = img.height
+
+  let dimensions img = width img, height img
+
+  let alpha img = img.alpha
+
+  let data img = img.data
+
+  let data_split img =
+    let width = img.width in
+    let height = img.height in
+    let data = img.data in
+    let len = width * height in
+    let y = Bigarray.Array1.sub data 0 len in
+    let u = Bigarray.Array1.sub data len (len/4) in
+    let v = Bigarray.Array1.sub data (len*5/4) (len/4) in
+    y,u,v
+
+  let data_stride img y_stride uv_stride =
+    let width = img.width in
+    if y_stride <> width then failwith "TODO";
+    if uv_stride <> width / 2 then failwith "TODO";
+    data_split img
+
+  let size img = Bigarray.Array1.dim img.data
+
+  let make width height data =
+    {
+      data;
+      width;
+      height;
+      alpha=None;
+    }
+
+  let make_stride width height y_stride y uv_stride u v =
+    if y_stride <> width || uv_stride <> width / 2 then failwith "TODO";
+    let len = width*height in
+    let data = alloc (len*6/4) in
+    bigarray_blit_off y 0 data 0 len;
+    bigarray_blit_off u 0 data len (len/4);
+    bigarray_blit_off v 0 data (len*5/4) (len/4);
+    make width height data
+
+  let create width height =
+    let data = alloc (width * height * 6 / 4) in
+    make width height data
+
+  let of_I420_string s width =
+    let len = String.length s in
+    let pixels = len * 4 / 6 in
+    let height = pixels / width in
+    assert (len = width * height * 6 / 4);
+    let data = bigarray_of_string s in
+    make width height data
+
+  let of_RGB24_string s width = failwith "Not implemented: of_RGB24_string"
+
+  let copy img =
+    let dst = create img.width img.height in
+    assert (img.alpha = None); (* TODO *)
+    Bigarray.Array1.blit img.data dst.data;
+    dst
+
+  external blank : t -> unit = "caml_i420_blank"
+
+  let blank_all = blank
+
+  let blit_all src dst =
+    if (not (src.alpha = None && dst.alpha = None)) then failwith "TODO";
+    Bigarray.Array1.blit src.data dst.data
+
+  let blit src ?(blank=true) ?(x=0) ?(y=0) dst =
+    if x = 0 && y = 0 then
+      blit_all src dst
+    else
+      failwith "TODO"
+
+  let randomize img = failwith "Not implemented: randomize"
+
+  let add_all src dst =
+    if src.alpha = None then blit_all src dst
+    else failwith "TODO"
+
+  let add src ?(x=0) ?(y=0) dst =
+    if x = 0 && y = 0 then add_all src dst
+    else failwith "TODO"
+
+  external yuv_of_rgb : int * int * int -> int * int * int = "caml_yuv_of_rgb"
+
+  external rgb_of_yuv : int * int * int -> int * int * int = "caml_rgb_of_yuv"
+
+  let set_pixel img i j (r,g,b,a) =
+    if a <> 0xff then failwith "TODO";
+    let y,u,v = yuv_of_rgb (r,g,b) in
+    let data = img.data in
+    let width = img.width in
+    let height = img.height in
+    Bigarray.Array1.set data (j * width + i) y;
+    Bigarray.Array1.set data (height * width + j * width / 4 + i / 2) u;
+    Bigarray.Array1.set data (height * width * 5 / 4 + j * width / 4 + i / 2) v
+
+  let get_pixel img i j =
+    let data = img.data in
+    let width = img.width in
+    let height = img.height in
+    let y = Bigarray.Array1.get data (j * width + i) in
+    let u = Bigarray.Array1.get data (height * width + j * width / 4 + i / 2) in
+    let v = Bigarray.Array1.get data (height * width * 5 / 4 + j * width / 4 + i / 2) in
+    let r,g,b = rgb_of_yuv (y,u,v) in
+    let a =
+      match img.alpha with
+      | None -> 0xff
+      | Some alpha -> Bigarray.Array1.get alpha (j * width + i)
+    in
+    r,g,b,a
+
+  let to_int_image img = failwith "Not implemented: to_int_image"
+
+  module Effect = struct
+    let greyscale img = failwith "Not implemented: greyscale"
+
+    let sepia img = failwith "Not implemented: sepia"
+
+    let invert img = failwith "Not implemented: invert"
+
+    let lomo img = failwith "Not implemented: lomo"
+
+    let translate img x y = failwith "Not implemented: translate"
+
+    module Alpha = struct
+      let scale img x = failwith "Not implemented: Alpha.scale"
     end
   end
 end

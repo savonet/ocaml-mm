@@ -528,28 +528,6 @@ CAMLprim value caml_yuv_blank(value f)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_ba_of_string(value s)
-{
-  CAMLparam1(s);
-  CAMLlocal1(ans);
-  int len = String_len(s);
-  unsigned char* data = malloc(len);
-  memcpy(data, String_val(s), len);
-  ans = caml_ba_alloc(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8, 1, data, &len);
-  CAMLreturn(ans);
-}
-
-CAMLprim value caml_i420_blank(value yuv)
-{
-  CAMLparam1(yuv);
-  CAMLlocal1(data);
-  data = Field(yuv,0);
-  unsigned char *buf = Caml_ba_data_val(data);
-  int len =  Caml_ba_array_val(data)->dim[0];
-  memset(buf, 0, len);
-  CAMLreturn(Val_unit);
-}
-
 CAMLprim value caml_rgb_to_YUV420(value f, value yuv)
 {
   CAMLparam2(f,yuv);
@@ -1961,4 +1939,87 @@ CAMLprim value caml_RGB32_to_RGBA32(value _src, value _src_stride, value _dst, v
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);
+}
+
+/*************************************
+ ************ bigarrays***************
+ *************************************/
+
+CAMLprim value caml_ba_of_string(value s)
+{
+  CAMLparam1(s);
+  CAMLlocal1(ans);
+  int len = caml_string_length(s);
+  unsigned char* data = malloc(len);
+  memcpy(data, String_val(s), len);
+  ans = caml_ba_alloc(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8, 1, data, &len);
+  CAMLreturn(ans);
+}
+
+CAMLprim value caml_ba_blit_off(value _src, value _soff, value _dst, value _doff, value _len)
+{
+  CAMLparam5(_src, _soff, _dst, _doff, _len);
+  int soff = Int_val(_soff);
+  int doff = Int_val(_doff);
+  int len = Int_val(_len);
+  unsigned char* src = Caml_ba_data_val(_src);
+  unsigned char* dst = Caml_ba_data_val(_dst);
+  memcpy(src+soff, dst+doff, len);
+  CAMLreturn(Val_unit);
+}
+
+
+/*************************************
+ ************ I420 *******************
+ *************************************/
+
+#define I420_data(v) (Caml_ba_data_val(Field(v,0))
+
+CAMLprim value caml_i420_blank(value yuv)
+{
+  CAMLparam1(yuv);
+  CAMLlocal1(data);
+  data = Field(yuv,0);
+  unsigned char *buf = Caml_ba_data_val(data);
+  int len =  Caml_ba_array_val(data)->dim[0];
+  memset(buf, 0, len);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_yuv_of_rgb(value rgb)
+{
+  CAMLparam1(rgb);
+  CAMLlocal1(ans);
+  int r = Int_val(Field(rgb, 0));
+  int g = Int_val(Field(rgb, 1));
+  int b = Int_val(Field(rgb, 2));
+
+  int y = CLIP((19595 * r + 38470 * g + 7471 * b ) >> 16);
+  int u = CLIP((36962 * (b - CLIP((19595 * r + 38470 * g + 7471 * b) >> 16) ) >> 16) + 128);
+  int v = CLIP((46727 * (r - CLIP((19595 * r + 38470 * g + 7471 * b) >> 16) ) >> 16) + 128);
+
+  ans = caml_alloc_tuple(3);
+  Store_field(ans, 0, y);
+  Store_field(ans, 1, u);
+  Store_field(ans, 2, v);
+  CAMLreturn(ans);
+}
+
+CAMLprim value caml_rgb_of_yuv(value yuv)
+{
+  CAMLparam1(yuv);
+  CAMLlocal1(ans);
+  int y = Int_val(Field(yuv, 0));
+  int u = Int_val(Field(yuv, 1));
+  int v = Int_val(Field(yuv, 2));
+
+  int r = CLIP(y + ( 91881 * v >> 16 ) - 179);
+  int g = CLIP(y - (( 22544 * u + 46793 * v ) >> 16) + 135);
+  int b = CLIP(y + (116129 * u >> 16 ) - 226 );
+
+  ans = caml_alloc_tuple(3);
+  Store_field(ans, 0, r);
+  Store_field(ans, 1, g);
+  Store_field(ans, 2, b);
+  CAMLreturn(ans);
 }

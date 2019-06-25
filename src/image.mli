@@ -220,6 +220,87 @@ module RGBA32 : sig
   end
 end
 
+module I420 : sig
+  module Pixel : sig
+    type rgba = int * int * int * int
+
+    type yuv = int * int * int
+  end
+
+  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+  type t
+
+  val make : int -> int -> data -> t
+
+  val create : int -> int -> t
+
+  val make_stride : int -> int -> int -> data -> int -> data -> data -> t
+
+  val of_I420_string : string -> int -> t
+
+  val of_RGB24_string : string -> int -> t
+
+  val width : t -> int
+
+  val height : t -> int
+
+  val dimensions : t -> int * int
+
+  (** Internal data (without alpha channel). *)
+  val data : t -> data
+
+  (** Size in bytes. *)
+  val size : t -> int
+
+  (** Data in split y/u/v buffers. No copy is made. *)
+  val data_split : t -> data * data * data
+
+  (* (\** Obtaine data with given stride. No copy is made when possible. *\) *)
+  (* val data_stride : t -> int -> int -> data * data * data *)
+
+  val copy : t -> t
+
+  val blit_all : t -> t -> unit
+
+  val blit : t -> ?blank:bool -> ?x:int -> ?y:int -> t -> unit
+
+  (** [blit_all src dst] blits an entire image. *)
+  val blank_all : t -> unit
+
+  val add_all : t -> t -> unit
+
+  (** Add the fist image to the second. *)
+  val add : t -> ?x:int -> ?y:int -> t -> unit
+
+  val blank : t -> unit
+
+  val randomize : t -> unit
+
+  val set_pixel : t -> int -> int -> Pixel.rgba -> unit
+
+  val get_pixel : t -> int -> int -> Pixel.rgba
+
+  (** Convert to format useable by [Graphics.make_image]. *)
+  val to_int_image : t -> int array array
+
+  module Effect : sig
+    val greyscale : t -> unit
+
+    val sepia : t -> unit
+
+    val invert : t -> unit
+
+    val lomo : t -> unit
+
+    val translate : t -> int -> int -> unit
+
+    module Alpha : sig
+      val scale : t -> float -> unit
+    end
+  end
+end
+
 (** Operations on images in generic formats (many formats are supported). *)
 module Generic : sig
   (** Since the module is very generic, many of the functions are not
