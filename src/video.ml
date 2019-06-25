@@ -36,9 +36,9 @@ module Image = struct
 
   let to_I420 img = img
 
-  let of_i420 img = img
+  let of_I420 img = img
 
-  let to_i420 img = img
+  let to_I420 img = img
 end
 
 type t = Image.t array

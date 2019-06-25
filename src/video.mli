@@ -48,9 +48,9 @@ module Image : sig
   (** Convert to format useable by [Graphics.make_image]. *)
   val to_int_image : t -> int array array
 
-  val of_i420 : Image.I420.t -> t
+  val of_I420 : Image.I420.t -> t
 
-  val to_i420 : t -> Image.I420.t
+  val to_I420 : t -> Image.I420.t
 
   val copy : t -> t
 
