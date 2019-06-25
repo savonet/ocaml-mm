@@ -592,7 +592,7 @@ module I420 = struct
     make width height data
 
   let create width height =
-    let data = alloc (width * height * 6 / 4) in
+    let data = alloc (width*height*6/4) in
     make width height data
 
   let of_I420_string s width =
@@ -648,6 +648,25 @@ module I420 = struct
     Bigarray.Array1.set data (j * width + i) y;
     Bigarray.Array1.set data (height * width + (j / 2) * width / 2 + i / 2) u;
     Bigarray.Array1.set data (height * width * 5 / 4 + (j / 2) * width / 2 + i / 2) v
+
+  let get_pixel_y img i j =
+    let data = img.data in
+    let width = img.width in
+    Bigarray.Array1.get data (j * width + i)
+
+  let get_pixel_u img i j =
+    let data = img.data in
+    let width = img.width in
+    let height = img.height in
+    let len = width * height in
+    Bigarray.Array1.get data (len + (j / 2) * width / 2 + i / 2)
+
+  let get_pixel_v img i j =
+    let data = img.data in
+    let width = img.width in
+    let height = img.height in
+    let len = width * height in
+    Bigarray.Array1.get data (len * 5 / 4 + (j / 2) * width / 2 + i / 2)
 
   let get_pixel img i j =
     let data = img.data in

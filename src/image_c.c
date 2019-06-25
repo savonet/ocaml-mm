@@ -1998,10 +1998,14 @@ CAMLprim value caml_yuv_of_rgb(value rgb)
   int u = CLIP((36962 * (b - CLIP((19595 * r + 38470 * g + 7471 * b) >> 16) ) >> 16) + 128);
   int v = CLIP((46727 * (r - CLIP((19595 * r + 38470 * g + 7471 * b) >> 16) ) >> 16) + 128);
 
+  /* int y = CLIP(((66 * r + 129 * g +  25 * b + 128) >> 8) +  16); */
+  /* int u = CLIP(((-38 * r -  74 * g + 112 * b + 128) >> 8) + 128); */
+  /* int v = CLIP(((112 * r -  94 * g -  18 * b + 128) >> 8) + 128); */
+
   ans = caml_alloc_tuple(3);
-  Store_field(ans, 0, y);
-  Store_field(ans, 1, u);
-  Store_field(ans, 2, v);
+  Store_field(ans, 0, Val_int(y));
+  Store_field(ans, 1, Val_int(u));
+  Store_field(ans, 2, Val_int(v));
   CAMLreturn(ans);
 }
 
@@ -2013,13 +2017,24 @@ CAMLprim value caml_rgb_of_yuv(value yuv)
   int u = Int_val(Field(yuv, 1));
   int v = Int_val(Field(yuv, 2));
 
-  int r = CLIP(y + ( 91881 * v >> 16 ) - 179);
-  int g = CLIP(y - (( 22544 * u + 46793 * v ) >> 16) + 135);
-  int b = CLIP(y + (116129 * u >> 16 ) - 226 );
+  int r = CLIP(y + (91881 * v >> 16) - 179);
+  int g = CLIP(y - ((22544 * u + 46793 * v) >> 16) + 135);
+  int b = CLIP(y + (116129 * u >> 16) - 226);
+
+  /* int r = CLIP((298 * (y - 16) + 409 * (v - 128) + 128) >> 8); */
+  /* int g = CLIP((298 * (y - 16) - 100 * (u - 128) - 208 * (v - 128) + 128) >> 8); */
+  /* int b = CLIP((298 * (y - 16) + 516 * (u - 128) + 128) >> 8); */
+
+  /* int u1 = (((u - 128) << 7) + (u - 128)) >> 6; */
+  /* int rg = (((u - 128) << 1) + (u - 128) + ((v - 128) << 2) + ((v - 128) << 1)) >> 3; */
+  /* int v1 = (((v - 128) << 1) +  (v - 128)) >> 1; */
+  /* int r = CLIP(y + v1); */
+  /* int g = CLIP(y - rg); */
+  /* int b = CLIP(y + u1); */
 
   ans = caml_alloc_tuple(3);
-  Store_field(ans, 0, r);
-  Store_field(ans, 1, g);
-  Store_field(ans, 2, b);
+  Store_field(ans, 0, Val_int(r));
+  Store_field(ans, 1, Val_int(g));
+  Store_field(ans, 2, Val_int(b));
   CAMLreturn(ans);
 }
