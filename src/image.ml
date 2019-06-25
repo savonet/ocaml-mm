@@ -574,6 +574,7 @@ module I420 = struct
   let size img = Bigarray.Array1.dim img.data
 
   let make width height data =
+    assert (Bigarray.Array1.dim data = width*height*6/4);
     {
       data;
       width;
@@ -645,16 +646,20 @@ module I420 = struct
     let width = img.width in
     let height = img.height in
     Bigarray.Array1.set data (j * width + i) y;
-    Bigarray.Array1.set data (height * width + j * width / 4 + i / 2) u;
-    Bigarray.Array1.set data (height * width * 5 / 4 + j * width / 4 + i / 2) v
+    Bigarray.Array1.set data (height * width + (j / 2) * width / 2 + i / 2) u;
+    Bigarray.Array1.set data (height * width * 5 / 4 + (j / 2) * width / 2 + i / 2) v
 
   let get_pixel img i j =
     let data = img.data in
     let width = img.width in
     let height = img.height in
+    let len = width * height in
+    (* assert (size img = len * 6 / 4); *)
+    (* assert (0 <= i && i < width); *)
+    (* assert (0 <= j && j < height); *)
     let y = Bigarray.Array1.get data (j * width + i) in
-    let u = Bigarray.Array1.get data (height * width + j * width / 4 + i / 2) in
-    let v = Bigarray.Array1.get data (height * width * 5 / 4 + j * width / 4 + i / 2) in
+    let u = Bigarray.Array1.get data (len + (j / 2) * width / 2 + i / 2) in
+    let v = Bigarray.Array1.get data (len * 5 / 4 + (j / 2) * width / 2 + i / 2) in
     let r,g,b = rgb_of_yuv (y,u,v) in
     let a =
       match img.alpha with
@@ -663,7 +668,15 @@ module I420 = struct
     in
     r,g,b,a
 
-  let to_int_image img = failwith "Not implemented: to_int_image"
+  let to_int_image img =
+    Array.init img.height
+      (fun j ->
+        Array.init img.width
+          (fun i ->
+            let r,g,b,_ = get_pixel img i j in
+            r lsl 16 + g lsl 8 + b
+          )
+      )
 
   module Effect = struct
     let greyscale img = failwith "Not implemented: greyscale"

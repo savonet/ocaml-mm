@@ -1949,10 +1949,10 @@ CAMLprim value caml_ba_of_string(value s)
 {
   CAMLparam1(s);
   CAMLlocal1(ans);
-  int len = caml_string_length(s);
+  long len = caml_string_length(s);
   unsigned char* data = malloc(len);
   memcpy(data, String_val(s), len);
-  ans = caml_ba_alloc(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8, 1, data, &len);
+  ans = caml_ba_alloc_dims(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8, 1, data, len);
   CAMLreturn(ans);
 }
 
