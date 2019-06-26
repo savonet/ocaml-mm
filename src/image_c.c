@@ -1973,16 +1973,39 @@ CAMLprim value caml_ba_blit_off(value _src, value _soff, value _dst, value _doff
  ************ I420 *******************
  *************************************/
 
-#define I420_data(v) (Caml_ba_data_val(Field(v,0))
+#define I420_data(v) (Caml_ba_data_val(Field(v,0)))
+#define I420_width(v) (Int_val(Field(v,1)))
+#define I420_height(v) (Int_val(Field(v,2)))
 
-CAMLprim value caml_i420_blank(value yuv)
+// studio swing
+/* #define YofRGB(r,g,b) CLIP(((66 * r + 129 * g +  25 * b + 128) >> 8) +  16) */
+/* #define UofRGB(r,g,b) CLIP(((-38 * r -  74 * g + 112 * b + 128) >> 8) + 128) */
+/* #define UofRGB(r,g,b) CLIP(((112 * r -  94 * g -  18 * b + 128) >> 8) + 128) */
+/* #define RofYUV(y,u,v) CLIP((298 * (y - 16) + 409 * (v - 128) + 128) >> 8) */
+/* #define GofYUV(y,u,v) CLIP((298 * (y - 16) - 100 * (u - 128) - 208 * (v - 128) + 128) >> 8) */
+/* #define BofYUV(y,u,v) CLIP((298 * (y - 16) + 516 * (u - 128) + 128) >> 8) */
+
+// full swing
+#define YofRGB(r,g,b) CLIP((19595 * r + 38470 * g + 7471 * b) >> 16)
+#define UofRGB(r,g,b) CLIP((36962 * (b - CLIP((19595 * r + 38470 * g + 7471 * b) >> 16)) >> 16) + 128)
+#define VofRGB(r,g,b) CLIP((46727 * (r - CLIP((19595 * r + 38470 * g + 7471 * b) >> 16)) >> 16) + 128)
+#define RofYUV(y,u,v) CLIP(y + (91881 * v >> 16) - 179)
+#define GofYUV(y,u,v) CLIP(y - ((22544 * u + 46793 * v) >> 16) + 135)
+#define BofYUV(y,u,v) CLIP(y + (116129 * u >> 16) - 226)
+
+CAMLprim value caml_i420_fill(value img, value yuv)
 {
-  CAMLparam1(yuv);
-  CAMLlocal1(data);
-  data = Field(yuv,0);
-  unsigned char *buf = Caml_ba_data_val(data);
-  int len =  Caml_ba_array_val(data)->dim[0];
-  memset(buf, 0, len);
+  CAMLparam2(img, yuv);
+  int y = Int_val(Field(yuv, 0));
+  int u = Int_val(Field(yuv, 1));
+  int v = Int_val(Field(yuv, 2));
+  int width = I420_width(img);
+  int height = I420_height(img);
+  unsigned char *data = I420_data(img);
+  int len = width*height;
+  memset(data, y, len);
+  memset(data+len, u, len/4);
+  memset(data+len*5/4, v, len/4);
   CAMLreturn(Val_unit);
 }
 
@@ -1994,18 +2017,10 @@ CAMLprim value caml_yuv_of_rgb(value rgb)
   int g = Int_val(Field(rgb, 1));
   int b = Int_val(Field(rgb, 2));
 
-  int y = CLIP((19595 * r + 38470 * g + 7471 * b ) >> 16);
-  int u = CLIP((36962 * (b - CLIP((19595 * r + 38470 * g + 7471 * b) >> 16) ) >> 16) + 128);
-  int v = CLIP((46727 * (r - CLIP((19595 * r + 38470 * g + 7471 * b) >> 16) ) >> 16) + 128);
-
-  /* int y = CLIP(((66 * r + 129 * g +  25 * b + 128) >> 8) +  16); */
-  /* int u = CLIP(((-38 * r -  74 * g + 112 * b + 128) >> 8) + 128); */
-  /* int v = CLIP(((112 * r -  94 * g -  18 * b + 128) >> 8) + 128); */
-
   ans = caml_alloc_tuple(3);
-  Store_field(ans, 0, Val_int(y));
-  Store_field(ans, 1, Val_int(u));
-  Store_field(ans, 2, Val_int(v));
+  Store_field(ans, 0, Val_int(YofRGB(r,g,b)));
+  Store_field(ans, 1, Val_int(UofRGB(r,g,b)));
+  Store_field(ans, 2, Val_int(VofRGB(r,g,b)));
   CAMLreturn(ans);
 }
 
@@ -2017,24 +2032,9 @@ CAMLprim value caml_rgb_of_yuv(value yuv)
   int u = Int_val(Field(yuv, 1));
   int v = Int_val(Field(yuv, 2));
 
-  int r = CLIP(y + (91881 * v >> 16) - 179);
-  int g = CLIP(y - ((22544 * u + 46793 * v) >> 16) + 135);
-  int b = CLIP(y + (116129 * u >> 16) - 226);
-
-  /* int r = CLIP((298 * (y - 16) + 409 * (v - 128) + 128) >> 8); */
-  /* int g = CLIP((298 * (y - 16) - 100 * (u - 128) - 208 * (v - 128) + 128) >> 8); */
-  /* int b = CLIP((298 * (y - 16) + 516 * (u - 128) + 128) >> 8); */
-
-  /* int u1 = (((u - 128) << 7) + (u - 128)) >> 6; */
-  /* int rg = (((u - 128) << 1) + (u - 128) + ((v - 128) << 2) + ((v - 128) << 1)) >> 3; */
-  /* int v1 = (((v - 128) << 1) +  (v - 128)) >> 1; */
-  /* int r = CLIP(y + v1); */
-  /* int g = CLIP(y - rg); */
-  /* int b = CLIP(y + u1); */
-
   ans = caml_alloc_tuple(3);
-  Store_field(ans, 0, Val_int(r));
-  Store_field(ans, 1, Val_int(g));
-  Store_field(ans, 2, Val_int(b));
+  Store_field(ans, 0, Val_int(RofYUV(y,u,v)));
+  Store_field(ans, 1, Val_int(GofYUV(y,u,v)));
+  Store_field(ans, 2, Val_int(BofYUV(y,u,v)));
   CAMLreturn(ans);
 }

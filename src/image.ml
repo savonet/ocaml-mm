@@ -219,6 +219,8 @@ module RGBA32 = struct
 
   let data buf = buf.data
 
+  let size buf = Bigarray.Array1.dim buf.data
+
   let stride buf = buf.stride
 
   let make ?stride width height data =
@@ -271,7 +273,7 @@ module RGBA32 = struct
 
   external fill_all : t -> Color.t -> unit = "caml_rgb_fill"
 
-  external blank_all : t -> unit = "caml_rgb_blank" "noalloc"
+  external blank_all : t -> unit = "caml_rgb_blank" [@@noalloc]
 
   external of_RGB24_string : t -> string -> unit = "caml_rgb_of_rgb8_string"
   let of_RGB24_string data width =
@@ -525,6 +527,7 @@ module RGBA32 = struct
   end
 end
 
+(* I420 without strides. *)
 module I420 = struct
   type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
   let kind = Bigarray.int8_unsigned
@@ -534,7 +537,13 @@ module I420 = struct
   module Pixel = struct
     type rgba = int * int * int * int
 
+    type rgb = int * int * int
+
     type yuv = int * int * int
+
+    external yuv_of_rgb : rgb -> yuv = "caml_yuv_of_rgb"
+
+    external rgb_of_yuv : yuv -> rgb = "caml_rgb_of_yuv"
   end
 
   type t =
@@ -573,23 +582,32 @@ module I420 = struct
 
   let size img = Bigarray.Array1.dim img.data
 
-  let make width height data =
-    assert (Bigarray.Array1.dim data = width*height*6/4);
-    {
-      data;
-      width;
-      height;
-      alpha=None;
-    }
-
   let make_stride width height y_stride y uv_stride u v =
-    if y_stride <> width || uv_stride <> width / 2 then failwith "TODO";
     let len = width*height in
     let data = alloc (len*6/4) in
-    bigarray_blit_off y 0 data 0 len;
-    bigarray_blit_off u 0 data len (len/4);
-    bigarray_blit_off v 0 data (len*5/4) (len/4);
-    make width height data
+    if y_stride = width && uv_stride = width / 2 then
+      (
+        bigarray_blit_off y 0 data 0 len;
+        bigarray_blit_off u 0 data len (len/4);
+        bigarray_blit_off v 0 data (len*5/4) (len/4)
+      )
+    else
+      (
+        for j = 0 to height - 1 do
+          bigarray_blit_off y (j*y_stride) data (j*width) width
+        done;
+        for j = 0 to height/2 - 1 do
+          bigarray_blit_off u (j*uv_stride) data (len+j*(width/2)) (width/4);
+          bigarray_blit_off u (j*uv_stride) data (len*5/6+j*(width/2)) (width/4)
+        done
+      );
+    { data; width; height; alpha=None }
+
+  let make width height data =
+    let dim = Bigarray.Array1.dim data in
+    let len = width*height*6/4 in
+    assert (dim = len);
+    { data; width; height; alpha=None }
 
   let create width height =
     let data = alloc (width*height*6/4) in
@@ -611,7 +629,10 @@ module I420 = struct
     Bigarray.Array1.blit img.data dst.data;
     dst
 
-  external blank : t -> unit = "caml_i420_blank"
+  external fill : t -> Pixel.yuv -> unit = "caml_i420_fill" [@@noalloc]
+
+  let blank img =
+    fill img (Pixel.yuv_of_rgb (0,0,0))
 
   let blank_all = blank
 
@@ -623,7 +644,7 @@ module I420 = struct
     if x = 0 && y = 0 then
       blit_all src dst
     else
-      failwith "TODO"
+      failwith "TODO: blit"
 
   let randomize img = failwith "Not implemented: randomize"
 
@@ -635,19 +656,15 @@ module I420 = struct
     if x = 0 && y = 0 then add_all src dst
     else failwith "TODO"
 
-  external yuv_of_rgb : int * int * int -> int * int * int = "caml_yuv_of_rgb"
-
-  external rgb_of_yuv : int * int * int -> int * int * int = "caml_rgb_of_yuv"
-
   let set_pixel img i j (r,g,b,a) =
     if a <> 0xff then failwith "TODO";
-    let y,u,v = yuv_of_rgb (r,g,b) in
+    let y,u,v = Pixel.yuv_of_rgb (r,g,b) in
     let data = img.data in
     let width = img.width in
     let height = img.height in
     Bigarray.Array1.set data (j * width + i) y;
-    Bigarray.Array1.set data (height * width + (j / 2) * width / 2 + i / 2) u;
-    Bigarray.Array1.set data (height * width * 5 / 4 + (j / 2) * width / 2 + i / 2) v
+    Bigarray.Array1.set data (height * width + (j / 2) * (width / 2) + i / 2) u;
+    Bigarray.Array1.set data (height * width * 5 / 4 + (j / 2) * (width / 2) + i / 2) v
 
   let get_pixel_y img i j =
     let data = img.data in
@@ -659,14 +676,14 @@ module I420 = struct
     let width = img.width in
     let height = img.height in
     let len = width * height in
-    Bigarray.Array1.get data (len + (j / 2) * width / 2 + i / 2)
+    Bigarray.Array1.get data (len + (j / 2) * (width / 2) + i / 2)
 
   let get_pixel_v img i j =
     let data = img.data in
     let width = img.width in
     let height = img.height in
     let len = width * height in
-    Bigarray.Array1.get data (len * 5 / 4 + (j / 2) * width / 2 + i / 2)
+    Bigarray.Array1.get data (len * 5 / 4 + (j / 2) * (width / 2) + i / 2)
 
   let get_pixel img i j =
     let data = img.data in
@@ -677,9 +694,9 @@ module I420 = struct
     (* assert (0 <= i && i < width); *)
     (* assert (0 <= j && j < height); *)
     let y = Bigarray.Array1.get data (j * width + i) in
-    let u = Bigarray.Array1.get data (len + (j / 2) * width / 2 + i / 2) in
-    let v = Bigarray.Array1.get data (len * 5 / 4 + (j / 2) * width / 2 + i / 2) in
-    let r,g,b = rgb_of_yuv (y,u,v) in
+    let u = Bigarray.Array1.get data (len + (j / 2) * (width / 2) + i / 2) in
+    let v = Bigarray.Array1.get data (len * 5 / 4 + (j / 2) * (width / 2) + i / 2) in
+    let r,g,b = Pixel.rgb_of_yuv (y,u,v) in
     let a =
       match img.alpha with
       | None -> 0xff

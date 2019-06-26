@@ -100,6 +100,8 @@ module RGBA32 : sig
 
   val data : t -> data
 
+  val size : t -> int
+
   val stride : t -> int
 
   val create : int -> int -> t
