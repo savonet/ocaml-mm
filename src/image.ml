@@ -704,6 +704,7 @@ module I420 = struct
     in
     r,g,b,a
 
+  (*
   let to_int_image img =
     Array.init img.height
       (fun j ->
@@ -713,6 +714,8 @@ module I420 = struct
             r lsl 16 + g lsl 8 + b
           )
       )
+   *)
+  external to_int_image : t -> int array array = "caml_i420_to_int_image"
 
   module Effect = struct
     let greyscale img = failwith "Not implemented: greyscale"

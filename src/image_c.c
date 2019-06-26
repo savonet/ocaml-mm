@@ -2009,6 +2009,35 @@ CAMLprim value caml_i420_fill(value img, value yuv)
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value caml_i420_to_int_image(value img)
+{
+  CAMLparam1(img);
+  CAMLlocal2(ans,tmp);
+  int width = I420_width(img);
+  int height = I420_height(img);
+  unsigned char *data = I420_data(img);
+  int len = width*height;
+  int i,j;
+  int y,u,v,r,g,b;
+  ans = caml_alloc_tuple(height);
+  for (j = 0; j < height; j++)
+    {
+      tmp = caml_alloc_tuple(width);
+      for (i = 0; i < width; i++)
+        {
+          y = data[j*width+i];
+          u = data[len+(j/2)*(width/2)+i/2];
+          v = data[len*5/4+(j/2)*(width/2)+i/2];
+          r = RofYUV(y,u,v);
+          g = GofYUV(y,u,v);
+          b = BofYUV(y,u,v);
+          Store_field(tmp, i, Val_int((r<<16)+(g<<8)+b));
+        }
+      Store_field(ans, j, tmp);
+    }
+  CAMLreturn(ans);
+}
+
 CAMLprim value caml_yuv_of_rgb(value rgb)
 {
   CAMLparam1(rgb);
