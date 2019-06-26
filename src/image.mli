@@ -239,9 +239,14 @@ module I420 : sig
 
   type t
 
+  val print_pointers : t -> unit
+
   val make : int -> int -> data -> t
 
   val create : int -> int -> t
+
+  (** Ensure that the image has an alpha channel. *)
+  val ensure_alpha : t -> unit
 
   val make_stride : int -> int -> int -> data -> int -> data -> data -> t
 

@@ -111,7 +111,7 @@ CAMLprim value caml_rgb_aligned_plane(value _height, value _stride)
   void *data;
   data = memalign(ALIGNMENT_BYTES,len);
   if (data == NULL) caml_raise_out_of_memory();
-  v = caml_ba_alloc(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8,1,data,&len);
+  v = caml_ba_alloc_dims(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8,1,data,len);
 
   // We return
   ans = caml_alloc_tuple(2);
@@ -502,7 +502,7 @@ CAMLprim value caml_yuv_of_string(value yuv, value s)
   unsigned char *data = (unsigned char*)memalign(ALIGNMENT_BYTES, datalen);
   if (data == NULL) caml_raise_out_of_memory();
   memcpy(data, String_val(s), datalen);
-  int i, j;
+  int i;
 
   caml_enter_blocking_section();
   for (i = 0; i < height; i++)
@@ -1629,7 +1629,7 @@ CAMLprim value caml_mm_Gray8_motion_multi_compute(value _bs, value _width, value
   int vw = w/bs;
   int vh = h/bs;
   // Size of vector table
-  intnat vlen = vw*vh*2;
+  long vlen = vw*vh*2;
   // Vector table of size vw*vh
   int *v = malloc(vlen*sizeof(int));
   if (v == NULL) caml_raise_out_of_memory();
@@ -1690,7 +1690,7 @@ CAMLprim value caml_mm_Gray8_motion_multi_compute(value _bs, value _width, value
       }
   caml_leave_blocking_section();
 
-  value ans = caml_ba_alloc(CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_NATIVE_INT, 1, v, &vlen);
+  value ans = caml_ba_alloc_dims(CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_NATIVE_INT, 1, v, vlen);
   CAMLreturn(ans);
 }
 
@@ -1945,7 +1945,20 @@ CAMLprim value caml_RGB32_to_RGBA32(value _src, value _src_stride, value _dst, v
  ************ bigarrays***************
  *************************************/
 
-CAMLprim value caml_ba_of_string(value s)
+/*
+CAMLprim value caml_data_alloc(value _len)
+{
+  CAMLparam1(_len);
+  CAMLlocal1(ans);
+  long len = Int_val(_len);
+  void *data = malloc(len);
+  if (data == NULL) caml_raise_out_of_memory();
+  ans = caml_ba_alloc_dims(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8,1,data,len);
+  CAMLreturn(ans);
+}
+*/
+
+CAMLprim value caml_data_of_string(value s)
 {
   CAMLparam1(s);
   CAMLlocal1(ans);
@@ -1956,19 +1969,19 @@ CAMLprim value caml_ba_of_string(value s)
   CAMLreturn(ans);
 }
 
-CAMLprim value caml_ba_copy(value _src)
+CAMLprim value caml_data_copy(value _src)
 {
   CAMLparam1(_src);
   CAMLlocal1(ans);
   unsigned char* src = Caml_ba_data_val(_src);
-  int len = Caml_ba_array_val(_src)->dim[0];
+  long len = Caml_ba_array_val(_src)->dim[0];
   unsigned char* dst = malloc(len);
   memcpy(src, dst, len);
   ans = caml_ba_alloc_dims(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8, 1, dst, len);
   CAMLreturn(ans);
 }
 
-CAMLprim value caml_ba_blit_off(value _src, value _soff, value _dst, value _doff, value _len)
+CAMLprim value caml_data_blit_off(value _src, value _soff, value _dst, value _doff, value _len)
 {
   CAMLparam5(_src, _soff, _dst, _doff, _len);
   int soff = Int_val(_soff);
@@ -2089,7 +2102,7 @@ CAMLprim value caml_i420_to_int_image(value img)
   CAMLreturn(ans);
 }
 
-CAMLprim value caml_i420_of_rgba32(value _rgb)
+CAMLprim value caml_i420_of_rgba32(value _rgb, value img)
 {
   CAMLparam1(_rgb);
   CAMLlocal1(ans);
@@ -2097,9 +2110,9 @@ CAMLprim value caml_i420_of_rgba32(value _rgb)
   frame_of_value(_rgb, &rgb);
   int width = rgb.width;
   int height = rgb.height;
-  int len = width*height;
-  unsigned char *yuv = malloc(len*6/4);
-  unsigned char *alpha = malloc(len);
+  long len = width*height;
+  unsigned char *data = I420_data(img);
+  unsigned char *alpha = I420_alpha(img);
   int i, j;
 
   caml_enter_blocking_section();
@@ -2110,17 +2123,14 @@ CAMLprim value caml_i420_of_rgba32(value _rgb)
         int g = Green(&rgb,i,j);
         int b = Blue(&rgb,i,j);
         int a = Alpha(&rgb,i,j);
-        yuv[j*width+i] = YofRGB(r,g,b);
-        yuv[len+(j/2)*(width/2)+i/2] = UofRGB(r,g,b);
-        yuv[len*5/4+(j/2)*(width/2)+i/2] = VofRGB(r,g,b);
+        data[j*width+i] = YofRGB(r,g,b);
+        data[len+(j/2)*(width/2)+i/2] = UofRGB(r,g,b);
+        data[len*5/4+(j/2)*(width/2)+i/2] = VofRGB(r,g,b);
         alpha[j*width+i] = a;
       }
   caml_leave_blocking_section();
 
-  ans = caml_alloc_tuple(2);
-  Store_field(ans, 0, caml_ba_alloc_dims(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8, 1, yuv, len*6/4));
-  Store_field(ans, 1, caml_ba_alloc_dims(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8, 1, alpha, len));
-  CAMLreturn(ans);
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_i420_scale(value _src, value _dst)
@@ -2137,6 +2147,9 @@ CAMLprim value caml_i420_scale(value _src, value _dst)
   int slen = swidth*sheight;
   int dlen = dwidth*dheight;
   int i,j,is,js;
+
+
+  assert(!salpha || dalpha);
 
   caml_enter_blocking_section();
   for (j = 0; j < dheight; j++)
@@ -2201,14 +2214,14 @@ CAMLprim value caml_i420_add(value _src, value _x, value _y, value _dst)
   unsigned char *dalpha = I420_alpha(_dst);
   int slen = swidth*sheight;
   int dlen = dwidth*dheight;
-  int ia = max(0,x);
+  int ia = max(x,0);
   int ib = min(x+swidth,dwidth);
-  int ja = max(0,y);
+  int ja = max(y,0);
   int jb = min(y+sheight,dheight);
   int i,j;
 
   caml_enter_blocking_section();
-  if (!salpha)
+  if (salpha == NULL)
     for (j = ja; j < jb; j++)
       for (i = ia; i < ib; i++)
         {
@@ -2217,7 +2230,7 @@ CAMLprim value caml_i420_add(value _src, value _x, value _y, value _dst)
           dst[j*dwidth+i] = src[js*swidth+is];
           dst[dlen+(j/2)*(dwidth/2)+i/2] = src[slen+(js/2)*(swidth/2)+is/2];
           dst[dlen*5/4+(j/2)*(dwidth/2)+i/2] = src[slen*5/4+(js/2)*(swidth/2)+is/2];
-          if (dalpha) dalpha[j*dwidth+i] = 0xff;
+          if (dalpha != NULL) dalpha[j*dwidth+i] = 0xff;
         }
   else
     for (j = ja; j < jb; j++)
@@ -2235,7 +2248,7 @@ CAMLprim value caml_i420_add(value _src, value _x, value _y, value _dst)
           dst[j*dwidth+i] = CLIP((ys * a + yd * (0xff - a)) / 0xff);
           dst[dlen+(j/2)*(dwidth/2)+i/2] = CLIP((us * a + ud * (0xff - a)) / 0xff);
           dst[dlen*5/4+(j/2)*(dwidth/2)+i/2] = CLIP((vs * a + vd * (0xff - a)) / 0xff);
-          if (dalpha) dalpha[j*dwidth+i] = a; // We could think of something better here
+          if (dalpha != NULL) dalpha[j*dwidth+i] = a; // We could think of something better here
         }
   caml_leave_blocking_section();
 
@@ -2251,10 +2264,9 @@ CAMLprim value caml_i420_get_pixel_rgba(value img, value _i, value _j)
   int len = width*height;
   unsigned char *data = I420_data(img);
   unsigned char *alpha = I420_alpha(img);
-  int i = Int_val(i);
-  int j = Int_val(j);
+  int i = Int_val(_i);
+  int j = Int_val(_j);
 
-  caml_enter_blocking_section();
   int y = data[j*width+i];
   int u = data[len+(j/2)*(width/2)+i/2];
   int v = data[len*5/4+(j/2)*(width/2)+i/2];
@@ -2262,7 +2274,6 @@ CAMLprim value caml_i420_get_pixel_rgba(value img, value _i, value _j)
   int r = RofYUV(y,u,v);
   int g = GofYUV(y,u,v);
   int b = BofYUV(y,u,v);
-  caml_leave_blocking_section();
 
   ans = caml_alloc_tuple(4);
   Store_field(ans, 0, Val_int(r));
@@ -2280,19 +2291,25 @@ CAMLprim value caml_i420_set_pixel_rgba(value img, value _i, value _j, value c)
   int len = width*height;
   unsigned char *data = I420_data(img);
   unsigned char *alpha = I420_alpha(img);
-  int i = Int_val(i);
-  int j = Int_val(j);
+  int i = Int_val(_i);
+  int j = Int_val(_j);
   int r = Int_val(Field(c,0));
   int g = Int_val(Field(c,1));
   int b = Int_val(Field(c,2));
   int a = Int_val(Field(c,3));
 
-  caml_enter_blocking_section();
   data[j*width+i] = YofRGB(r,g,b);
   data[len+(j/2)*(width/2)+i/2] = UofRGB(r,g,b);
   data[len*5/4+(j/2)*(width/2)+i/2] = VofRGB(r,g,b);
   if (alpha) alpha[j*width+i] = a;
-  caml_leave_blocking_section();
 
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value print_pointers(value img) {
+  CAMLparam1(img);
+  unsigned char *src = I420_data(img);
+  unsigned char *alpha = I420_alpha(img);
+  printf("POINTERS:\nsrc  : %p\nalpha: %p\n\n", src, alpha);
   CAMLreturn(Val_unit);
 }

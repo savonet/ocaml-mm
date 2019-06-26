@@ -31,15 +31,21 @@
  *
  *)
 
+module Data = struct
+  type t = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
-(* Creates an 16-bytes aligned plane. Returns (stride*plane). *)
-external create_rounded_plane : int -> int -> int*((int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t) = "caml_rgb_aligned_plane"
+  (* Creates an 16-bytes aligned plane. Returns (stride*plane). *)
+  external create_rounded_plane : int -> int -> int * t = "caml_rgb_aligned_plane"
 
-external bigarray_of_string : string -> (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t = "caml_ba_of_string"
+  (* external alloc : int -> t = "caml_data_alloc" *)
+  let alloc n = Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.C_layout n
 
-external bigarray_blit_off : (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t -> int -> (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t -> int -> int -> unit= "caml_ba_blit_off"
+  external of_string : string -> t = "caml_data_of_string"
 
-external bigarray_copy : (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t -> (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t = "caml_ba_copy"
+  external blit : t -> int -> t -> int -> int -> unit = "caml_data_blit_off" [@@noalloc]
+
+  external copy : t -> t = "caml_data_copy"
+end
 
 module Motion_multi = struct
   type vectors_data = (int, Bigarray.nativeint_elt, Bigarray.c_layout) Bigarray.Array1.t
@@ -139,10 +145,10 @@ module YUV420 = struct
   let internal img = img.data
 
   let create w h =
-    let (ys,y) = create_rounded_plane h w in
-    let (uvs,u) = create_rounded_plane (h/2) (w/2) in
+    let (ys,y) = Data.create_rounded_plane h w in
+    let (uvs,u) = Data.create_rounded_plane (h/2) (w/2) in
     (* Stride should be the same in this case.. *)
-    let (_,v) = create_rounded_plane (h/2) (w/2) in
+    let (_,v) = Data.create_rounded_plane (h/2) (w/2) in
     make w h y ys u v uvs
 
   external of_string : t -> string -> unit = "caml_yuv_of_string"
@@ -162,7 +168,7 @@ module YUV420 = struct
 end
 
 module BGRA = struct
-  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+  type data = Data.t
 
   type t =
     {
@@ -191,7 +197,7 @@ module BGRA = struct
       | Some v -> v
       | None -> 4*width
     in
-    let stride, data = create_rounded_plane height stride in
+    let stride, data = Data.create_rounded_plane height stride in
     make ~stride width height data
 
   let data img = img.data
@@ -245,7 +251,7 @@ module RGBA32 = struct
 	| None -> 4*width
     in
     let (stride,data) = 
-      create_rounded_plane height stride 
+      Data.create_rounded_plane height stride
     in
     make ~stride width height data
 
@@ -275,7 +281,7 @@ module RGBA32 = struct
 
   external fill_all : t -> Color.t -> unit = "caml_rgb_fill"
 
-  external blank_all : t -> unit = "caml_rgb_blank" [@@noalloc]
+  external blank_all : t -> unit = "caml_rgb_blank"
 
   external of_RGB24_string : t -> string -> unit = "caml_rgb_of_rgb8_string"
   let of_RGB24_string data width =
@@ -531,10 +537,10 @@ end
 
 (* I420 without strides. *)
 module I420 = struct
-  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+  type data = Data.t
   let kind = Bigarray.int8_unsigned
 
-  let alloc n = Bigarray.Array1.create kind Bigarray.C_layout n
+  let alloc n = Data.alloc n
 
   module Pixel = struct
     type rgba = int * int * int * int
@@ -555,6 +561,8 @@ module I420 = struct
       height : int;
       mutable alpha : data option;
     }
+
+  external print_pointers : t -> unit = "print_pointers" [@@noalloc]
 
   let width img = img.width
 
@@ -589,18 +597,18 @@ module I420 = struct
     let data = alloc (len*6/4) in
     if y_stride = width && uv_stride = width / 2 then
       (
-        bigarray_blit_off y 0 data 0 len;
-        bigarray_blit_off u 0 data len (len/4);
-        bigarray_blit_off v 0 data (len*5/4) (len/4)
+        Data.blit y 0 data 0 len;
+        Data.blit u 0 data len (len/4);
+        Data.blit v 0 data (len*5/4) (len/4)
       )
     else
       (
         for j = 0 to height - 1 do
-          bigarray_blit_off y (j*y_stride) data (j*width) width
+          Data.blit y (j*y_stride) data (j*width) width
         done;
         for j = 0 to height/2 - 1 do
-          bigarray_blit_off u (j*uv_stride) data (len+j*(width/2)) (width/4);
-          bigarray_blit_off u (j*uv_stride) data (len*5/6+j*(width/2)) (width/4)
+          Data.blit u (j*uv_stride) data (len+j*(width/2)) (width/4);
+          Data.blit u (j*uv_stride) data (len*5/6+j*(width/2)) (width/4)
         done
       );
     { data; width; height; alpha=None }
@@ -624,27 +632,32 @@ module I420 = struct
     let pixels = len * 4 / 6 in
     let height = pixels / width in
     assert (len = width * height * 6 / 4);
-    let data = bigarray_of_string s in
+    let data = Data.of_string s in
     make width height data
 
   let of_RGB24_string s width = failwith "Not implemented: of_RGB24_string"
 
-  external of_RGBA32 : RGBA32.t -> data * data = "caml_i420_of_rgba32"
-  let of_RGBA32 img =
-    let data, alpha = of_RGBA32 img in
-    let width = RGBA32.width img in
-    let height = RGBA32.height img in
-    let img = make width height data in
-    img.alpha <- Some alpha;
+  external of_RGBA32 : RGBA32.t -> t -> unit = "caml_i420_of_rgba32"
+  let of_RGBA32 rgb =
+    let width = RGBA32.width rgb in
+    let height = RGBA32.height rgb in
+    let img = create width height in
+    ensure_alpha img;
+    of_RGBA32 rgb img;
     img
 
   let copy img =
     let dst = create img.width img.height in
-    assert (img.alpha = None); (* TODO *)
     Bigarray.Array1.blit img.data dst.data;
+    let alpha =
+      match img.alpha with
+      | None -> None
+      | Some alpha -> Some (Data.copy alpha)
+    in
+    dst.alpha <- alpha;
     dst
 
-  external fill : t -> Pixel.yuv -> unit = "caml_i420_fill" [@@noalloc]
+  external fill : t -> Pixel.yuv -> unit = "caml_i420_fill"
 
   let fill_alpha img a =
     ensure_alpha img;
@@ -661,7 +674,7 @@ module I420 = struct
     | None -> dst.alpha <- None
     | Some alpha ->
        match dst.alpha with
-       | None -> dst.alpha <- Some (bigarray_copy alpha)
+       | None -> dst.alpha <- Some (Data.copy alpha)
        | Some alpha' -> Bigarray.Array1.blit alpha alpha'
 
   let blit src ?(blank=true) ?(x=0) ?(y=0) dst =
@@ -670,7 +683,7 @@ module I420 = struct
 
   let randomize img = failwith "Not implemented: randomize"
 
-  external add : t -> int -> int -> t -> unit = "caml_i420_add" [@@noalloc]
+  external add : t -> int -> int -> t -> unit = "caml_i420_add"
   let add src ?(x=0) ?(y=0) dst = add src x y dst
   let add_all src dst = add src dst
 
@@ -714,7 +727,7 @@ module I420 = struct
     let len = width * height in
     Bigarray.Array1.get data (len * 5 / 4 + (j / 2) * (width / 2) + i / 2)
 
-  external get_pixel_rgba : t -> int -> int -> Pixel.rgba = "caml_i420_get_pixel_rgba"
+  external get_pixel_rgba : t -> int -> int -> Pixel.rgba = "caml_i420_get_pixel_rgba" [@@noalloc]
   (*
   let get_pixel_rgba img i j =
     let data = img.data in
@@ -749,16 +762,16 @@ module I420 = struct
    *)
   external to_int_image : t -> int array array = "caml_i420_to_int_image"
 
-  external scale_full : t -> t -> unit = "caml_i420_scale" [@@noalloc]
+  external scale_full : t -> t -> unit = "caml_i420_scale"
   let scale_full src dst =
     (
-    match src.alpha with
-    | None -> dst.alpha <- None
-    | Some alpha -> ensure_alpha dst
+      match src.alpha with
+      | None -> dst.alpha <- None
+      | Some alpha -> ensure_alpha dst
     );
     scale_full src dst
 
-  let scale = scale_full
+  let scale src dst = scale_full src dst
 
     (*
   let scale_coef_kind k src dst (dw,sw) (dh,sh) =
