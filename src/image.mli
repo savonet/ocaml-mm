@@ -226,7 +226,13 @@ module I420 : sig
   module Pixel : sig
     type rgba = int * int * int * int
 
+    type rgb = int * int * int
+
     type yuv = int * int * int
+
+    val yuv_of_rgb : rgb -> yuv
+
+    val rgb_of_yuv : yuv -> rgb
   end
 
   type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
@@ -242,6 +248,8 @@ module I420 : sig
   val of_I420_string : string -> int -> t
 
   val of_RGB24_string : string -> int -> t
+
+  val of_RGBA32 : RGBA32.t -> t
 
   val width : t -> int
 
@@ -278,6 +286,8 @@ module I420 : sig
   val add : t -> ?x:int -> ?y:int -> t -> unit
 
   val blank : t -> unit
+
+  val fill : t -> Pixel.yuv -> unit
 
   val fill_alpha : t -> int -> unit
 

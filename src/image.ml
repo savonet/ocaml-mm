@@ -629,6 +629,15 @@ module I420 = struct
 
   let of_RGB24_string s width = failwith "Not implemented: of_RGB24_string"
 
+  external of_RGBA32 : RGBA32.t -> data * data = "caml_i420_of_rgba32"
+  let of_RGBA32 img =
+    let data, alpha = of_RGBA32 img in
+    let width = RGBA32.width img in
+    let height = RGBA32.height img in
+    let img = make width height data in
+    img.alpha <- Some alpha;
+    img
+
   let copy img =
     let dst = create img.width img.height in
     assert (img.alpha = None); (* TODO *)
@@ -656,20 +665,21 @@ module I420 = struct
        | Some alpha' -> Bigarray.Array1.blit alpha alpha'
 
   let blit src ?(blank=true) ?(x=0) ?(y=0) dst =
-    if x = 0 && y = 0 then
-      blit_all src dst
-    else
-      failwith "TODO: blit"
+    if x = 0 && y = 0 then blit_all src dst
+    else failwith "TODO: blit"
 
   let randomize img = failwith "Not implemented: randomize"
 
   external add : t -> int -> int -> t -> unit = "caml_i420_add" [@@noalloc]
-
-  let add src ?(x=0) ?(y=0) dst =
-    add src x y dst
-
+  let add src ?(x=0) ?(y=0) dst = add src x y dst
   let add_all src dst = add src dst
 
+  external set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit = "caml_i420_set_pixel_rgba" [@@noalloc]
+  let set_pixel_rgba img i j ((r,g,b,a) as p) =
+    if a <> 0xff then ensure_alpha img;
+    set_pixel_rgba img i j p
+
+  (*
   let set_pixel_rgba img i j (r,g,b,a) =
     let data = img.data in
     let width = img.width in
@@ -683,6 +693,7 @@ module I420 = struct
     Bigarray.Array1.set data (j * width + i) y;
     Bigarray.Array1.set data (height * width + (j / 2) * (width / 2) + i / 2) u;
     Bigarray.Array1.set data (height * width * 5 / 4 + (j / 2) * (width / 2) + i / 2) v
+  *)
 
   let get_pixel_y img i j =
     let data = img.data in
@@ -703,6 +714,8 @@ module I420 = struct
     let len = width * height in
     Bigarray.Array1.get data (len * 5 / 4 + (j / 2) * (width / 2) + i / 2)
 
+  external get_pixel_rgba : t -> int -> int -> Pixel.rgba = "caml_i420_get_pixel_rgba"
+  (*
   let get_pixel_rgba img i j =
     let data = img.data in
     let width = img.width in
@@ -721,6 +734,7 @@ module I420 = struct
       | Some alpha -> Bigarray.Array1.get alpha (j * width + i)
     in
     r,g,b,a
+  *)
 
   (*
   let to_int_image img =
@@ -735,7 +749,55 @@ module I420 = struct
    *)
   external to_int_image : t -> int array array = "caml_i420_to_int_image"
 
-  external scale : t -> t -> unit = "caml_i420_scale" [@@noalloc]
+  external scale_full : t -> t -> unit = "caml_i420_scale" [@@noalloc]
+  let scale_full src dst =
+    (
+    match src.alpha with
+    | None -> dst.alpha <- None
+    | Some alpha -> ensure_alpha dst
+    );
+    scale_full src dst
+
+  let scale = scale_full
+
+    (*
+  let scale_coef_kind k src dst (dw,sw) (dh,sh) =
+    match k with
+    | Linear ->
+       scale_coef src dst (dw,sw) (dh,sh)
+    | Bilinear ->
+       let x = float dw /. float sw in
+       let y = float dh /. float sh in
+       bilinear_scale_coef src dst x y
+
+    let onto ?(kind=Linear) ?(proportional=false) src dst =
+      let sw, sh = src.width,src.height in
+      let dw, dh = dst.width,dst.height in
+      if dw = sw && dh = sh then
+        blit_all src dst
+      else
+        (
+          if not proportional then
+            scale_coef_kind kind src dst (sw, dw) (sh, dh)
+          else
+            let n, d =
+              if dh * sw < sh * dw then
+	        dh, sh
+              else
+	        dw, sw
+            in
+            scale_coef_kind kind src dst (n,d) (n,d)
+        )
+
+    let create ?kind ?(copy=true) ?proportional src w h =
+      if not copy && width src = w && height src = h then
+        src
+      else
+        let dst = create w h in
+        onto ?kind ?proportional src dst;
+        dst
+
+     *)
 
   module Effect = struct
     let greyscale img = failwith "Not implemented: greyscale"
