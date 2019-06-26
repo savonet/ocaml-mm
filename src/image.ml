@@ -627,6 +627,12 @@ module I420 = struct
     if img.alpha = None then
       img.alpha <- Some (alloc (img.width*img.height))
 
+  let has_alpha img =
+    img.alpha <> None
+
+  let remove_alpha img =
+    img.alpha <- None
+
   let of_I420_string s width =
     let len = String.length s in
     let pixels = len * 4 / 6 in
@@ -644,6 +650,11 @@ module I420 = struct
     let img = create width height in
     ensure_alpha img;
     of_RGBA32 rgb img;
+    img
+
+  let of_PPM s =
+    let img = of_RGBA32 (RGBA32.of_PPM s) in
+    remove_alpha img;
     img
 
   let copy img =

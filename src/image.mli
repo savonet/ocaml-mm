@@ -248,6 +248,8 @@ module I420 : sig
   (** Ensure that the image has an alpha channel. *)
   val ensure_alpha : t -> unit
 
+  val remove_alpha : t -> unit
+
   val make_stride : int -> int -> int -> data -> int -> data -> data -> t
 
   val of_I420_string : string -> int -> t
@@ -255,6 +257,8 @@ module I420 : sig
   val of_RGB24_string : string -> int -> t
 
   val of_RGBA32 : RGBA32.t -> t
+
+  val of_PPM : string -> t
 
   val width : t -> int
 
@@ -267,6 +271,9 @@ module I420 : sig
 
   (** Size in bytes. *)
   val size : t -> int
+
+  (** Whether the image has an alpha channel. *)
+  val has_alpha : t -> bool
 
   (** Data in split y/u/v buffers. No copy is made. *)
   val data_split : t -> data * data * data
