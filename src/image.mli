@@ -267,6 +267,8 @@ module I420 : sig
 
   val blit : t -> ?blank:bool -> ?x:int -> ?y:int -> t -> unit
 
+  val scale : t -> t -> unit
+
   (** [blit_all src dst] blits an entire image. *)
   val blank_all : t -> unit
 
@@ -277,11 +279,13 @@ module I420 : sig
 
   val blank : t -> unit
 
+  val fill_alpha : t -> int -> unit
+
   val randomize : t -> unit
 
-  val set_pixel : t -> int -> int -> Pixel.rgba -> unit
+  val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
 
-  val get_pixel : t -> int -> int -> Pixel.rgba
+  val get_pixel_rgba : t -> int -> int -> Pixel.rgba
 
   (** Convert to format useable by [Graphics.make_image]. *)
   val to_int_image : t -> int array array

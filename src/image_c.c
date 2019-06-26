@@ -1956,6 +1956,18 @@ CAMLprim value caml_ba_of_string(value s)
   CAMLreturn(ans);
 }
 
+CAMLprim value caml_ba_copy(value _src)
+{
+  CAMLparam1(_src);
+  CAMLlocal1(ans);
+  unsigned char* src = Caml_ba_data_val(_src);
+  int len = Caml_ba_array_val(_src)->dim[0];
+  unsigned char* dst = malloc(len);
+  memcpy(src, dst, len);
+  ans = caml_ba_alloc_dims(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8, 1, dst, len);
+  CAMLreturn(ans);
+}
+
 CAMLprim value caml_ba_blit_off(value _src, value _soff, value _dst, value _doff, value _len)
 {
   CAMLparam5(_src, _soff, _dst, _doff, _len);
@@ -2037,6 +2049,95 @@ CAMLprim value caml_i420_to_int_image(value img)
     }
   CAMLreturn(ans);
 }
+
+CAMLprim value caml_i420_scale(value _src, value _dst)
+{
+  CAMLparam2(_src, _dst);
+  int swidth = I420_width(_src);
+  int sheight = I420_height(_src);
+  unsigned char *src = I420_data(_src);
+  int dwidth = I420_width(_dst);
+  int dheight = I420_height(_dst);
+  unsigned char *dst = I420_data(_dst);
+  int slen = swidth*sheight;
+  int dlen = dwidth*dheight;
+  int i,j,is,js;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < dheight; j++)
+    for (i = 0; i < dwidth; i++)
+      {
+        is = i*swidth/dwidth;
+        js = j*sheight/dheight;
+        dst[j*dwidth+i] = src[js*swidth+is];
+        dst[dlen+(j/2)*(dwidth/2)+i/2] = src[slen+(js/2)*(swidth/2)+is/2];
+        dst[dlen*5/4+(j/2)*(dwidth/2)+i/2] = src[slen*5/4+(js/2)*(swidth/2)+is/2];
+      }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_i420_add(value _src, value _x, value _y, value _dst)
+{
+  CAMLparam4(_src, _x, _y, _dst);
+  int x = Int_val(_x);
+  int y = Int_val(_y);
+  int swidth = I420_width(_src);
+  int sheight = I420_height(_src);
+  unsigned char *src = I420_data(_src);
+  unsigned char *salpha = NULL;
+  int dwidth = I420_width(_dst);
+  int dheight = I420_height(_dst);
+  unsigned char *dst = I420_data(_dst);
+  unsigned char *dalpha = NULL;
+  int slen = swidth*sheight;
+  int dlen = dwidth*dheight;
+  if (Is_block(Field(_src, 3)))
+    salpha = Caml_ba_data_val(Field(Field(_src,3),0));
+  if (Is_block(Field(_dst, 3)))
+    dalpha = Caml_ba_data_val(Field(Field(_dst,3),0));
+  int ia = max(0,x);
+  int ib = min(x+swidth,dwidth);
+  int ja = max(0,y);
+  int jb = min(y+sheight,dheight);
+  int i,j;
+
+  caml_enter_blocking_section();
+  if (!salpha)
+    for (j = ja; j < jb; j++)
+      for (i = ia; i < ib; i++)
+        {
+          int is = i-x;
+          int js = j-y;
+          dst[j*dwidth+i] = src[js*swidth+is];
+          dst[dlen+(j/2)*(dwidth/2)+i/2] = src[slen+(js/2)*(swidth/2)+is/2];
+          dst[dlen*5/4+(j/2)*(dwidth/2)+i/2] = src[slen*5/4+(js/2)*(swidth/2)+is/2];
+          if (dalpha)
+            dalpha[j*dwidth+i] = 0xff;
+        }
+  else
+    for (j = ja; j < jb; j++)
+      for (i = ia; i < ib; i++)
+        {
+          int is = i-x;
+          int js = j-y;
+          int ys = src[js*swidth+is];
+          int us = src[slen+(js/2)*(swidth/2)+is/2];
+          int vs = src[slen*5/4+(js/2)*(swidth/2)+is/2];
+          int a = salpha[js*swidth+is];
+          int yd = dst[j*dwidth+i];
+          int ud = dst[dlen+(j/2)*(dwidth/2)+i/2];
+          int vd = dst[dlen*5/4+(j/2)*(dwidth/2)+i/2];
+          dst[j*dwidth+i] = CLIP((ys * a + yd * (0xff - a)) / 0xff);
+          dst[dlen+(j/2)*(dwidth/2)+i/2] = CLIP((us * a + ud * (0xff - a)) / 0xff);
+          dst[dlen*5/4+(j/2)*(dwidth/2)+i/2] = CLIP((vs * a + vd * (0xff - a)) / 0xff);
+        }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
 
 CAMLprim value caml_yuv_of_rgb(value rgb)
 {

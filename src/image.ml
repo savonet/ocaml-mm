@@ -39,6 +39,8 @@ external bigarray_of_string : string -> (int, Bigarray.int8_unsigned_elt, Bigarr
 
 external bigarray_blit_off : (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t -> int -> (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t -> int -> int -> unit= "caml_ba_blit_off"
 
+external bigarray_copy : (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t -> (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t = "caml_ba_copy"
+
 module Motion_multi = struct
   type vectors_data = (int, Bigarray.nativeint_elt, Bigarray.c_layout) Bigarray.Array1.t
 
@@ -551,7 +553,7 @@ module I420 = struct
       data : data;
       width : int;
       height : int;
-      alpha : data option;
+      mutable alpha : data option;
     }
 
   let width img = img.width
@@ -613,6 +615,10 @@ module I420 = struct
     let data = alloc (width*height*6/4) in
     make width height data
 
+  let ensure_alpha img =
+    if img.alpha = None then
+      img.alpha <- Some (alloc (img.width*img.height))
+
   let of_I420_string s width =
     let len = String.length s in
     let pixels = len * 4 / 6 in
@@ -631,14 +637,23 @@ module I420 = struct
 
   external fill : t -> Pixel.yuv -> unit = "caml_i420_fill" [@@noalloc]
 
+  let fill_alpha img a =
+    ensure_alpha img;
+    Bigarray.Array1.fill (Option.get img.alpha) a
+
   let blank img =
     fill img (Pixel.yuv_of_rgb (0,0,0))
 
   let blank_all = blank
 
   let blit_all src dst =
-    if (not (src.alpha = None && dst.alpha = None)) then failwith "TODO";
-    Bigarray.Array1.blit src.data dst.data
+    Bigarray.Array1.blit src.data dst.data;
+    match src.alpha with
+    | None -> dst.alpha <- None
+    | Some alpha ->
+       match dst.alpha with
+       | None -> dst.alpha <- Some (bigarray_copy alpha)
+       | Some alpha' -> Bigarray.Array1.blit alpha alpha'
 
   let blit src ?(blank=true) ?(x=0) ?(y=0) dst =
     if x = 0 && y = 0 then
@@ -648,20 +663,23 @@ module I420 = struct
 
   let randomize img = failwith "Not implemented: randomize"
 
-  let add_all src dst =
-    if src.alpha = None then blit_all src dst
-    else failwith "TODO"
+  external add : t -> int -> int -> t -> unit = "caml_i420_add" [@@noalloc]
 
   let add src ?(x=0) ?(y=0) dst =
-    if x = 0 && y = 0 then add_all src dst
-    else failwith "TODO"
+    add src x y dst
 
-  let set_pixel img i j (r,g,b,a) =
-    if a <> 0xff then failwith "TODO";
-    let y,u,v = Pixel.yuv_of_rgb (r,g,b) in
+  let add_all src dst = add src dst
+
+  let set_pixel_rgba img i j (r,g,b,a) =
     let data = img.data in
     let width = img.width in
     let height = img.height in
+    if img.alpha <> None || a <> 0xff then
+      (
+        ensure_alpha img;
+        Bigarray.Array1.set (Option.get img.alpha) (j * width + i) a
+      );
+    let y,u,v = Pixel.yuv_of_rgb (r,g,b) in
     Bigarray.Array1.set data (j * width + i) y;
     Bigarray.Array1.set data (height * width + (j / 2) * (width / 2) + i / 2) u;
     Bigarray.Array1.set data (height * width * 5 / 4 + (j / 2) * (width / 2) + i / 2) v
@@ -685,7 +703,7 @@ module I420 = struct
     let len = width * height in
     Bigarray.Array1.get data (len * 5 / 4 + (j / 2) * (width / 2) + i / 2)
 
-  let get_pixel img i j =
+  let get_pixel_rgba img i j =
     let data = img.data in
     let width = img.width in
     let height = img.height in
@@ -716,6 +734,8 @@ module I420 = struct
       )
    *)
   external to_int_image : t -> int array array = "caml_i420_to_int_image"
+
+  external scale : t -> t -> unit = "caml_i420_scale" [@@noalloc]
 
   module Effect = struct
     let greyscale img = failwith "Not implemented: greyscale"

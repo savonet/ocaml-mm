@@ -65,14 +65,16 @@ module Image : sig
 
   val blank : t -> unit
 
+  val scale : t -> t -> unit
+
   val randomize : t -> unit
 
   (** [blit_all src dst] blits an entire image. *)
   val blit : t -> ?blank:bool -> ?x:int -> ?y:int -> t -> unit
 
-  val get_pixel : t -> int -> int -> int * int * int * int
+  val get_pixel_rgba : t -> int -> int -> int * int * int * int
 
-  val set_pixel : t -> int -> int -> (int * int * int * int) -> unit
+  val set_pixel_rgba : t -> int -> int -> (int * int * int * int) -> unit
 
   (** Add the fist image to the second. *)
   val add : t -> ?x:int -> ?y:int -> t -> unit
