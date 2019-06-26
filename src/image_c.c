@@ -1976,7 +1976,7 @@ CAMLprim value caml_data_copy(value _src)
   unsigned char* src = Caml_ba_data_val(_src);
   long len = Caml_ba_array_val(_src)->dim[0];
   unsigned char* dst = malloc(len);
-  memcpy(src, dst, len);
+  memcpy(dst, src, len);
   ans = caml_ba_alloc_dims(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8, 1, dst, len);
   CAMLreturn(ans);
 }
