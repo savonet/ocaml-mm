@@ -58,7 +58,7 @@ object (self)
       (fun n ->
         let s = Bytes.create n in
         let n = self#stream_read s 0 n in
-        s, n)
+        Bytes.to_string s, n)
   in
   let _, c, _ = Mad.get_output_format f in
   (* TODO: we should decode a frame in order to get the real number of
@@ -94,7 +94,7 @@ object (self)
 end
 
 class reader_of_file fname =
-object (self)
+object
   inherit IO.Unix.rw ~read:true fname
   inherit reader
 end

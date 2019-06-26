@@ -34,8 +34,6 @@
 let init () =
   Sdl.init [`VIDEO]
 
-module I = Image.RGBA32
-
 (*
 (** 8bit surfaces always use a palette *)
 let from_8 surface =
@@ -172,7 +170,7 @@ let from_32 surface =
 *)
 
 class writer_to_screen w h =
-object (self)
+object
   initializer
     Sdlevent.enable_events Sdlevent.quit_mask;
     (* Try to get 32bpp because it's faster (twice as fast here), but accept
@@ -223,7 +221,7 @@ class midi_keyboard : MIDI.IO.Reader.t =
       | Not_found ->
         array_index knotes1 c + 59
   in
-object (self)
+object
   initializer
     Sdl.init [`EVENTTHREAD; `VIDEO];
     Sdlevent.disable_events (Sdlevent.all_events_mask);
@@ -236,7 +234,7 @@ object (self)
 
   val channel = 0
 
-  method read sr buf ofs len =
+  method read _ buf ofs len =
     MIDI.Multitrack.clear buf ofs len;
     Sdlevent.pump ();
     while Sdlevent.has_event () do

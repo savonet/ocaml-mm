@@ -83,7 +83,7 @@ object (self)
     let s = Bytes.create slen in
     let r = self#stream_read s 0 slen in
     let len = Audio.S16LE.duration channels r in
-    Audio.S16LE.to_audio s 0 buf ofs len;
+    Audio.S16LE.to_audio (Bytes.to_string s) 0 buf ofs len;
     len
 
   method seek (n:int) : unit = assert false
