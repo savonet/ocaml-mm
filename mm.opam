@@ -21,3 +21,7 @@ build: [
 install: [make "install"]
 remove: ["ocamlfind" "remove" "mm"]
 dev-repo: "git+https://github.com/savonet/ocaml-mm.git"
+url {
+  src: "https://github.com/savonet/ocaml-mm/releases/download/0.4.1/ocaml-mm-0.4.1.tar.gz"
+  checksum: "md5=97d1ef96477ab47bf2d2faedf41c2328"
+}
