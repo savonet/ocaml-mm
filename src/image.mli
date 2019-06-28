@@ -239,6 +239,7 @@ module I420 : sig
 
   type t
 
+  (* For debugging, will be removed in a short future. *)
   val print_pointers : t -> unit
 
   val make : int -> int -> data -> t
@@ -250,7 +251,9 @@ module I420 : sig
 
   val remove_alpha : t -> unit
 
-  val make_stride : int -> int -> int -> data -> int -> data -> data -> t
+  val make_stride : int -> int -> data -> int -> int -> t
+
+  val make_stride_planes : int -> int -> int -> data -> int -> data -> data -> t
 
   val of_I420_string : string -> int -> t
 
@@ -287,7 +290,7 @@ module I420 : sig
 
   val blit : t -> ?blank:bool -> ?x:int -> ?y:int -> t -> unit
 
-  val scale : t -> t -> unit
+  val scale : ?proportional:bool -> t -> t -> unit
 
   (** [blit_all src dst] blits an entire image. *)
   val blank_all : t -> unit

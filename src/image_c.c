@@ -1989,7 +1989,7 @@ CAMLprim value caml_data_blit_off(value _src, value _soff, value _dst, value _do
   int len = Int_val(_len);
   unsigned char* src = Caml_ba_data_val(_src);
   unsigned char* dst = Caml_ba_data_val(_dst);
-  memcpy(src+soff, dst+doff, len);
+  memcpy(dst+doff, src+soff, len);
   CAMLreturn(Val_unit);
 }
 
@@ -2124,6 +2124,7 @@ CAMLprim value caml_i420_of_rgba32(value _rgb, value img)
         int b = Blue(&rgb,i,j);
         int a = Alpha(&rgb,i,j);
         data[j*width+i] = YofRGB(r,g,b);
+        // TODO: don't do u/v twice
         data[len+(j/2)*(width/2)+i/2] = UofRGB(r,g,b);
         data[len*5/4+(j/2)*(width/2)+i/2] = VofRGB(r,g,b);
         alpha[j*width+i] = a;
@@ -2148,7 +2149,6 @@ CAMLprim value caml_i420_scale(value _src, value _dst)
   int dlen = dwidth*dheight;
   int i,j,is,js;
 
-
   assert(!salpha || dalpha);
 
   caml_enter_blocking_section();
@@ -2158,6 +2158,7 @@ CAMLprim value caml_i420_scale(value _src, value _dst)
         is = i*swidth/dwidth;
         js = j*sheight/dheight;
         dst[j*dwidth+i] = src[js*swidth+is];
+        // TODO: don't do u/v twice
         dst[dlen+(j/2)*(dwidth/2)+i/2] = src[slen+(js/2)*(swidth/2)+is/2];
         dst[dlen*5/4+(j/2)*(dwidth/2)+i/2] = src[slen*5/4+(js/2)*(swidth/2)+is/2];
         if (salpha) dalpha[j*dwidth+i] = salpha[js*swidth+is];
@@ -2167,36 +2168,52 @@ CAMLprim value caml_i420_scale(value _src, value _dst)
   CAMLreturn(Val_unit);
 }
 
-/*
-CAMLprim value caml_rgb_scale_coef(value _src, value _dst, value w, value h)
+CAMLprim value caml_i420_scale_coef(value src, value dst, value xscale, value yscale)
 {
-  CAMLparam4(_dst, _src, xscale, yscale);
-  frame src,dst;
-  frame_of_value(_src, &src);
-  frame_of_value(_dst, &dst);
+  CAMLparam4(src, dst, xscale, yscale);
+  int src_width = I420_width(src);
+  int src_height = I420_height(src);
+  int src_len = src_width * src_height;
+  unsigned char* src_data = I420_data(src);
+  unsigned char* src_alpha = I420_alpha(src);
+  int dst_width = I420_width(dst);
+  int dst_height = I420_height(dst);
+  int dst_len = dst_width * dst_height;
+  unsigned char* dst_data = I420_data(dst);
+  unsigned char* dst_alpha = I420_alpha(dst);
+  // x scaling (xn: numerator, xd: denominator)
+  int xn = Int_val(Field(xscale, 0));
+  int xd = Int_val(Field(xscale, 1));
+  // y scaling
+  int yn = Int_val(Field(yscale, 0));
+  int yd = Int_val(Field(yscale, 1));
+  // offsets
+  int ox = (dst_width - src_width * xn / xd) / 2;
+  int oy = (dst_height - src_height * yn / yd) / 2;
   int i, j;
-  int xd = Int_val(Field(xscale, 0));
-  int xn = Int_val(Field(xscale, 1));
-  int yd = Int_val(Field(yscale, 0));
-  int yn = Int_val(Field(yscale, 1));
-  int ox = (dst.width - src.width * xn / xd) / 2,
-      oy = (dst.height - src.height * yn / yd) / 2;
 
   assert(ox >= 0 && oy >= 0);
 
   caml_enter_blocking_section();
-  if (ox != 0 || oy != 0)
-    rgb_blank(&dst);
-  for (j = oy; j < dst.height - oy; j++)
-    for (i = ox; i < dst.width - ox; i++)
-      //for (c = 0; c < Rgb_elems_per_pixel; c++)
-      //Color(&dst, c, i, j) = Color(&src, c, (i - ox) * xd / xn, (j - oy) * yd / yn);
-      Copy_pixel(&dst,i,j,&src,(i-ox)*xd/xn,(j-oy)*yd/yn);
+  // TODO: blank
+  /* if (ox != 0 || oy != 0) rgb_blank(&dst); */
+  for (j = oy; j < dst_height - oy; j++)
+    for (i = ox; i < dst_width - ox; i++) {
+      int is = (i-ox)*xd/xn;
+      int js = (j-oy)*yd/yn;
+      // TODO: don't do u/v twice
+      dst_data[j*dst_width+i] = src_data[js*src_width+is];
+      dst_data[dst_len+(j/2)*(dst_width/2)+(i/2)] = src_data[src_len+(js/2)*(src_width/2)+(is/2)];
+      dst_data[dst_len*5/4+(j/2)*(dst_width/2)+(i/2)] = src_data[src_len*5/4+(js/2)*(src_width/2)+(is/2)];
+      if (src_alpha)
+        {
+          dst_alpha[j*dst_width+i] = src_alpha[js*src_width+is];
+        }
+    }
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);
 }
-*/
 
 
 CAMLprim value caml_i420_add(value _src, value _x, value _y, value _dst)
@@ -2228,6 +2245,7 @@ CAMLprim value caml_i420_add(value _src, value _x, value _y, value _dst)
           int is = i-x;
           int js = j-y;
           dst[j*dwidth+i] = src[js*swidth+is];
+          // TODO: don't do u/v twice
           dst[dlen+(j/2)*(dwidth/2)+i/2] = src[slen+(js/2)*(swidth/2)+is/2];
           dst[dlen*5/4+(j/2)*(dwidth/2)+i/2] = src[slen*5/4+(js/2)*(swidth/2)+is/2];
           if (dalpha != NULL) dalpha[j*dwidth+i] = 0xff;
@@ -2246,9 +2264,10 @@ CAMLprim value caml_i420_add(value _src, value _x, value _y, value _dst)
           int ud = dst[dlen+(j/2)*(dwidth/2)+i/2];
           int vd = dst[dlen*5/4+(j/2)*(dwidth/2)+i/2];
           dst[j*dwidth+i] = CLIP((ys * a + yd * (0xff - a)) / 0xff);
+          // TODO: don't do u/v twice
           dst[dlen+(j/2)*(dwidth/2)+i/2] = CLIP((us * a + ud * (0xff - a)) / 0xff);
           dst[dlen*5/4+(j/2)*(dwidth/2)+i/2] = CLIP((vs * a + vd * (0xff - a)) / 0xff);
-          if (dalpha != NULL) dalpha[j*dwidth+i] = a; // We could think of something better here
+          if (dalpha != NULL) dalpha[j*dwidth+i] = 0xff-((0xff-a)*(0xff-dalpha[j*dwidth+i]))/0xff;
         }
   caml_leave_blocking_section();
 
@@ -2288,11 +2307,11 @@ CAMLprim value caml_i420_set_pixel_rgba(value img, value _i, value _j, value c)
   CAMLparam4(img, _i, _j, c);
   int width = I420_width(img);
   int height = I420_height(img);
+  int i = Int_val(_i);
+  int j = Int_val(_j);
   int len = width*height;
   unsigned char *data = I420_data(img);
   unsigned char *alpha = I420_alpha(img);
-  int i = Int_val(_i);
-  int j = Int_val(_j);
   int r = Int_val(Field(c,0));
   int g = Int_val(Field(c,1));
   int b = Int_val(Field(c,2));

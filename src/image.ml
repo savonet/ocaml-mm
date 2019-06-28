@@ -42,7 +42,8 @@ module Data = struct
 
   external of_string : string -> t = "caml_data_of_string"
 
-  external blit : t -> int -> t -> int -> int -> unit = "caml_data_blit_off" [@@noalloc]
+  external blit : t -> int -> t -> int -> int -> unit = "caml_data_blit_off"
+  (* [@@noalloc] *)
 
   external copy : t -> t = "caml_data_copy"
 end
@@ -562,7 +563,8 @@ module I420 = struct
       mutable alpha : data option;
     }
 
-  external print_pointers : t -> unit = "print_pointers" [@@noalloc]
+  external print_pointers : t -> unit = "print_pointers"
+  (* [@@noalloc] *)
 
   let width img = img.width
 
@@ -592,9 +594,20 @@ module I420 = struct
 
   let size img = Bigarray.Array1.dim img.data
 
-  let make_stride width height y_stride y uv_stride u v =
+  let make width height data =
+    let dim = Bigarray.Array1.dim data in
+    let len = width*height*6/4 in
+    assert (dim = len);
+    { data; width; height; alpha=None }
+
+  let create width height =
+    let data = alloc (width*height*6/4) in
+    make width height data
+
+  let make_stride_planes width height y_stride y uv_stride u v =
+    let img = create width height in
+    let data = img.data in
     let len = width*height in
-    let data = alloc (len*6/4) in
     if y_stride = width && uv_stride = width / 2 then
       (
         Data.blit y 0 data 0 len;
@@ -603,6 +616,9 @@ module I420 = struct
       )
     else
       (
+        assert (Bigarray.Array1.dim y =  y_stride * height);
+        assert (Bigarray.Array1.dim u = uv_stride * (height / 2));
+        assert (Bigarray.Array1.dim v = uv_stride * (height / 2));
         for j = 0 to height - 1 do
           Data.blit y (j*y_stride) data (j*width) width
         done;
@@ -613,15 +629,11 @@ module I420 = struct
       );
     { data; width; height; alpha=None }
 
-  let make width height data =
-    let dim = Bigarray.Array1.dim data in
-    let len = width*height*6/4 in
-    assert (dim = len);
-    { data; width; height; alpha=None }
-
-  let create width height =
-    let data = alloc (width*height*6/4) in
-    make width height data
+  let make_stride width height buf y_stride uv_stride =
+    let y = Bigarray.Array1.sub buf 0 (y_stride*height) in
+    let u = Bigarray.Array1.sub buf (y_stride*height) (uv_stride*(height/2)) in
+    let v = Bigarray.Array1.sub buf (y_stride*height+uv_stride*(height/2)) (uv_stride*(height/2)) in
+    make_stride_planes width height y_stride y uv_stride u v
 
   let ensure_alpha img =
     if img.alpha = None then
@@ -698,8 +710,10 @@ module I420 = struct
   let add src ?(x=0) ?(y=0) dst = add src x y dst
   let add_all src dst = add src dst
 
-  external set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit = "caml_i420_set_pixel_rgba" [@@noalloc]
+  external set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit = "caml_i420_set_pixel_rgba"
+  (* [@@noalloc] *)
   let set_pixel_rgba img i j ((r,g,b,a) as p) =
+    assert (0 <= i && i < img.width && 0 <= j && j < img.height);
     if a <> 0xff then ensure_alpha img;
     set_pixel_rgba img i j p
 
@@ -738,7 +752,8 @@ module I420 = struct
     let len = width * height in
     Bigarray.Array1.get data (len * 5 / 4 + (j / 2) * (width / 2) + i / 2)
 
-  external get_pixel_rgba : t -> int -> int -> Pixel.rgba = "caml_i420_get_pixel_rgba" [@@noalloc]
+  external get_pixel_rgba : t -> int -> int -> Pixel.rgba = "caml_i420_get_pixel_rgba"
+  (* [@@noalloc] *)
   (*
   let get_pixel_rgba img i j =
     let data = img.data in
@@ -775,53 +790,27 @@ module I420 = struct
 
   external scale_full : t -> t -> unit = "caml_i420_scale"
   let scale_full src dst =
-    (
-      match src.alpha with
-      | None -> dst.alpha <- None
-      | Some alpha -> ensure_alpha dst
-    );
+    if has_alpha src then ensure_alpha dst;
     scale_full src dst
 
-  let scale src dst = scale_full src dst
+  external scale_coef : t -> t -> int * int -> int * int -> unit = "caml_i420_scale_coef"
+  let scale_proportional src dst =
+    if has_alpha src then ensure_alpha dst;
+    let sw, sh = src.width,src.height in
+    let dw, dh = dst.width,dst.height in
+    if dw = sw && dh = sh then blit_all src dst
+    else
+      let n, d =
+        if dh * sw < sh * dw then
+	  dh, sh
+        else
+	  dw, sw
+      in
+      scale_coef src dst (n,d) (n,d)
 
-    (*
-  let scale_coef_kind k src dst (dw,sw) (dh,sh) =
-    match k with
-    | Linear ->
-       scale_coef src dst (dw,sw) (dh,sh)
-    | Bilinear ->
-       let x = float dw /. float sw in
-       let y = float dh /. float sh in
-       bilinear_scale_coef src dst x y
-
-    let onto ?(kind=Linear) ?(proportional=false) src dst =
-      let sw, sh = src.width,src.height in
-      let dw, dh = dst.width,dst.height in
-      if dw = sw && dh = sh then
-        blit_all src dst
-      else
-        (
-          if not proportional then
-            scale_coef_kind kind src dst (sw, dw) (sh, dh)
-          else
-            let n, d =
-              if dh * sw < sh * dw then
-	        dh, sh
-              else
-	        dw, sw
-            in
-            scale_coef_kind kind src dst (n,d) (n,d)
-        )
-
-    let create ?kind ?(copy=true) ?proportional src w h =
-      if not copy && width src = w && height src = h then
-        src
-      else
-        let dst = create w h in
-        onto ?kind ?proportional src dst;
-        dst
-
-     *)
+  let scale ?(proportional=false) src dst =
+    if proportional then scale_proportional src dst
+    else scale_full src dst
 
   module Effect = struct
     let greyscale img = failwith "Not implemented: greyscale"

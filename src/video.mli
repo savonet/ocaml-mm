@@ -43,14 +43,8 @@ module Image : sig
 
   val of_I420_string : string -> int -> t
 
-  val to_I420 : t -> Image.I420.t
-
   (** Convert to format useable by [Graphics.make_image]. *)
   val to_int_image : t -> int array array
-
-  val of_I420 : Image.I420.t -> t
-
-  val to_I420 : t -> Image.I420.t
 
   val copy : t -> t
 
@@ -65,7 +59,7 @@ module Image : sig
 
   val blank : t -> unit
 
-  val scale : t -> t -> unit
+  val scale : ?proportional:bool -> t -> t -> unit
 
   val randomize : t -> unit
 
