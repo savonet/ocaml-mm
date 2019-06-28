@@ -31,7 +31,35 @@
  *
  *)
 
-(** Operations on images. Mostly only the RGBA32 format is supported for now. *)
+(** Operations on images. *)
+
+module Data : sig
+    type t = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+  (** Creates an 16-bytes aligned plane. Returns (stride*plane). *)
+  val create_rounded_plane : int -> int -> int * t
+
+  (** external alloc : int -> t = "caml_data_alloc" *)
+  val alloc : int -> t
+
+  val of_string : string -> t
+
+  val blit : t -> int -> t -> int -> int -> unit
+
+  val copy : t -> t
+end
+
+module Pixel : sig
+  type rgba = int * int * int * int
+
+  type rgb = int * int * int
+
+  type yuv = int * int * int
+
+  val yuv_of_rgb : rgb -> yuv
+
+  val rgb_of_yuv : yuv -> rgb
+end
 
 (** Operations on images stored in RGB8 format, ie RGB channels, one byte each. *)
 module RGB8 : sig
@@ -47,9 +75,6 @@ end
 
 (** Operations on images stored in YUV420 format, ie one luma (Y) and two chrominance (U and V) channels. *)
 module YUV420 : sig
-  (** Data of a channel. *)
-  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
-
   (** An image in YUV420 format. *)
   type t
 
@@ -67,17 +92,15 @@ module YUV420 : sig
   (** Clear an image (sets it to black). *)
   val blank_all : t -> unit
 
-  val make : int -> int -> data -> int -> data -> data -> int -> t
+  val make : int -> int -> Data.t -> int -> Data.t -> Data.t -> int -> t
 
-  val internal : t -> (data * int) * (data * data * int)
+  val internal : t -> (Data.t * int) * (Data.t * Data.t * int)
 end
 
 module BGRA : sig
   type t
 
-  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
-
-  val data : t -> data
+  val data : t -> Data.t
 end
 
 (** Operations on images stored in RGBA32 format (ie RGB channels + an alpha
@@ -223,26 +246,12 @@ module RGBA32 : sig
 end
 
 module I420 : sig
-  module Pixel : sig
-    type rgba = int * int * int * int
-
-    type rgb = int * int * int
-
-    type yuv = int * int * int
-
-    val yuv_of_rgb : rgb -> yuv
-
-    val rgb_of_yuv : yuv -> rgb
-  end
-
-  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
-
   type t
 
   (* For debugging, will be removed in a short future. *)
   val print_pointers : t -> unit
 
-  val make : int -> int -> data -> t
+  val make : int -> int -> Data.t -> t
 
   val create : int -> int -> t
 
@@ -251,9 +260,9 @@ module I420 : sig
 
   val remove_alpha : t -> unit
 
-  val make_stride : int -> int -> data -> int -> int -> t
+  val make_stride : int -> int -> Data.t -> int -> int -> t
 
-  val make_stride_planes : int -> int -> int -> data -> int -> data -> data -> t
+  val make_stride_planes : int -> int -> int -> Data.t -> int -> Data.t -> Data.t -> t
 
   val of_I420_string : string -> int -> t
 
@@ -270,7 +279,7 @@ module I420 : sig
   val dimensions : t -> int * int
 
   (** Internal data (without alpha channel). *)
-  val data : t -> data
+  val data : t -> Data.t
 
   (** Size in bytes. *)
   val size : t -> int
@@ -279,10 +288,10 @@ module I420 : sig
   val has_alpha : t -> bool
 
   (** Data in split y/u/v buffers. No copy is made. *)
-  val data_split : t -> data * data * data
+  val data_split : t -> Data.t * Data.t * Data.t
 
   (* (\** Obtaine data with given stride. No copy is made when possible. *\) *)
-  (* val data_stride : t -> int -> int -> data * data * data *)
+  (* val data_stride : t -> int -> int -> Data.t * Data.t * Data.t *)
 
   val copy : t -> t
 

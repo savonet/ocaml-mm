@@ -48,6 +48,18 @@ module Data = struct
   external copy : t -> t = "caml_data_copy"
 end
 
+module Pixel = struct
+  type rgba = int * int * int * int
+
+  type rgb = int * int * int
+
+  type yuv = int * int * int
+
+  external yuv_of_rgb : rgb -> yuv = "caml_yuv_of_rgb"
+
+  external rgb_of_yuv : yuv -> rgb = "caml_rgb_of_yuv"
+end
+
 module Motion_multi = struct
   type vectors_data = (int, Bigarray.nativeint_elt, Bigarray.c_layout) Bigarray.Array1.t
 
@@ -118,11 +130,7 @@ module Gray8 = struct
 end
 
 module YUV420 = struct
-  (* TODO: also store width and height? *)
-  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
-  let kind = Bigarray.int8_unsigned
-
-  type yuv_data = (data * int) * (data * data * int)
+  type yuv_data = (Data.t * int) * (Data.t * Data.t * int)
 
   (** (Y, Y stride), (U, V, UV stride) *)
   type t =
@@ -161,7 +169,7 @@ module YUV420 = struct
     of_string img s;
     img
 
-  external blank : data -> unit = "caml_yuv_blank"
+  external blank : Data.t -> unit = "caml_yuv_blank"
 
   let blank_all x =
     let (y,_),(u,v,_) = x.data in
@@ -542,18 +550,6 @@ module I420 = struct
   let kind = Bigarray.int8_unsigned
 
   let alloc n = Data.alloc n
-
-  module Pixel = struct
-    type rgba = int * int * int * int
-
-    type rgb = int * int * int
-
-    type yuv = int * int * int
-
-    external yuv_of_rgb : rgb -> yuv = "caml_yuv_of_rgb"
-
-    external rgb_of_yuv : yuv -> rgb = "caml_rgb_of_yuv"
-  end
 
   type t =
     {
