@@ -35,7 +35,7 @@ module Data = struct
   type t = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
   (* Creates an 16-bytes aligned plane. Returns (stride*plane). *)
-  external create_rounded_plane : int -> int -> int * t = "caml_rgb_aligned_plane"
+  external create_rounded_plane : int -> int -> int * t = "caml_data_aligned_plane"
 
   (* external alloc : int -> t = "caml_data_alloc" *)
   let alloc n = Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.C_layout n
