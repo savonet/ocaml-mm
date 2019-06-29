@@ -35,10 +35,22 @@ module Data = struct
   type t = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
   (* Creates an 16-bytes aligned plane. Returns (stride*plane). *)
-  external create_rounded_plane : int -> int -> int * t = "caml_data_aligned_plane"
+  (* external create_rounded_plane : int -> int -> int * t = "caml_data_aligned_plane" *)
 
-  (* external alloc : int -> t = "caml_data_alloc" *)
   let alloc n = Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.C_layout n
+
+  (** [round n k] rounds [n] to the nearest upper multiple of [k]. *)
+  let round k n =
+    ((n+(k-1))/k)*k
+
+  external aligned : int -> int -> t = "caml_data_aligned"
+
+  (* Creates an 16-bytes aligned plane. Returns (stride*plane). *)
+  let rounded_plane width height =
+    let align = 16 in
+    let stride = round 16 width in
+    let data = aligned align (height*stride) in
+    stride, data
 
   external of_string : string -> t = "caml_data_of_string"
 
@@ -46,6 +58,8 @@ module Data = struct
   (* [@@noalloc] *)
 
   external copy : t -> t = "caml_data_copy"
+
+  let sub buf ofs len = Bigarray.Array1.sub buf ofs len
 end
 
 module Pixel = struct
@@ -54,6 +68,8 @@ module Pixel = struct
   type rgb = int * int * int
 
   type yuv = int * int * int
+
+  type yuva = (int * int * int) * int
 
   external yuv_of_rgb : rgb -> yuv = "caml_yuv_of_rgb"
 
@@ -90,12 +106,10 @@ module RGB8 = struct
 end
 
 module Gray8 = struct
-  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
-
   (* TODO: stride ? *)
   type t =
       {
-        data : data;
+        data : Data.t;
         width : int;
       }
 
@@ -110,14 +124,14 @@ module Gray8 = struct
     make w (Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.c_layout (w*h))
 
   module Motion = struct
-    external compute : int -> int -> data -> data -> int * int = "caml_mm_Gray8_motion_compute"
+    external compute : int -> int -> Data.t -> Data.t -> int * int = "caml_mm_Gray8_motion_compute"
 
     let compute bs o n = compute bs n.width o.data n.data
 
     module Multi = struct
       include Motion_multi
 
-      external compute : int -> int -> data -> data -> vectors_data = "caml_mm_Gray8_motion_multi_compute"
+      external compute : int -> int -> Data.t -> Data.t -> vectors_data = "caml_mm_Gray8_motion_multi_compute"
 
       let compute bs o n =
         {
@@ -127,53 +141,6 @@ module Gray8 = struct
         }
     end
   end
-end
-
-module YUV420 = struct
-  type yuv_data = (Data.t * int) * (Data.t * Data.t * int)
-
-  (** (Y, Y stride), (U, V, UV stride) *)
-  type t =
-      {
-        data : yuv_data;
-        width : int;
-        height : int;
-      }
-
-  let width img = img.width
-
-  let height img = img.height
-
-  let make w h y ys u v uvs =
-    {
-      data = (y, ys), (u, v, uvs);
-      width = w;
-      height = h;
-    }
-
-  let internal img = img.data
-
-  let create w h =
-    let (ys,y) = Data.create_rounded_plane h w in
-    let (uvs,u) = Data.create_rounded_plane (h/2) (w/2) in
-    (* Stride should be the same in this case.. *)
-    let (_,v) = Data.create_rounded_plane (h/2) (w/2) in
-    make w h y ys u v uvs
-
-  external of_string : t -> string -> unit = "caml_yuv_of_string"
-
-  let of_string s width =
-    let pixels = String.length s * 4 / 6 in
-    let height = pixels / width in
-    let img = create width height in
-    of_string img s;
-    img
-
-  external blank : Data.t -> unit = "caml_yuv_blank"
-
-  let blank_all x =
-    let (y,_),(u,v,_) = x.data in
-    blank y ; blank u ; blank v
 end
 
 module BGRA = struct
@@ -206,7 +173,7 @@ module BGRA = struct
       | Some v -> v
       | None -> 4*width
     in
-    let stride, data = Data.create_rounded_plane height stride in
+    let stride, data = Data.rounded_plane stride height in
     make ~stride width height data
 
   let data img = img.data
@@ -259,9 +226,7 @@ module RGBA32 = struct
 	| Some v -> v
 	| None -> 4*width
     in
-    let (stride,data) = 
-      Data.create_rounded_plane height stride
-    in
+    let stride, data = Data.rounded_plane stride height in
     make ~stride width height data
 
   let copy f =
@@ -311,20 +276,7 @@ module RGBA32 = struct
     to_BGRA bgra img;
     bgra
 
-  external of_YUV420 : YUV420.yuv_data -> t -> unit = "caml_rgb_of_YUV420"
-
-  let of_YUV420 img = of_YUV420 img.YUV420.data
-
-  let of_YUV420 frame =
-    let ans = create (YUV420.width frame) (YUV420.height frame) in
-    of_YUV420 frame ans;
-    ans
-
-  external to_YUV420 : t -> YUV420.yuv_data -> unit = "caml_rgb_to_YUV420"
-
-  let to_YUV420 x y = to_YUV420 x y.YUV420.data
-
-  external to_Gray8 : t -> Gray8.data -> unit = "caml_mm_RGBA8_to_Gray8"
+  external to_Gray8 : t -> Data.t -> unit = "caml_mm_RGBA8_to_Gray8"
 
   let to_Gray8 rgb gray = to_Gray8 rgb gray.Gray8.data
 
@@ -542,6 +494,46 @@ module RGBA32 = struct
         arrows v.block_size v.vectors img
     end
   end
+end
+
+module YUV420 = struct
+  (** (Y, Y stride), (U, V, UV stride) *)
+  type t =
+      {
+        y : Data.t;
+        u : Data.t;
+        v : Data.t;
+        y_stride : int;
+        uv_stride : int;
+        width : int;
+        height : int;
+      }
+
+  let width img = img.width
+
+  let height img = img.height
+
+  let make_planes width height y_stride y uv_stride u v =
+    { y; u; v; y_stride; uv_stride; width; height }
+
+  let make width height data y_stride uv_stride =
+    let len = y_stride * height in
+    let y = Data.sub data 0 len in
+    let u = Data.sub data len (uv_stride * height) in
+    let v = Data.sub data (len + uv_stride * height) (uv_stride * height) in
+    make_planes width height y_stride y uv_stride u v
+
+  let create width height =
+    let align = 4 in
+    let y_stride = Data.round align width in
+    let uv_stride = Data.round align (width/2) in
+    let y = Data.aligned align (y_stride*height) in
+    let u = Data.aligned align (uv_stride*(height/2)) in
+    let v = Data.aligned align (uv_stride*(height/2)) in
+    make_planes width height y_stride y uv_stride u v
+
+  let blank_all img =
+    failwith "TODO: implement blank_all"
 end
 
 (* I420 without strides. *)
@@ -983,15 +975,14 @@ module Generic = struct
     }
 
   let of_YUV420 img =
-    let (y,y_stride),(u,v,uv_stride) = img.YUV420.data in
     let yuv_data =
       {
         yuv_pixel = Pixel.YUVJ420;
-        y = y;
-        y_stride = y_stride;
-        u = u;
-        v = v;
-        uv_stride = uv_stride
+        y = img.YUV420.y;
+        y_stride = img.YUV420.y_stride;
+        u = img.YUV420.u;
+        v = img.YUV420.v;
+        uv_stride = img.YUV420.uv_stride
       }
     in
     {
@@ -1007,12 +998,7 @@ module Generic = struct
         | _ -> assert false
     in
     assert (yuv.yuv_pixel = Pixel.YUVJ420);
-    {
-      YUV420.
-      data = yuv_data img;
-      width = img.width;
-      height = img.height;
-    }
+    { YUV420.y = yuv.y; u = yuv.u; v = yuv.v; y_stride = yuv.y_stride; uv_stride = yuv.uv_stride; width = img.width; height = img.height; }
 
   external rgba32_to_bgr32 : data -> int -> data -> int -> int * int -> unit = "caml_RGBA32_to_BGR32"
 
@@ -1026,6 +1012,7 @@ module Generic = struct
         let src = to_RGBA32 src in
         let dst = to_RGBA32 dst in
         RGBA32.Scale.onto ?kind:scale_kind ~proportional src dst
+        (*
       | YUV s, RGB d when s.yuv_pixel = Pixel.YUVJ420 && d.rgb_pixel = Pixel.RGBA32 ->
         let src = to_YUV420 src in
         let src = RGBA32.of_YUV420 src in
@@ -1036,6 +1023,7 @@ module Generic = struct
         let src = RGBA32.Scale.create ?kind:scale_kind ~proportional ~copy:false src dst.width dst.height in
         let dst = to_YUV420 dst in
         RGBA32.to_YUV420 src dst
+         *)
       | RGB s, RGB d when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.BGR32 ->
         if src.width = dst.width && src.height = dst.height then
           rgba32_to_bgr32 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride (src.width,src.height)

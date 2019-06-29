@@ -36,9 +36,6 @@
 module Data : sig
     type t = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
-  (** Creates an 16-bytes aligned plane. Returns (stride*plane). *)
-  val create_rounded_plane : int -> int -> int * t
-
   (** external alloc : int -> t = "caml_data_alloc" *)
   val alloc : int -> t
 
@@ -71,30 +68,6 @@ module RGB8 : sig
     (** Decode a color stored as RGB. *)
     val of_int : int -> t
   end
-end
-
-(** Operations on images stored in YUV420 format, ie one luma (Y) and two chrominance (U and V) channels. *)
-module YUV420 : sig
-  (** An image in YUV420 format. *)
-  type t
-
-  (** Width of an image. *)
-  val width : t -> int
-
-  (** Height of an image. *)
-  val height : t -> int
-
-  (** Create an image of given width and height. *)
-  val create : int -> int -> t
-
-  val of_string : string -> int -> t
-
-  (** Clear an image (sets it to black). *)
-  val blank_all : t -> unit
-
-  val make : int -> int -> Data.t -> int -> Data.t -> Data.t -> int -> t
-
-  val internal : t -> (Data.t * int) * (Data.t * Data.t * int)
 end
 
 module BGRA : sig
@@ -152,8 +125,6 @@ module RGBA32 : sig
   val of_BGRA : BGRA.t -> t
 
   val to_BGRA : t -> BGRA.t
-
-  val of_YUV420 : YUV420.t -> t
 
   val to_int_image : t -> int array array
 
@@ -243,6 +214,25 @@ module RGBA32 : sig
       val arrows : vectors -> t -> unit
     end
   end
+end
+
+(** Operations on images stored in YUV420 format, ie one luma (Y) and two chrominance (U and V) channels. *)
+module YUV420 : sig
+  (** An image in YUV420 format. *)
+  type t
+
+  (** Width of an image. *)
+  val width : t -> int
+
+  (** Height of an image. *)
+  val height : t -> int
+
+  (** Create an image of given width and height. *)
+  val create : int -> int -> t
+
+  val make_planes : int -> int -> int -> Data.t -> int -> Data.t -> Data.t -> t
+
+  val blank_all : t -> unit
 end
 
 module I420 : sig

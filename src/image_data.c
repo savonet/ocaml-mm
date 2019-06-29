@@ -8,54 +8,26 @@
 #include <malloc.h>
 #include <string.h>
 
-#include "image_data.h"
-
-/*
-CAMLprim value caml_data_alloc(value _len)
-{
-  CAMLparam1(_len);
-  CAMLlocal1(ans);
-  long len = Int_val(_len);
-  void *data = malloc(len);
-  if (data == NULL) caml_raise_out_of_memory();
-  ans = caml_ba_alloc_dims(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8,1,data,len);
-  CAMLreturn(ans);
-}
-*/
-
 #ifdef HAVE_MEMALIGN
 /* some systems have memalign() but no declaration for it */
-void * memalign(size_t align, size_t size);
+void *memalign(size_t align, size_t size);
 #else
 /* assume malloc alignment is sufficient */
 #define memalign(align,size) malloc (size)
 #endif
 
-#define ALIGN(a) a=((a+ALIGNMENT_BYTES-1)/ALIGNMENT_BYTES)*ALIGNMENT_BYTES
-
-/* This function creates a 16 bytes aligned plane. It returns a big array along
-  with the new stride. */
-CAMLprim value caml_data_aligned_plane(value _height, value _stride)
+CAMLprim value caml_data_aligned(value _alignment, value _len)
 {
-  CAMLparam0();
-  CAMLlocal2(v,ans);
-  long height = Long_val(_height);
-  long stride = Long_val(_stride);
+  CAMLparam2(_alignment, _len);
+  CAMLlocal1(ans);
+  int alignment = Int_val(_alignment);
+  int len = Int_val(_len);
+  unsigned char * data;
 
-  // round up values..
-  ALIGN(stride);
-  long len = height*stride;  
-
-  // Init plane..
-  void *data;
-  data = memalign(ALIGNMENT_BYTES,len);
+  data = memalign(alignment, len);
   if (data == NULL) caml_raise_out_of_memory();
-  v = caml_ba_alloc_dims(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8,1,data,len);
+  ans = caml_ba_alloc_dims(CAML_BA_MANAGED|CAML_BA_C_LAYOUT|CAML_BA_UINT8,1,data,len);
 
-  // We return
-  ans = caml_alloc_tuple(2);
-  Store_field(ans,0,Val_int(stride));
-  Store_field(ans,1,v);
   CAMLreturn(ans);
 }
 
