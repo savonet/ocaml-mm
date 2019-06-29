@@ -74,26 +74,22 @@ CAMLprim value caml_yuv420_of_rgba32(value _rgb, value img)
   CAMLlocal1(ans);
   frame rgb;
   frame_of_value(_rgb, &rgb);
-  int width = rgb.width;
-  int height = rgb.height;
-  long len = width*height;
-  unsigned char *data = YUV420_data(img);
-  unsigned char *alpha = YUV420_alpha(img);
+  yuv420 yuv;
+  yuv420_of_value(&yuv, img);
   int i, j;
 
   caml_enter_blocking_section();
-  for (j = 0; j < height; j++)
-    for (i = 0; i < width; i++)
+  for (j = 0; j < rgb.height; j++)
+    for (i = 0; i < rgb.width; i++)
       {
         int r = Red(&rgb,i,j);
         int g = Green(&rgb,i,j);
         int b = Blue(&rgb,i,j);
-        int a = Alpha(&rgb,i,j);
-        data[j*width+i] = YofRGB(r,g,b);
+        Y(yuv,i,j) = YofRGB(r,g,b);
         // TODO: don't do u/v twice
-        data[len+(j/2)*(width/2)+i/2] = UofRGB(r,g,b);
-        data[len*5/4+(j/2)*(width/2)+i/2] = VofRGB(r,g,b);
-        alpha[j*width+i] = a;
+        U(yuv,i,j) = UofRGB(r,g,b);
+        V(yuv,i,j) = VofRGB(r,g,b);
+        A(yuv,i,j) = Alpha(&rgb,i,j);
       }
   caml_leave_blocking_section();
 
@@ -189,7 +185,7 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst)
           Y(dst,i,j) = Y(src,is,js);
           // TODO: don't do u/v twice
           U(dst,i,j) = U(src,is,js);
-          V(dst,i,j) = V(dst,is,js);
+          V(dst,i,j) = V(src,is,js);
           if (dst.alpha) A(dst,i,j) = 0xff;
         }
   else

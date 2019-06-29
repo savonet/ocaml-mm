@@ -511,9 +511,9 @@ end
 module YUV420 = struct
   type t =
     {
-      data : Data.t;
-      y_stride : int;
-      uv_stride : int;
+      mutable data : Data.t;
+      mutable y_stride : int;
+      mutable uv_stride : int;
       width : int;
       height : int;
       mutable alpha : Data.t option; (* alpha stride is y_stride *)
@@ -630,13 +630,29 @@ module YUV420 = struct
   let blank_all = blank
 
   let blit_all src dst =
-    Bigarray.Array1.blit src.data dst.data;
-    match src.alpha with
-    | None -> dst.alpha <- None
-    | Some alpha ->
-       match dst.alpha with
-       | None -> dst.alpha <- Some (Data.copy alpha)
-       | Some alpha' -> Bigarray.Array1.blit alpha alpha'
+    assert (src.width = dst.width);
+    assert (src.height = dst.height);
+    if (src.y_stride = dst.y_stride && src.uv_stride = dst.uv_stride) then
+      (
+        Data.blit src.data 0 dst.data 0 (dst.height*(dst.y_stride+dst.uv_stride));
+        match src.alpha with
+        | None -> dst.alpha <- None
+        | Some alpha ->
+           match dst.alpha with
+           | None -> dst.alpha <- Some (Data.copy alpha)
+           | Some alpha' -> Bigarray.Array1.blit alpha alpha'
+      )
+    else
+      (
+        dst.data <- Data.copy src.data;
+        dst.y_stride <- src.y_stride;
+        dst.uv_stride <- src.uv_stride;
+        (
+          match src.alpha with
+          | None -> dst.alpha <- None
+          | Some alpha -> dst.alpha <- Some (Data.copy alpha)
+        )
+      )
 
   let blit src ?(blank=true) ?(x=0) ?(y=0) dst =
     if x = 0 && y = 0 then blit_all src dst
@@ -646,7 +662,6 @@ module YUV420 = struct
 
   external add : t -> int -> int -> t -> unit = "caml_yuv420_add"
   let add src ?(x=0) ?(y=0) dst = add src x y dst
-  let add_all src dst = add src dst
 
   external set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit = "caml_yuv420_set_pixel_rgba"
   (* [@@noalloc] *)

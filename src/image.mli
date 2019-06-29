@@ -281,8 +281,6 @@ module YUV420 : sig
   (** [blit_all src dst] blits an entire image. *)
   val blank_all : t -> unit
 
-  val add_all : t -> t -> unit
-
   (** Add the fist image to the second. *)
   val add : t -> ?x:int -> ?y:int -> t -> unit
 
