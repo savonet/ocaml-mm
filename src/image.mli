@@ -53,6 +53,8 @@ module Pixel : sig
 
   type yuv = int * int * int
 
+  type yuva = yuv * int
+
   val yuv_of_rgb : rgb -> yuv
 
   val rgb_of_yuv : yuv -> rgb

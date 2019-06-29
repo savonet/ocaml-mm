@@ -13,8 +13,9 @@
 #define V_val(yuv) Caml_ba_data_val(Field(yuv,2))
 #define Ystride_val(yuv) Int_val(Field(yuv,3))
 #define UVstride_val(yuv) Int_val(Field(yuv,4))
-#define Width_val(yuv) Int_val(Field(yuv,5))
-#define Height_val(yuv) Int_val(Field(yuv 6))
+#define A_val(yuv) (Is_block(Field(yuv,5))?Caml_ba_data_val(Field(Field(yuv,5),0)):NULL)
+#define Width_val(yuv) Int_val(Field(yuv,6))
+#define Height_val(yuv) Int_val(Field(yuv 7))
 
 /*
 // TODO: Implements ASM version of these conversions,

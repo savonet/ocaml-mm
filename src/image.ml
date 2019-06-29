@@ -505,6 +505,7 @@ module YUV420 = struct
         v : Data.t;
         y_stride : int;
         uv_stride : int;
+        alpha : Data.t option;
         width : int;
         height : int;
       }
@@ -514,7 +515,7 @@ module YUV420 = struct
   let height img = img.height
 
   let make_planes width height y_stride y uv_stride u v =
-    { y; u; v; y_stride; uv_stride; width; height }
+    { y; u; v; y_stride; uv_stride; alpha = None; width; height }
 
   let make width height data y_stride uv_stride =
     let len = y_stride * height in
@@ -998,7 +999,7 @@ module Generic = struct
         | _ -> assert false
     in
     assert (yuv.yuv_pixel = Pixel.YUVJ420);
-    { YUV420.y = yuv.y; u = yuv.u; v = yuv.v; y_stride = yuv.y_stride; uv_stride = yuv.uv_stride; width = img.width; height = img.height; }
+    { YUV420.y = yuv.y; u = yuv.u; v = yuv.v; y_stride = yuv.y_stride; uv_stride = yuv.uv_stride; width = img.width; height = img.height; alpha = None }
 
   external rgba32_to_bgr32 : data -> int -> data -> int -> int * int -> unit = "caml_RGBA32_to_BGR32"
 
@@ -1012,6 +1013,7 @@ module Generic = struct
         let src = to_RGBA32 src in
         let dst = to_RGBA32 dst in
         RGBA32.Scale.onto ?kind:scale_kind ~proportional src dst
+      (* TODO: restore this.................... *)
         (*
       | YUV s, RGB d when s.yuv_pixel = Pixel.YUVJ420 && d.rgb_pixel = Pixel.RGBA32 ->
         let src = to_YUV420 src in
