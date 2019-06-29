@@ -54,12 +54,20 @@ module Data = struct
 
   external of_string : string -> t = "caml_data_of_string"
 
+  let blit_all src dst = Bigarray.Array1.blit src dst
+
   external blit : t -> int -> t -> int -> int -> unit = "caml_data_blit_off"
   (* [@@noalloc] *)
 
   external copy : t -> t = "caml_data_copy"
 
   let sub buf ofs len = Bigarray.Array1.sub buf ofs len
+
+  let length img = Bigarray.Array1.dim img
+
+  let size img = length img
+
+  let get = Bigarray.Array1.get
 end
 
 module Pixel = struct
@@ -288,6 +296,10 @@ module RGBA32 = struct
   external get_pixel : t -> int -> int -> Color.t = "caml_rgb_get_pixel"
 
   external set_pixel : t -> int -> int -> Color.t -> unit = "caml_rgb_set_pixel"
+  let set_pixel img i j =
+    assert (0 <= i && i < img.width);
+    assert (0 <= j && j < img.height);
+    set_pixel img i j
 
   external randomize_all : t -> unit = "caml_rgb_randomize"
 
@@ -497,63 +509,17 @@ module RGBA32 = struct
 end
 
 module YUV420 = struct
-  (** (Y, Y stride), (U, V, UV stride) *)
-  type t =
-      {
-        y : Data.t;
-        u : Data.t;
-        v : Data.t;
-        y_stride : int;
-        uv_stride : int;
-        alpha : Data.t option;
-        width : int;
-        height : int;
-      }
-
-  let width img = img.width
-
-  let height img = img.height
-
-  let make_planes width height y_stride y uv_stride u v =
-    { y; u; v; y_stride; uv_stride; alpha = None; width; height }
-
-  let make width height data y_stride uv_stride =
-    let len = y_stride * height in
-    let y = Data.sub data 0 len in
-    let u = Data.sub data len (uv_stride * height) in
-    let v = Data.sub data (len + uv_stride * height) (uv_stride * height) in
-    make_planes width height y_stride y uv_stride u v
-
-  let create width height =
-    let align = 4 in
-    let y_stride = Data.round align width in
-    let uv_stride = Data.round align (width/2) in
-    let y = Data.aligned align (y_stride*height) in
-    let u = Data.aligned align (uv_stride*(height/2)) in
-    let v = Data.aligned align (uv_stride*(height/2)) in
-    make_planes width height y_stride y uv_stride u v
-
-  let blank_all img =
-    failwith "TODO: implement blank_all"
-end
-
-(* I420 without strides. *)
-module I420 = struct
-  type data = Data.t
-  let kind = Bigarray.int8_unsigned
-
-  let alloc n = Data.alloc n
-
   type t =
     {
-      data : data;
+      data : Data.t;
+      y_stride : int;
+      uv_stride : int;
       width : int;
       height : int;
-      mutable alpha : data option;
+      mutable alpha : Data.t option; (* alpha stride is y_stride *)
     }
 
   external print_pointers : t -> unit = "print_pointers"
-  (* [@@noalloc] *)
 
   let width img = img.width
 
@@ -565,68 +531,54 @@ module I420 = struct
 
   let data img = img.data
 
+  let data_y img = Data.sub img.data 0 (img.height*img.y_stride)
+
+  let data_u img = Data.sub img.data (img.height*img.y_stride) ((img.height/2)*img.uv_stride)
+
+  let data_v img = Data.sub img.data (img.height*img.y_stride+(img.height/2)*img.uv_stride) ((img.height/2)*img.uv_stride)
+
   let data_split img =
-    let width = img.width in
-    let height = img.height in
     let data = img.data in
-    let len = width * height in
-    let y = Bigarray.Array1.sub data 0 len in
-    let u = Bigarray.Array1.sub data len (len/4) in
-    let v = Bigarray.Array1.sub data (len*5/4) (len/4) in
+    let height = img.height in
+    let y_len = height * img.y_stride in
+    let u_len = (height/2) * img.uv_stride in
+    let y = Data.sub data 0 y_len in
+    let u = Data.sub data y_len u_len in
+    let v = Data.sub data (y_len+u_len) u_len in
     y,u,v
 
   let data_stride img y_stride uv_stride =
-    let width = img.width in
-    if y_stride <> width then failwith "TODO";
-    if uv_stride <> width / 2 then failwith "TODO";
+    if y_stride <> img.y_stride then failwith "TODO";
+    if uv_stride <> img.uv_stride then failwith "TODO";
     data_split img
 
-  let size img = Bigarray.Array1.dim img.data
+  let size img = Data.size img.data
 
-  let make width height data =
-    let dim = Bigarray.Array1.dim data in
-    let len = width*height*6/4 in
-    assert (dim = len);
-    { data; width; height; alpha=None }
+  let make width height data y_stride uv_stride =
+    { data; y_stride; uv_stride; width; height; alpha=None }
 
-  let create width height =
-    let data = alloc (width*height*6/4) in
-    make width height data
+  let default_stride width y_stride uv_stride =
+    let align = 4 in
+    let y_stride = Option.value ~default:(Data.round align width) y_stride in
+    let uv_stride = Option.value ~default:(Data.round align (width/2)) uv_stride in
+    y_stride, uv_stride
 
-  let make_stride_planes width height y_stride y uv_stride u v =
-    let img = create width height in
-    let data = img.data in
-    let len = width*height in
-    if y_stride = width && uv_stride = width / 2 then
-      (
-        Data.blit y 0 data 0 len;
-        Data.blit u 0 data len (len/4);
-        Data.blit v 0 data (len*5/4) (len/4)
-      )
-    else
-      (
-        assert (Bigarray.Array1.dim y =  y_stride * height);
-        assert (Bigarray.Array1.dim u = uv_stride * (height / 2));
-        assert (Bigarray.Array1.dim v = uv_stride * (height / 2));
-        for j = 0 to height - 1 do
-          Data.blit y (j*y_stride) data (j*width) width
-        done;
-        for j = 0 to height/2 - 1 do
-          Data.blit u (j*uv_stride) data (len+j*(width/2)) (width/4);
-          Data.blit u (j*uv_stride) data (len*5/6+j*(width/2)) (width/4)
-        done
-      );
-    { data; width; height; alpha=None }
+  let create ?(y_stride) ?(uv_stride) width height =
+    let align = 4 in
+    let y_stride, uv_stride = default_stride width y_stride uv_stride in
+    let data = Data.aligned align (height*(y_stride+uv_stride*2)) in
+    make width height data y_stride uv_stride
 
-  let make_stride width height buf y_stride uv_stride =
-    let y = Bigarray.Array1.sub buf 0 (y_stride*height) in
-    let u = Bigarray.Array1.sub buf (y_stride*height) (uv_stride*(height/2)) in
-    let v = Bigarray.Array1.sub buf (y_stride*height+uv_stride*(height/2)) (uv_stride*(height/2)) in
-    make_stride_planes width height y_stride y uv_stride u v
+  let make_planes width height y_stride y uv_stride u v =
+    let data = Data.alloc (Data.length y + Data.length u + Data.length v) in
+    Data.blit y 0 data 0 (Data.length y);
+    Data.blit u 0 data (Data.length y) (Data.length u);
+    Data.blit v 0 data (Data.length y + Data.length u) (Data.length v);
+    make width height data y_stride uv_stride
 
   let ensure_alpha img =
     if img.alpha = None then
-      img.alpha <- Some (alloc (img.width*img.height))
+      img.alpha <- Some (Data.alloc (img.height*img.y_stride))
 
   let has_alpha img =
     img.alpha <> None
@@ -634,17 +586,14 @@ module I420 = struct
   let remove_alpha img =
     img.alpha <- None
 
-  let of_I420_string s width =
-    let len = String.length s in
-    let pixels = len * 4 / 6 in
-    let height = pixels / width in
-    assert (len = width * height * 6 / 4);
+  let of_YUV420_string ?y_stride ?uv_stride s width height =
+    let y_stride, uv_stride = default_stride width y_stride uv_stride in
     let data = Data.of_string s in
-    make width height data
+    make width height data y_stride uv_stride
 
   let of_RGB24_string s width = failwith "Not implemented: of_RGB24_string"
 
-  external of_RGBA32 : RGBA32.t -> t -> unit = "caml_i420_of_rgba32"
+  external of_RGBA32 : RGBA32.t -> t -> unit = "caml_yuv420_of_rgba32"
   let of_RGBA32 rgb =
     let width = RGBA32.width rgb in
     let height = RGBA32.height rgb in
@@ -659,7 +608,7 @@ module I420 = struct
     img
 
   let copy img =
-    let dst = create img.width img.height in
+    let dst = create ~y_stride:img.y_stride ~uv_stride:img.uv_stride img.width img.height in
     Bigarray.Array1.blit img.data dst.data;
     let alpha =
       match img.alpha with
@@ -669,7 +618,7 @@ module I420 = struct
     dst.alpha <- alpha;
     dst
 
-  external fill : t -> Pixel.yuv -> unit = "caml_i420_fill"
+  external fill : t -> Pixel.yuv -> unit = "caml_yuv420_fill"
 
   let fill_alpha img a =
     ensure_alpha img;
@@ -695,11 +644,11 @@ module I420 = struct
 
   let randomize img = failwith "Not implemented: randomize"
 
-  external add : t -> int -> int -> t -> unit = "caml_i420_add"
+  external add : t -> int -> int -> t -> unit = "caml_yuv420_add"
   let add src ?(x=0) ?(y=0) dst = add src x y dst
   let add_all src dst = add src dst
 
-  external set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit = "caml_i420_set_pixel_rgba"
+  external set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit = "caml_yuv420_set_pixel_rgba"
   (* [@@noalloc] *)
   let set_pixel_rgba img i j ((r,g,b,a) as p) =
     assert (0 <= i && i < img.width && 0 <= j && j < img.height);
@@ -720,69 +669,27 @@ module I420 = struct
     Bigarray.Array1.set data (j * width + i) y;
     Bigarray.Array1.set data (height * width + (j / 2) * (width / 2) + i / 2) u;
     Bigarray.Array1.set data (height * width * 5 / 4 + (j / 2) * (width / 2) + i / 2) v
-  *)
+   *)
 
   let get_pixel_y img i j =
-    let data = img.data in
-    let width = img.width in
-    Bigarray.Array1.get data (j * width + i)
+    Data.get img.data (j * img.y_stride + i)
 
   let get_pixel_u img i j =
-    let data = img.data in
-    let width = img.width in
-    let height = img.height in
-    let len = width * height in
-    Bigarray.Array1.get data (len + (j / 2) * (width / 2) + i / 2)
+    Data.get img.data (img.height*img.y_stride+j*img.uv_stride+i)
 
   let get_pixel_v img i j =
-    let data = img.data in
-    let width = img.width in
-    let height = img.height in
-    let len = width * height in
-    Bigarray.Array1.get data (len * 5 / 4 + (j / 2) * (width / 2) + i / 2)
+    Data.get img.data (img.height*img.y_stride+(img.height/2)*img.uv_stride+j*img.uv_stride+i)
 
-  external get_pixel_rgba : t -> int -> int -> Pixel.rgba = "caml_i420_get_pixel_rgba"
-  (* [@@noalloc] *)
-  (*
-  let get_pixel_rgba img i j =
-    let data = img.data in
-    let width = img.width in
-    let height = img.height in
-    let len = width * height in
-    (* assert (size img = len * 6 / 4); *)
-    (* assert (0 <= i && i < width); *)
-    (* assert (0 <= j && j < height); *)
-    let y = Bigarray.Array1.get data (j * width + i) in
-    let u = Bigarray.Array1.get data (len + (j / 2) * (width / 2) + i / 2) in
-    let v = Bigarray.Array1.get data (len * 5 / 4 + (j / 2) * (width / 2) + i / 2) in
-    let r,g,b = Pixel.rgb_of_yuv (y,u,v) in
-    let a =
-      match img.alpha with
-      | None -> 0xff
-      | Some alpha -> Bigarray.Array1.get alpha (j * width + i)
-    in
-    r,g,b,a
-  *)
+  external get_pixel_rgba : t -> int -> int -> Pixel.rgba = "caml_yuv420_get_pixel_rgba"
 
-  (*
-  let to_int_image img =
-    Array.init img.height
-      (fun j ->
-        Array.init img.width
-          (fun i ->
-            let r,g,b,_ = get_pixel img i j in
-            r lsl 16 + g lsl 8 + b
-          )
-      )
-   *)
-  external to_int_image : t -> int array array = "caml_i420_to_int_image"
+  external to_int_image : t -> int array array = "caml_yuv420_to_int_image"
 
-  external scale_full : t -> t -> unit = "caml_i420_scale"
+  external scale_full : t -> t -> unit = "caml_yuv420_scale"
   let scale_full src dst =
     if has_alpha src then ensure_alpha dst;
     scale_full src dst
 
-  external scale_coef : t -> t -> int * int -> int * int -> unit = "caml_i420_scale_coef"
+  external scale_coef : t -> t -> int * int -> int * int -> unit = "caml_yuv420_scale_coef"
   let scale_proportional src dst =
     if has_alpha src then ensure_alpha dst;
     let sw, sh = src.width,src.height in
@@ -979,10 +886,10 @@ module Generic = struct
     let yuv_data =
       {
         yuv_pixel = Pixel.YUVJ420;
-        y = img.YUV420.y;
+        y = YUV420.data_y img;
         y_stride = img.YUV420.y_stride;
-        u = img.YUV420.u;
-        v = img.YUV420.v;
+        u = YUV420.data_u img;
+        v = YUV420.data_v img;
         uv_stride = img.YUV420.uv_stride
       }
     in
@@ -999,7 +906,8 @@ module Generic = struct
         | _ -> assert false
     in
     assert (yuv.yuv_pixel = Pixel.YUVJ420);
-    { YUV420.y = yuv.y; u = yuv.u; v = yuv.v; y_stride = yuv.y_stride; uv_stride = yuv.uv_stride; width = img.width; height = img.height; alpha = None }
+    assert false
+    (* { YUV420.y = yuv.y; u = yuv.u; v = yuv.v; y_stride = yuv.y_stride; uv_stride = yuv.uv_stride; width = img.width; height = img.height; a = None; a_stride = img.width } *)
 
   external rgba32_to_bgr32 : data -> int -> data -> int -> int * int -> unit = "caml_RGBA32_to_BGR32"
 

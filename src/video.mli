@@ -35,13 +35,13 @@
 
 (** Images of videos. *)
 module Image : sig
-  type t = Image.I420.t
+  type t = Image.YUV420.t
 
   val create : int -> int -> t
 
   val of_RGB24_string : string -> int -> t
 
-  val of_I420_string : string -> int -> t
+  val of_YUV420_string : ?y_stride:int -> ?uv_stride:int -> string -> int -> int -> t
 
   (** Convert to format useable by [Graphics.make_image]. *)
   val to_int_image : t -> int array array

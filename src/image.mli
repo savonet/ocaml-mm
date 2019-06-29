@@ -44,6 +44,8 @@ module Data : sig
   val blit : t -> int -> t -> int -> int -> unit
 
   val copy : t -> t
+
+  val round : int -> int -> int
 end
 
 module Pixel : sig
@@ -223,40 +225,21 @@ module YUV420 : sig
   (** An image in YUV420 format. *)
   type t
 
-  (** Width of an image. *)
-  val width : t -> int
-
-  (** Height of an image. *)
-  val height : t -> int
-
-  (** Create an image of given width and height. *)
-  val create : int -> int -> t
-
-  val make_planes : int -> int -> int -> Data.t -> int -> Data.t -> Data.t -> t
-
-  val blank_all : t -> unit
-end
-
-module I420 : sig
-  type t
-
   (* For debugging, will be removed in a short future. *)
   val print_pointers : t -> unit
 
-  val make : int -> int -> Data.t -> t
+  val make : int -> int -> Data.t -> int -> int -> t
 
-  val create : int -> int -> t
+  val make_planes : int -> int -> int -> Data.t -> int -> Data.t -> Data.t -> t
+
+  val create : ?y_stride:int -> ?uv_stride:int -> int -> int -> t
 
   (** Ensure that the image has an alpha channel. *)
   val ensure_alpha : t -> unit
 
   val remove_alpha : t -> unit
 
-  val make_stride : int -> int -> Data.t -> int -> int -> t
-
-  val make_stride_planes : int -> int -> int -> Data.t -> int -> Data.t -> Data.t -> t
-
-  val of_I420_string : string -> int -> t
+  val of_YUV420_string : ?y_stride:int -> ?uv_stride:int -> string -> int -> int -> t
 
   val of_RGB24_string : string -> int -> t
 
@@ -264,8 +247,10 @@ module I420 : sig
 
   val of_PPM : string -> t
 
+  (** Width of an image. *)
   val width : t -> int
 
+  (** Height of an image. *)
   val height : t -> int
 
   val dimensions : t -> int * int

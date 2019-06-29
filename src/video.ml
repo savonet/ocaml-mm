@@ -32,7 +32,9 @@
  *)
 
 module Image = struct
-  include Image.I420
+  include Image.YUV420
+
+  let create w h = create w h
 end
 
 type t = Image.t array
