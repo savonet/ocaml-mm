@@ -307,12 +307,6 @@ module YUV420 : sig
     val invert : t -> unit
 
     val lomo : t -> unit
-
-    val translate : t -> int -> int -> unit
-
-    module Alpha : sig
-      val scale : t -> float -> unit
-    end
   end
 end
 

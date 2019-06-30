@@ -621,8 +621,13 @@ module YUV420 = struct
   external fill : t -> Pixel.yuv -> unit = "caml_yuv420_fill"
 
   let fill_alpha img a =
-    ensure_alpha img;
-    Bigarray.Array1.fill (Option.get img.alpha) a
+    if a = 0xff then
+      img.alpha <- None
+    else
+      (
+        ensure_alpha img;
+        Bigarray.Array1.fill (Option.get img.alpha) a
+      )
 
   let blank img =
     fill img (Pixel.yuv_of_rgb (0,0,0))
@@ -658,7 +663,7 @@ module YUV420 = struct
     if x = 0 && y = 0 then blit_all src dst
     else failwith "TODO: blit"
 
-  let randomize img = failwith "Not implemented: randomize"
+  external randomize : t -> unit = "caml_yuv_randomize"
 
   external add : t -> int -> int -> t -> unit = "caml_yuv420_add"
   let add src ?(x=0) ?(y=0) dst = add src x y dst
@@ -724,19 +729,13 @@ module YUV420 = struct
     else scale_full src dst
 
   module Effect = struct
-    let greyscale img = failwith "Not implemented: greyscale"
+    external greyscale : t -> unit = "caml_yuv_greyscale"
 
     let sepia img = failwith "Not implemented: sepia"
 
     let invert img = failwith "Not implemented: invert"
 
     let lomo img = failwith "Not implemented: lomo"
-
-    let translate img x y = failwith "Not implemented: translate"
-
-    module Alpha = struct
-      let scale img x = failwith "Not implemented: Alpha.scale"
-    end
   end
 end
 

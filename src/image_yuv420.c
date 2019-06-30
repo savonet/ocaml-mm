@@ -252,6 +252,44 @@ CAMLprim value caml_yuv420_set_pixel_rgba(value img, value _i, value _j, value c
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value caml_yuv_randomize(value img)
+{
+  CAMLparam1(img);
+  yuv420 yuv;
+  yuv420_of_value(&yuv, img);
+  int i, j;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < yuv.height; j++)
+    for (i = 0; i < yuv.width; i++) {
+      Y(yuv,i,j) = rand();
+      U(yuv,i,j) = rand();
+      V(yuv,i,j) = rand();
+    }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_yuv_greyscale(value img)
+{
+  CAMLparam1(img);
+  yuv420 yuv;
+  yuv420_of_value(&yuv, img);
+  int i, j;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < yuv.height; j++)
+    for (i = 0; i < yuv.width; i++) {
+      /* int y = Y(yuv,i,j); */
+      U(yuv,i,j) = 0x7f;
+      V(yuv,i,j) = 0x7f;
+    }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value print_pointers(value img) {
   CAMLparam1(img);
   unsigned char *src = YUV420_data(img);

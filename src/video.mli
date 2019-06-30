@@ -59,6 +59,8 @@ module Image : sig
 
   val blank : t -> unit
 
+  val fill_alpha : t -> int -> unit
+
   val scale : ?proportional:bool -> t -> t -> unit
 
   val randomize : t -> unit
@@ -81,12 +83,6 @@ module Image : sig
     val invert : t -> unit
 
     val lomo : t -> unit
-
-    val translate : t -> int -> int -> unit
-
-    module Alpha : sig
-      val scale : t -> float -> unit
-    end
   end
 end
 
