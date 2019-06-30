@@ -34,12 +34,14 @@
 (** Operations on images. *)
 
 module Data : sig
-    type t = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+  type t = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
   (** external alloc : int -> t = "caml_data_alloc" *)
   val alloc : int -> t
 
   val of_string : string -> t
+
+  val length : t -> int
 
   val blit : t -> int -> t -> int -> int -> unit
 
@@ -225,12 +227,9 @@ module YUV420 : sig
   (** An image in YUV420 format. *)
   type t
 
-  (* For debugging, will be removed in a short future. *)
-  val print_pointers : t -> unit
+  val make : int -> int -> Data.t -> int -> Data.t -> Data.t -> int -> t
 
-  val make : int -> int -> Data.t -> int -> int -> t
-
-  val make_planes : int -> int -> int -> Data.t -> int -> Data.t -> Data.t -> t
+  val make_data : int -> int -> Data.t -> int -> int -> t
 
   val create : ?y_stride:int -> ?uv_stride:int -> int -> int -> t
 
@@ -253,19 +252,21 @@ module YUV420 : sig
   (** Height of an image. *)
   val height : t -> int
 
-  val dimensions : t -> int * int
+  val y : t -> Data.t
 
-  (** Internal data (without alpha channel). *)
-  val data : t -> Data.t
+  val u : t -> Data.t
+
+  val v : t -> Data.t
+
+  val data : t -> Data.t * Data.t * Data.t
+
+  val dimensions : t -> int * int
 
   (** Size in bytes. *)
   val size : t -> int
 
   (** Whether the image has an alpha channel. *)
   val has_alpha : t -> bool
-
-  (** Data in split y/u/v buffers. No copy is made. *)
-  val data_split : t -> Data.t * Data.t * Data.t
 
   (* (\** Obtaine data with given stride. No copy is made when possible. *\) *)
   (* val data_stride : t -> int -> int -> Data.t * Data.t * Data.t *)

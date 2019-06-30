@@ -511,15 +511,15 @@ end
 module YUV420 = struct
   type t =
     {
-      mutable data : Data.t;
+      mutable y : Data.t;
       mutable y_stride : int;
+      mutable u : Data.t;
+      mutable v : Data.t;
       mutable uv_stride : int;
       width : int;
       height : int;
       mutable alpha : Data.t option; (* alpha stride is y_stride *)
     }
-
-  external print_pointers : t -> unit = "print_pointers"
 
   let width img = img.width
 
@@ -527,35 +527,27 @@ module YUV420 = struct
 
   let dimensions img = width img, height img
 
+  let y img = img.y
+
+  let u img = img.u
+
+  let v img = img.v
+
+  let data img = img.y, img.u, img.v
+
   let alpha img = img.alpha
 
-  let data img = img.data
+  let size img =
+    Data.size img.y + Data.size img.u + Data.size img.v
 
-  let data_y img = Data.sub img.data 0 (img.height*img.y_stride)
+  let make width height y y_stride u v uv_stride =
+    { y; y_stride; u; v; uv_stride; width; height; alpha=None }
 
-  let data_u img = Data.sub img.data (img.height*img.y_stride) ((img.height/2)*img.uv_stride)
-
-  let data_v img = Data.sub img.data (img.height*img.y_stride+(img.height/2)*img.uv_stride) ((img.height/2)*img.uv_stride)
-
-  let data_split img =
-    let data = img.data in
-    let height = img.height in
-    let y_len = height * img.y_stride in
-    let u_len = (height/2) * img.uv_stride in
-    let y = Data.sub data 0 y_len in
-    let u = Data.sub data y_len u_len in
-    let v = Data.sub data (y_len+u_len) u_len in
-    y,u,v
-
-  let data_stride img y_stride uv_stride =
-    if y_stride <> img.y_stride then failwith "TODO";
-    if uv_stride <> img.uv_stride then failwith "TODO";
-    data_split img
-
-  let size img = Data.size img.data
-
-  let make width height data y_stride uv_stride =
-    { data; y_stride; uv_stride; width; height; alpha=None }
+  let make_data width height data y_stride uv_stride =
+    let y = Data.sub data 0 (height*y_stride) in
+    let u = Data.sub data (height*y_stride) ((height/2)*uv_stride) in
+    let v = Data.sub data (height*y_stride+(height/2)*uv_stride) ((height/2)*uv_stride) in
+    make width height y y_stride u v uv_stride
 
   let default_stride width y_stride uv_stride =
     let align = 4 in
@@ -566,15 +558,10 @@ module YUV420 = struct
   let create ?(y_stride) ?(uv_stride) width height =
     let align = 4 in
     let y_stride, uv_stride = default_stride width y_stride uv_stride in
-    let data = Data.aligned align (height*(y_stride+uv_stride*2)) in
-    make width height data y_stride uv_stride
-
-  let make_planes width height y_stride y uv_stride u v =
-    let data = Data.alloc (Data.length y + Data.length u + Data.length v) in
-    Data.blit y 0 data 0 (Data.length y);
-    Data.blit u 0 data (Data.length y) (Data.length u);
-    Data.blit v 0 data (Data.length y + Data.length u) (Data.length v);
-    make width height data y_stride uv_stride
+    let y = Data.aligned align (height*y_stride) in
+    let u = Data.aligned align ((height/2)*uv_stride) in
+    let v = Data.aligned align ((height/2)*uv_stride) in
+    make width height y y_stride u v uv_stride
 
   let ensure_alpha img =
     if img.alpha = None then
@@ -589,7 +576,7 @@ module YUV420 = struct
   let of_YUV420_string ?y_stride ?uv_stride s width height =
     let y_stride, uv_stride = default_stride width y_stride uv_stride in
     let data = Data.of_string s in
-    make width height data y_stride uv_stride
+    make_data width height data y_stride uv_stride
 
   let of_RGB24_string s width = failwith "Not implemented: of_RGB24_string"
 
@@ -609,7 +596,9 @@ module YUV420 = struct
 
   let copy img =
     let dst = create ~y_stride:img.y_stride ~uv_stride:img.uv_stride img.width img.height in
-    Bigarray.Array1.blit img.data dst.data;
+    Bigarray.Array1.blit img.y dst.y;
+    Bigarray.Array1.blit img.u dst.u;
+    Bigarray.Array1.blit img.v dst.v;
     let alpha =
       match img.alpha with
       | None -> None
@@ -639,7 +628,9 @@ module YUV420 = struct
     assert (src.height = dst.height);
     if (src.y_stride = dst.y_stride && src.uv_stride = dst.uv_stride) then
       (
-        Data.blit src.data 0 dst.data 0 (dst.height*(dst.y_stride+dst.uv_stride));
+        Data.blit src.y 0 dst.y 0 (dst.height*dst.y_stride);
+        Data.blit src.u 0 dst.u 0 ((dst.height/2)*dst.uv_stride);
+        Data.blit src.v 0 dst.v 0 ((dst.height/2)*dst.uv_stride);
         match src.alpha with
         | None -> dst.alpha <- None
         | Some alpha ->
@@ -649,7 +640,9 @@ module YUV420 = struct
       )
     else
       (
-        dst.data <- Data.copy src.data;
+        dst.y <- Data.copy src.y;
+        dst.u <- Data.copy src.u;
+        dst.v <- Data.copy src.v;
         dst.y_stride <- src.y_stride;
         dst.uv_stride <- src.uv_stride;
         (
@@ -692,13 +685,13 @@ module YUV420 = struct
    *)
 
   let get_pixel_y img i j =
-    Data.get img.data (j * img.y_stride + i)
+    Data.get img.y (j * img.y_stride + i)
 
   let get_pixel_u img i j =
-    Data.get img.data (img.height*img.y_stride+j*img.uv_stride+i)
+    Data.get img.u ((j/2)*img.uv_stride+(i/2))
 
   let get_pixel_v img i j =
-    Data.get img.data (img.height*img.y_stride+(img.height/2)*img.uv_stride+j*img.uv_stride+i)
+    Data.get img.v ((j/2)*img.uv_stride+(i/2))
 
   external get_pixel_rgba : t -> int -> int -> Pixel.rgba = "caml_yuv420_get_pixel_rgba"
 
@@ -900,10 +893,10 @@ module Generic = struct
     let yuv_data =
       {
         yuv_pixel = Pixel.YUVJ420;
-        y = YUV420.data_y img;
+        y = img.YUV420.y;
         y_stride = img.YUV420.y_stride;
-        u = YUV420.data_u img;
-        v = YUV420.data_v img;
+        u = img.YUV420.u;
+        v = img.YUV420.v;
         uv_stride = img.YUV420.uv_stride
       }
     in
@@ -920,8 +913,7 @@ module Generic = struct
         | _ -> assert false
     in
     assert (yuv.yuv_pixel = Pixel.YUVJ420);
-    assert false
-    (* { YUV420.y = yuv.y; u = yuv.u; v = yuv.v; y_stride = yuv.y_stride; uv_stride = yuv.uv_stride; width = img.width; height = img.height; a = None; a_stride = img.width } *)
+    YUV420.make img.width img.height yuv.y yuv.y_stride yuv.u yuv.v yuv.uv_stride
 
   external rgba32_to_bgr32 : data -> int -> data -> int -> int * int -> unit = "caml_RGBA32_to_BGR32"
 

@@ -27,10 +27,9 @@ CAMLprim value caml_yuv420_fill(value img, value p)
   int height = YUV420_height(img);
   int y_stride = YUV420_y_stride(img);
   int uv_stride = YUV420_uv_stride(img);
-  unsigned char *data = YUV420_data(img);
-  memset(data, y, height*y_stride);
-  memset(data+height*y_stride, u, (height/2)*uv_stride);
-  memset(data+height*y_stride+(height/2)*uv_stride, v, (height/2)*uv_stride);
+  memset(YUV420_y(img), y, height*y_stride);
+  memset(YUV420_u(img), u, (height/2)*uv_stride);
+  memset(YUV420_v(img), v, (height/2)*uv_stride);
   CAMLreturn(Val_unit);
 }
 
@@ -287,13 +286,5 @@ CAMLprim value caml_yuv_greyscale(value img)
     }
   caml_leave_blocking_section();
 
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim value print_pointers(value img) {
-  CAMLparam1(img);
-  unsigned char *src = YUV420_data(img);
-  unsigned char *alpha = YUV420_alpha(img);
-  printf("POINTERS:\nsrc  : %p\nalpha: %p\n\n", src, alpha);
   CAMLreturn(Val_unit);
 }
