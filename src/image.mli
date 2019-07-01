@@ -299,6 +299,8 @@ module YUV420 : sig
 
   val fill_alpha : t -> int -> unit
 
+  val disk_alpha : t -> int -> int -> int -> unit
+
   val randomize : t -> unit
 
   val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit

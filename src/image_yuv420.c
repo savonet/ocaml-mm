@@ -337,3 +337,26 @@ CAMLprim value caml_yuv_greyscale(value img)
 
   CAMLreturn(Val_unit);
 }
+
+CAMLprim value caml_yuv_disk_alpha(value img, value _x, value _y, value _r)
+{
+  CAMLparam1(img);
+  yuv420 yuv;
+  yuv420_of_value(&yuv,img);
+  int x = Int_val(_x);
+  int y = Int_val(_y);
+  int radius = Int_val(_r);
+  radius = radius * radius;
+  int i, j;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < yuv.height; j++)
+    for (i = 0; i < yuv.width; i++)
+    {
+      int r = (i - x) * (i - x) + (j - y) * (j - y);
+      if (r > radius) A(yuv, i, j) = 0;
+    }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}

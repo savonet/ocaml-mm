@@ -70,6 +70,9 @@ module Data = struct
   let size img = length img
 
   let get = Bigarray.Array1.get
+
+  let fill buf x =
+    Bigarray.Array1.fill buf x
 end
 
 module Pixel = struct
@@ -572,7 +575,9 @@ module YUV420 = struct
 
   let ensure_alpha img =
     if img.alpha = None then
-      img.alpha <- Some (Data.alloc (img.height*img.y_stride))
+      let a = Data.alloc (img.height*img.y_stride) in
+      Data.fill a 0xff;
+      img.alpha <- Some a
 
   let has_alpha img =
     img.alpha <> None
@@ -742,6 +747,11 @@ module YUV420 = struct
   let scale ?(proportional=false) src dst =
     if proportional then scale_proportional src dst
     else scale_full src dst
+
+  external disk_alpha : t -> int -> int -> int -> unit = "caml_yuv_disk_alpha"
+  let disk_alpha img x y r =
+    ensure_alpha img;
+    disk_alpha img x y r
 
   module Effect = struct
     external greyscale : t -> unit = "caml_yuv_greyscale"
