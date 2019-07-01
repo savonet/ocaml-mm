@@ -246,6 +246,8 @@ module YUV420 : sig
 
   val of_RGBA32 : RGBA32.t -> t
 
+  val to_RGBA32 : t -> RGBA32.t
+
   val of_PPM : string -> t
 
   (** Width of an image. *)

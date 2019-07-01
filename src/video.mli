@@ -111,6 +111,8 @@ val size : t -> int
 (** Obtaine the i-th image of a video. *)
 val get : t -> int -> Image.t
 
+val set : t -> int -> Image.t -> unit
+
 val iter : (Image.t -> unit) -> t -> int -> int -> unit
 
 val blank : t -> int -> int -> unit

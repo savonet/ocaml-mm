@@ -93,9 +93,8 @@ CAMLprim value caml_yuv420_of_rgb24_string(value img, value s)
 
 CAMLprim value caml_yuv420_of_rgba32(value _rgb, value img)
 {
-  CAMLparam1(_rgb);
-  CAMLlocal1(ans);
-  frame rgb;
+  CAMLparam2(_rgb,img);
+   frame rgb;
   frame_of_value(_rgb, &rgb);
   yuv420 yuv;
   yuv420_of_value(&yuv, img);
@@ -113,6 +112,32 @@ CAMLprim value caml_yuv420_of_rgba32(value _rgb, value img)
         U(yuv,i,j) = UofRGB(r,g,b);
         V(yuv,i,j) = VofRGB(r,g,b);
         A(yuv,i,j) = Alpha(&rgb,i,j);
+      }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_yuv420_to_rgba32(value img, value _rgb)
+{
+  CAMLparam2(img,_rgb);
+  frame rgb;
+  frame_of_value(_rgb, &rgb);
+  yuv420 yuv;
+  yuv420_of_value(&yuv, img);
+  int i, j;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < yuv.height; j++)
+    for (i = 0; i < yuv.width; i++)
+      {
+        int y = Y(yuv,i,j);
+        int u = U(yuv,i,j);
+        int v = V(yuv,i,j);
+        Red(&rgb,i,j) = RofYUV(y,u,v);
+        Green(&rgb,i,j) = GofYUV(y,u,v);
+        Blue(&rgb,i,j) = BofYUV(y,u,v);
+        Alpha(&rgb,i,j) = yuv.alpha ? A(yuv,i,j) : 0xff;
       }
   caml_leave_blocking_section();
 

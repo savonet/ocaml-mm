@@ -603,6 +603,14 @@ module YUV420 = struct
     of_RGBA32 rgb img;
     img
 
+  external to_RGBA32 : t -> RGBA32.t -> unit = "caml_yuv420_to_rgba32"
+  let to_RGBA32 img =
+    let width = img.width in
+    let height = img.height in
+    let rgb = RGBA32.create width height in
+    to_RGBA32 img rgb;
+    rgb
+
   let of_PPM s =
     let img = of_RGBA32 (RGBA32.of_PPM s) in
     remove_alpha img;

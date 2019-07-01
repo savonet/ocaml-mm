@@ -66,6 +66,8 @@ let size vid =
 
 let get vid i = vid.(i)
 
+let set vid i img = vid.(i) <- img
+
 let iter f vid off len =
   for i = off to off + len - 1 do
     f vid.(i)
