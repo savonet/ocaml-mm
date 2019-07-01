@@ -89,6 +89,37 @@ module Pixel = struct
   external rgb_of_yuv : yuv -> rgb = "caml_rgb_of_yuv"
 end
 
+module Draw = struct
+  (* Besenham algorithm. *)
+  let line p (sx,sy) (dx,dy) =
+    let steep = (abs (dy - sy) > abs (dx - sx)) in
+    let sx, sy, dx, dy =
+      if steep then sy, sx, dy, dx
+      else sx, sy, dx, dy
+    in
+    let sx, sy, dx, dy =
+      if sx > dx then dx, dy, sx, sy
+      else sx, sy, dx, dy
+    in
+    let deltax = dx - sx in
+    let deltay = abs (dy - sy) in
+    let error = ref (deltax / 2) in
+    let ystep = if sy < dy then 1 else -1 in
+    let j = ref sy in
+    for i = sx to dx - 1 do
+      if steep then
+        p !j i
+      else
+        p i !j;
+      error := !error - deltay;
+      if !error < 0 then
+        (
+          j := !j + ystep;
+          error := !error + deltax;
+        )
+    done
+end
+
 module Motion_multi = struct
   type vectors_data = (int, Bigarray.nativeint_elt, Bigarray.c_layout) Bigarray.Array1.t
 

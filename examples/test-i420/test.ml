@@ -34,6 +34,8 @@ let () =
   YUV420.add img2 ~x:20 ~y:10 img;
   (* YUV420.fill img (Pixel.yuv_of_rgb (0xff,0,0)); *)
   (* YUV420.Effect.greyscale img; *)
+  YUV420.disk_alpha img 10 10 300;
+  Draw.line (fun i j -> YUV420.set_pixel_rgba img i j (0xff,0,0,0xff)) (10,30) (300,200);
   display img
 
   (*

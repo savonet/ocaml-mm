@@ -66,6 +66,10 @@ module Pixel : sig
   val rgb_of_yuv : yuv -> rgb
 end
 
+module Draw : sig
+  val line : (int -> int -> unit) -> int * int -> int * int -> unit
+end
+
 (** Operations on images stored in RGB8 format, ie RGB channels, one byte each. *)
 module RGB8 : sig
   (** Operations on colors. *)
