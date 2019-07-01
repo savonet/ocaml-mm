@@ -42,6 +42,17 @@ CAMLprim value caml_data_of_string(value s)
   CAMLreturn(ans);
 }
 
+CAMLprim value caml_data_to_string(value _data)
+{
+  CAMLparam1(_data);
+  CAMLlocal1(ans);
+  unsigned char* data = Caml_ba_data_val(_data);
+  long len = Caml_ba_array_val(_data)->dim[0];
+  ans = caml_alloc_string(len);
+  memcpy(String_val(ans), data, len);
+  CAMLreturn(ans);
+}
+
 CAMLprim value caml_data_copy(value _src)
 {
   CAMLparam1(_src);

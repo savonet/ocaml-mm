@@ -41,6 +41,8 @@ module Data : sig
 
   val of_string : string -> t
 
+  val to_string : t -> string
+
   val length : t -> int
 
   val blit : t -> int -> t -> int -> int -> unit
@@ -254,9 +256,13 @@ module YUV420 : sig
 
   val y : t -> Data.t
 
+  val y_stride : t -> int
+
   val u : t -> Data.t
 
   val v : t -> Data.t
+
+  val uv_stride : t -> int
 
   val data : t -> Data.t * Data.t * Data.t
 

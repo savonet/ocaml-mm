@@ -52,6 +52,8 @@ module Data = struct
     let data = aligned align (height*stride) in
     stride, data
 
+  external to_string : t -> string = "caml_data_to_string"
+
   external of_string : string -> t = "caml_data_of_string"
 
   let blit_all src dst = Bigarray.Array1.blit src dst
@@ -529,9 +531,13 @@ module YUV420 = struct
 
   let y img = img.y
 
+  let y_stride img = img.y_stride
+
   let u img = img.u
 
   let v img = img.v
+
+  let uv_stride img = img.uv_stride
 
   let data img = img.y, img.u, img.v
 
