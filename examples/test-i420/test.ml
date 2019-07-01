@@ -34,7 +34,6 @@ let () =
   YUV420.add img2 ~x:20 ~y:10 img;
   (* YUV420.fill img (Pixel.yuv_of_rgb (0xff,0,0)); *)
   (* YUV420.Effect.greyscale img; *)
-  YUV420.Effect.Alpha.scale img 0.7;
   display img
 
   (*
