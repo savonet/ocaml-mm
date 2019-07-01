@@ -550,6 +550,7 @@ module YUV420 = struct
     { y; y_stride; u; v; uv_stride; width; height; alpha=None }
 
   let make_data width height data y_stride uv_stride =
+    assert (Data.length data = height*(y_stride+uv_stride));
     let y = Data.sub data 0 (height*y_stride) in
     let u = Data.sub data (height*y_stride) ((height/2)*uv_stride) in
     let v = Data.sub data (height*y_stride+(height/2)*uv_stride) ((height/2)*uv_stride) in
@@ -580,11 +581,18 @@ module YUV420 = struct
     img.alpha <- None
 
   let of_YUV420_string ?y_stride ?uv_stride s width height =
-    let y_stride, uv_stride = default_stride width y_stride uv_stride in
+    (* let y_stride, uv_stride = default_stride width y_stride uv_stride in *)
+    let y_stride = Option.value ~default:width y_stride in
+    let uv_stride = Option.value ~default:(width/2) uv_stride in
     let data = Data.of_string s in
     make_data width height data y_stride uv_stride
 
-  let of_RGB24_string s width = failwith "Not implemented: of_RGB24_string"
+  external of_RGB24_string : t -> string -> unit = "caml_yuv420_of_rgb24_string"
+  let of_RGB24_string s width =
+    let height = String.length s / (3 * width) in
+    let img = create width height in
+    of_RGB24_string img s;
+    img
 
   external of_RGBA32 : RGBA32.t -> t -> unit = "caml_yuv420_of_rgba32"
   let of_RGBA32 rgb =

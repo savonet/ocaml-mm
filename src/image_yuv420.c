@@ -67,6 +67,30 @@ CAMLprim value caml_yuv420_to_int_image(value img)
   CAMLreturn(ans);
 }
 
+CAMLprim value caml_yuv420_of_rgb24_string(value img, value s)
+{
+  CAMLparam2(img,s);
+  yuv420 yuv;
+  yuv420_of_value(&yuv,img);
+  // We don't copy so we cannot release the lock
+  unsigned char *data = (unsigned char *)String_val(s);
+  int i,j;
+
+  for (j = 0; j < yuv.height; j++)
+    for (i = 0; i < yuv.width; i++)
+      {
+        int r = data[3*(j*yuv.width+i)+0];
+        int g = data[3*(j*yuv.width+i)+1];
+        int b = data[3*(j*yuv.width+i)+2];
+        Y(yuv,i,j) = YofRGB(r,g,b);
+        // TODO: don't do u/v twice
+        U(yuv,i,j) = UofRGB(r,g,b);
+        V(yuv,i,j) = VofRGB(r,g,b);
+      }
+
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value caml_yuv420_of_rgba32(value _rgb, value img)
 {
   CAMLparam1(_rgb);
