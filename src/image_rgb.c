@@ -231,7 +231,7 @@ CAMLprim value caml_rgb_blit_off_scale(value _src, value _dst, value d, value di
 
 CAMLprim value caml_rgb_fill(value f, value col)
 {
-  CAMLparam1(f);
+  CAMLparam2(f,col);
   frame rgb;
   frame_of_value(f,&rgb);
   int r = Int_val(Field(col, 0)),
@@ -249,6 +249,23 @@ CAMLprim value caml_rgb_fill(value f, value col)
       Blue(&rgb,i,j)  = b;
       Alpha(&rgb,i,j) = a;
     }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_rgb_fill_alpha(value f, value _a)
+{
+  CAMLparam2(f,_a);
+  frame rgb;
+  frame_of_value(f,&rgb);
+  int a = Int_val(_a);
+  int i,j;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < rgb.height; j++)
+    for (i = 0; i < rgb.width; i++)
+      Alpha(&rgb,i,j) = a;
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);

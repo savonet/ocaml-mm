@@ -301,6 +301,10 @@ module RGBA32 = struct
 
   external blank_all : t -> unit = "caml_rgb_blank"
 
+  let blank = blank_all
+
+  external fill_alpha : t -> int -> unit = "caml_rgb_fill_alpha"
+
   external of_RGB24_string : t -> string -> unit = "caml_rgb_of_rgb8_string"
   let of_RGB24_string data width =
     let height = (String.length data / 3) / width in
@@ -337,7 +341,13 @@ module RGBA32 = struct
     assert (0 <= j && j < img.height);
     set_pixel img i j
 
+  let get_pixel_rgba = get_pixel
+
+  let set_pixel_rgba = set_pixel
+
   external randomize_all : t -> unit = "caml_rgb_randomize"
+
+  let randomize = randomize_all
 
   module Scale = struct
     type kind = Linear | Bilinear
@@ -382,6 +392,8 @@ module RGBA32 = struct
         onto ?kind ?proportional src dst;
         dst
   end
+
+  let scale ?proportional src dst = Scale.onto ?proportional src dst
 
   external to_BMP : t -> string = "caml_rgb_to_bmp"
 

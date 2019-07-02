@@ -121,6 +121,10 @@ module RGBA32 : sig
 
   val set_pixel : t -> int -> int -> Color.t -> unit
 
+  val get_pixel_rgba : t -> int -> int -> Pixel.rgba
+
+  val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
+
   val copy : t -> t
 
   val blit : ?blank:bool -> ?x:int -> ?y:int -> ?w:int -> ?h:int -> t -> t -> unit
@@ -155,7 +159,15 @@ module RGBA32 : sig
 
   val blank_all : t -> unit
 
+  val fill_alpha : t -> int -> unit
+
+  val blank : t -> unit
+
   val randomize_all : t -> unit
+
+  val randomize : t -> unit
+
+  val scale : ?proportional:bool -> t -> t -> unit
 
   module Scale : sig
     type kind = Linear | Bilinear
