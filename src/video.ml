@@ -32,10 +32,7 @@
  *)
 
 module Image = struct
-  include Image.RGBA32
-  (* TODO: remove when switching to YUV420 *)
-  let blit src ?blank ?x ?y dst = blit ?blank ?x ?y src dst
-  let add src ?x ?y dst = add ?x ?y src dst
+  include Image.YUV420
 
   let create w h = create w h
 end

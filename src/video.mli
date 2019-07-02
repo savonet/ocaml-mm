@@ -35,7 +35,7 @@
 
 (** Images of videos. *)
 module Image : sig
-  type t = Image.RGBA32.t
+  type t = Image.YUV420.t
 
   val create : int -> int -> t
 
