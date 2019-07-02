@@ -1,13 +1,12 @@
 0.5.0 (unreleased)
-=======
+=====
 * New implementation of `YUV420`, added many function to manipulate those.
 * Enhanced `Video` module.
 
 0.4.1 (27-06-2019)
-* Fix memory leak in `RGBA32.of_RGB24_string`.
 =====
+* Fix memory leak in `RGBA32.of_RGB24_string`.
 * Add `YUV420.of_string`.
-
 
 0.4.0 (18-08-2018)
 =====
