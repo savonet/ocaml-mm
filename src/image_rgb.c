@@ -53,6 +53,7 @@
 #endif
 
 #include "config.h"
+#include "image_data.h"
 #include "image_pixel.h"
 #include "image_rgb.h"
 
@@ -119,11 +120,8 @@ static frame *rgb_copy(frame *src, frame *dst)
   dst->width = src->width;
   dst->height = src->height;
   dst->stride = src->stride;
-  dst->data = malloc(Rgb_data_size(src));
+  dst->data = memalign(ALIGNMENT_BYTES, Rgb_data_size(src));
   if (dst->data == NULL) caml_raise_out_of_memory();
-  // Disabling this since we are forgetting about dst->data without freeing:
-  // possible memory leak...
-  assert(0);
   memcpy(dst->data, src->data, Rgb_data_size(src));
 
   return dst;
@@ -299,7 +297,7 @@ CAMLprim value caml_rgb_of_rgb8_string(value _rgb, value _data)
   frame rgb;
   frame_of_value(_rgb, &rgb);
   int datalen = rgb.height * rgb.width * 3;
-  char *data = (char*)malloc(datalen);
+  char *data = (char*)memalign(ALIGNMENT_BYTES, datalen);
   if (data == NULL) caml_raise_out_of_memory();
   memcpy(data, String_val(_data), datalen);
 

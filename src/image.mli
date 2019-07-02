@@ -47,6 +47,8 @@ module Data : sig
 
   val blit : t -> int -> t -> int -> int -> unit
 
+  val blit_all : t -> t -> unit
+
   val copy : t -> t
 
   val round : int -> int -> int
@@ -284,6 +286,8 @@ module YUV420 : sig
 
   val data : t -> Data.t * Data.t * Data.t
 
+  val alpha : t -> Data.t option
+
   val dimensions : t -> int * int
 
   (** Size in bytes. *)
@@ -299,7 +303,7 @@ module YUV420 : sig
 
   val blit_all : t -> t -> unit
 
-  val blit : t -> ?blank:bool -> ?x:int -> ?y:int -> t -> unit
+  val blit : t -> t -> unit
 
   val scale : ?proportional:bool -> t -> t -> unit
 
@@ -319,9 +323,15 @@ module YUV420 : sig
 
   val randomize : t -> unit
 
-  val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
+  val get_pixel_y : t -> int -> int -> int
+
+  val get_pixel_u : t -> int -> int -> int
+
+  val get_pixel_v : t -> int -> int -> int
 
   val get_pixel_rgba : t -> int -> int -> Pixel.rgba
+
+  val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
 
   (** Convert to format useable by [Graphics.make_image]. *)
   val to_int_image : t -> int array array
@@ -407,6 +417,8 @@ module Generic : sig
 
   (** Create a generic image from a YUV420 image. *)
   val of_YUV420 : YUV420.t -> t
+
+  val to_YUV420 : t -> YUV420.t
 
   (** Convert a generic image from a format to another. *)
   val convert : ?copy:bool -> ?proportional:bool -> ?scale_kind:RGBA32.Scale.kind -> t -> t -> unit

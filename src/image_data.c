@@ -8,13 +8,7 @@
 #include <malloc.h>
 #include <string.h>
 
-#ifdef HAVE_MEMALIGN
-/* some systems have memalign() but no declaration for it */
-void *memalign(size_t align, size_t size);
-#else
-/* assume malloc alignment is sufficient */
-#define memalign(align,size) malloc (size)
-#endif
+#include "image_data.h"
 
 CAMLprim value caml_data_aligned(value _alignment, value _len)
 {
