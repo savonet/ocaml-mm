@@ -3,21 +3,34 @@ version: "dev"
 maintainer: "Romain Beauxis <toots@rastageeks.org>"
 authors: "The Savonet Team <savonet-users@lists.sourceforge.net>"
 homepage: "https://github.com/savonet/ocaml-mm"
-bug-reports: "https://github.com/savonet/ocaml-mm/issues"
-depends: ["ocaml" "ocamlfind"]
-depopts: [
-  "alsa" "ao" "pulseaudio" "gstreamer" "mad" "ogg" "ocamlsdl" "theora"
+build: [
+  ["./bootstrap"]
+  ["./configure" "--prefix" prefix]
+  [make]
 ]
+install: [
+  [make "install"]
+]
+remove: ["ocamlfind" "remove" "mm"]
+depends: [
+  "ocaml"
+  "ocamlfind" {build}
+]
+depopts: [
+  "alsa"
+  "ao"
+  "pulseaudio"
+  "gstreamer"
+  "mad"
+  "ogg"
+  "ocamlsdl"
+  "theora"
+]
+bug-reports: "https://github.com/savonet/ocaml-mm/issues"
+dev-repo: "git+https://github.com/savonet/ocaml-mm.git"
+synopsis:
+  "The mm library contains high-level to create and manipulate multimedia streams (audio, video, MIDI)"
 conflicts: [
   "ocaml-variants" {= "4.04.2+flambda"}
 ]
 flags: light-uninstall
-build: [
-  ["./bootstrap"]
-  ["./configure" "--prefix" prefix]
-  [make "clean"]
-  [make]
-]
-install: [make "install"]
-remove: ["ocamlfind" "remove" "mm"]
-dev-repo: "git+https://github.com/savonet/ocaml-mm.git"
