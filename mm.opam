@@ -1,11 +1,10 @@
 opam-version: "2.0"
 name: "mm"
-version: "dev"
 maintainer: "Romain Beauxis <toots@rastageeks.org>"
 authors: "The Savonet Team <savonet-users@lists.sourceforge.net>"
 homepage: "https://github.com/savonet/ocaml-mm"
 build: [
-  ["./bootstrap"]
+  ["./bootstrap"] {dev}
   ["./configure" "--prefix" prefix]
   [make]
 ]
