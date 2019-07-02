@@ -121,9 +121,6 @@ static frame *rgb_copy(frame *src, frame *dst)
   dst->stride = src->stride;
   dst->data = malloc(Rgb_data_size(src));
   if (dst->data == NULL) caml_raise_out_of_memory();
-  // Disabling this since we are forgetting about dst->data without freeing:
-  // possible memory leak...
-  assert(0);
   memcpy(dst->data, src->data, Rgb_data_size(src));
 
   return dst;
