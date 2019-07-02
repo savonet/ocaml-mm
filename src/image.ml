@@ -529,7 +529,7 @@ module RGBA32 = struct
 
       external of_color_simple : t -> int * int * int -> int -> unit = "caml_rgb_color_to_alpha_simple"
       (* TODO: this does not work yet. *)
-      external of_color : t -> int * int * int -> float -> float -> unit = "caml_rgb_color_to_alpha"
+      (* external of_color : t -> int * int * int -> float -> float -> unit = "caml_rgb_color_to_alpha" *)
       let of_color = of_color_simple
     end
   end
@@ -722,9 +722,7 @@ module YUV420 = struct
         )
       )
 
-  let blit src ?(blank=true) ?(x=0) ?(y=0) dst =
-    if x = 0 && y = 0 then blit_all src dst
-    else failwith "TODO: blit"
+  let blit src dst = blit_all src dst
 
   external randomize : t -> unit = "caml_yuv_randomize"
 
@@ -733,7 +731,7 @@ module YUV420 = struct
 
   external set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit = "caml_yuv420_set_pixel_rgba"
   (* [@@noalloc] *)
-  let set_pixel_rgba img i j ((r,g,b,a) as p) =
+  let set_pixel_rgba img i j ((_,_,_,a) as p) =
     assert (0 <= i && i < img.width && 0 <= j && j < img.height);
     if a <> 0xff then ensure_alpha img;
     set_pixel_rgba img i j p
@@ -1002,19 +1000,16 @@ module Generic = struct
         let src = to_RGBA32 src in
         let dst = to_RGBA32 dst in
         RGBA32.Scale.onto ?kind:scale_kind ~proportional src dst
-      (* TODO: restore this.................... *)
-        (*
       | YUV s, RGB d when s.yuv_pixel = Pixel.YUVJ420 && d.rgb_pixel = Pixel.RGBA32 ->
         let src = to_YUV420 src in
-        let src = RGBA32.of_YUV420 src in
+        let src = YUV420.to_RGBA32 src in
         let dst = to_RGBA32 dst in
         RGBA32.Scale.onto ?kind:scale_kind ~proportional src dst
       | RGB s, YUV d when s.rgb_pixel = Pixel.RGBA32 && d.yuv_pixel = Pixel.YUVJ420 ->
         let src = to_RGBA32 src in
-        let src = RGBA32.Scale.create ?kind:scale_kind ~proportional ~copy:false src dst.width dst.height in
+        let src = YUV420.of_RGBA32 src in
         let dst = to_YUV420 dst in
-        RGBA32.to_YUV420 src dst
-         *)
+        YUV420.scale ~proportional src dst
       | RGB s, RGB d when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.BGR32 ->
         if src.width = dst.width && src.height = dst.height then
           rgba32_to_bgr32 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride (src.width,src.height)
