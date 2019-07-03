@@ -13,7 +13,7 @@
 #include "image_rgb.h"
 #include "image_yuv420.h"
 
-#ifndef WIN32
+#ifndef _WIN32
 #define max(a,b) (a>b)?a:b
 #define min(a,b) (a<b)?a:b
 #endif
