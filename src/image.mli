@@ -31,7 +31,46 @@
  *
  *)
 
-(** Operations on images. Mostly only the RGBA32 format is supported for now. *)
+(** Operations on images. *)
+
+module Data : sig
+  type t = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+  (** external alloc : int -> t = "caml_data_alloc" *)
+  val alloc : int -> t
+
+  val of_string : string -> t
+
+  val to_string : t -> string
+
+  val length : t -> int
+
+  val blit : t -> int -> t -> int -> int -> unit
+
+  val blit_all : t -> t -> unit
+
+  val copy : t -> t
+
+  val round : int -> int -> int
+end
+
+module Pixel : sig
+  type rgba = int * int * int * int
+
+  type rgb = int * int * int
+
+  type yuv = int * int * int
+
+  type yuva = yuv * int
+
+  val yuv_of_rgb : rgb -> yuv
+
+  val rgb_of_yuv : yuv -> rgb
+end
+
+module Draw : sig
+  val line : (int -> int -> unit) -> int * int -> int * int -> unit
+end
 
 (** Operations on images stored in RGB8 format, ie RGB channels, one byte each. *)
 module RGB8 : sig
@@ -45,39 +84,10 @@ module RGB8 : sig
   end
 end
 
-(** Operations on images stored in YUV420 format, ie one luma (Y) and two chrominance (U and V) channels. *)
-module YUV420 : sig
-  (** Data of a channel. *)
-  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
-
-  (** An image in YUV420 format. *)
-  type t
-
-  (** Width of an image. *)
-  val width : t -> int
-
-  (** Height of an image. *)
-  val height : t -> int
-
-  (** Create an image of given width and height. *)
-  val create : int -> int -> t
-
-  val of_string : string -> int -> t
-
-  (** Clear an image (sets it to black). *)
-  val blank_all : t -> unit
-
-  val make : int -> int -> data -> int -> data -> data -> int -> t
-
-  val internal : t -> (data * int) * (data * data * int)
-end
-
 module BGRA : sig
   type t
 
-  type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
-
-  val data : t -> data
+  val data : t -> Data.t
 end
 
 (** Operations on images stored in RGBA32 format (ie RGB channels + an alpha
@@ -100,6 +110,8 @@ module RGBA32 : sig
 
   val data : t -> data
 
+  val size : t -> int
+
   val stride : t -> int
 
   val create : int -> int -> t
@@ -110,6 +122,10 @@ module RGBA32 : sig
   val get_pixel : t -> int -> int -> Color.t
 
   val set_pixel : t -> int -> int -> Color.t -> unit
+
+  val get_pixel_rgba : t -> int -> int -> Pixel.rgba
+
+  val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
 
   val copy : t -> t
 
@@ -128,8 +144,6 @@ module RGBA32 : sig
 
   val to_BGRA : t -> BGRA.t
 
-  val of_YUV420 : YUV420.t -> t
-
   val to_int_image : t -> int array array
 
   val to_BMP : t -> string
@@ -147,7 +161,15 @@ module RGBA32 : sig
 
   val blank_all : t -> unit
 
+  val fill_alpha : t -> int -> unit
+
+  val blank : t -> unit
+
   val randomize_all : t -> unit
+
+  val randomize : t -> unit
+
+  val scale : ?proportional:bool -> t -> t -> unit
 
   module Scale : sig
     type kind = Linear | Bilinear
@@ -217,6 +239,111 @@ module RGBA32 : sig
 
       val arrows : vectors -> t -> unit
     end
+  end
+end
+
+(** Operations on images stored in YUV420 format, ie one luma (Y) and two chrominance (U and V) channels. *)
+module YUV420 : sig
+  (** An image in YUV420 format. *)
+  type t
+
+  val make : int -> int -> Data.t -> int -> Data.t -> Data.t -> int -> t
+
+  val make_data : int -> int -> Data.t -> int -> int -> t
+
+  val create : ?y_stride:int -> ?uv_stride:int -> int -> int -> t
+
+  (** Ensure that the image has an alpha channel. *)
+  val ensure_alpha : t -> unit
+
+  val remove_alpha : t -> unit
+
+  val of_YUV420_string : ?y_stride:int -> ?uv_stride:int -> string -> int -> int -> t
+
+  val of_RGB24_string : string -> int -> t
+
+  val of_RGBA32 : RGBA32.t -> t
+
+  val to_RGBA32 : t -> RGBA32.t
+
+  val of_PPM : string -> t
+
+  (** Width of an image. *)
+  val width : t -> int
+
+  (** Height of an image. *)
+  val height : t -> int
+
+  val y : t -> Data.t
+
+  val y_stride : t -> int
+
+  val u : t -> Data.t
+
+  val v : t -> Data.t
+
+  val uv_stride : t -> int
+
+  val data : t -> Data.t * Data.t * Data.t
+
+  val alpha : t -> Data.t option
+
+  val dimensions : t -> int * int
+
+  (** Size in bytes. *)
+  val size : t -> int
+
+  (** Whether the image has an alpha channel. *)
+  val has_alpha : t -> bool
+
+  (* (\** Obtaine data with given stride. No copy is made when possible. *\) *)
+  (* val data_stride : t -> int -> int -> Data.t * Data.t * Data.t *)
+
+  val copy : t -> t
+
+  val blit_all : t -> t -> unit
+
+  val blit : t -> t -> unit
+
+  val scale : ?proportional:bool -> t -> t -> unit
+
+  (** [blit_all src dst] blits an entire image. *)
+  val blank_all : t -> unit
+
+  (** Add the fist image to the second. *)
+  val add : t -> ?x:int -> ?y:int -> t -> unit
+
+  val blank : t -> unit
+
+  val fill : t -> Pixel.yuv -> unit
+
+  val fill_alpha : t -> int -> unit
+
+  val disk_alpha : t -> int -> int -> int -> unit
+
+  val randomize : t -> unit
+
+  val get_pixel_y : t -> int -> int -> int
+
+  val get_pixel_u : t -> int -> int -> int
+
+  val get_pixel_v : t -> int -> int -> int
+
+  val get_pixel_rgba : t -> int -> int -> Pixel.rgba
+
+  val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
+
+  (** Convert to format useable by [Graphics.make_image]. *)
+  val to_int_image : t -> int array array
+
+  module Effect : sig
+    val greyscale : t -> unit
+
+    val sepia : t -> unit
+
+    val invert : t -> unit
+
+    val lomo : t -> unit
   end
 end
 
@@ -290,6 +417,8 @@ module Generic : sig
 
   (** Create a generic image from a YUV420 image. *)
   val of_YUV420 : YUV420.t -> t
+
+  val to_YUV420 : t -> YUV420.t
 
   (** Convert a generic image from a format to another. *)
   val convert : ?copy:bool -> ?proportional:bool -> ?scale_kind:RGBA32.Scale.kind -> t -> t -> unit

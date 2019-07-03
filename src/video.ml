@@ -31,57 +31,61 @@
  *
  *)
 
-module Frame = Image.RGBA32
+module Image = struct
+  include Image.RGBA32
+  (* TODO: remove when switching to YUV420 *)
+  let blit src ?blank ?x ?y dst = blit ?blank ?x ?y src dst
+  let add src ?x ?y dst = add ?x ?y src dst
 
-type frame = Frame.t
+  let create w h = create w h
+end
 
-type buffer = frame array
+type t = Image.t array
 
-let size = Array.length
-
-let append = Array.append
-
-let iter_all buf f =
-  for i = 0 to Array.length buf - 1 do
-    f buf.(i)
-  done
-
-let map_all buf f =
-  for i = 0 to Array.length buf - 1 do
-    buf.(i) <- f buf.(i)
-  done
-
-(* TODO: we don't want to fill it with useless frames *)
-let create len =
-  let i = Frame.create 0 0 in
-  Array.make len i
+type buffer = t
 
 let make len width height =
-  Array.init len (fun _ -> Frame.create width height)
+  Array.init len (fun _ -> Image.create width height)
 
-(* TODO: more parameters. *)
+let single img = [|img|]
+
 let blit sbuf sofs dbuf dofs len =
   for i = 0 to len - 1 do
-    Frame.blit_all sbuf.(sofs + i) dbuf.(dofs + i)
+    Image.blit_all sbuf.(sofs + i) dbuf.(dofs + i)
   done
 
-let randomize buf ofs len =
-  for i = ofs to ofs + len - 1 do
-    Frame.randomize_all buf.(i)
+let copy vid =
+  Array.map Image.copy vid
+
+let length vid =
+  Array.length vid
+
+let size vid =
+  let n = ref 0 in
+  for i = 0 to Array.length vid - 1 do
+    n := !n + Image.size vid.(i)
+  done;
+  !n
+
+let get vid i = vid.(i)
+
+let set vid i img = vid.(i) <- img
+
+let iter f vid off len =
+  for i = off to off + len - 1 do
+    f vid.(i)
   done
 
-let blank buf ofs len =
-  for i = ofs to ofs + len - 1 do
-    Frame.blank_all buf.(i)
-  done
+let blank vid off len =
+  iter Image.blank vid off len
 
-let copy buf =
-  Array.map Frame.copy buf
+let randomize vid off len =
+  iter Image.randomize vid off len
 
 module RE = struct
-  type t = frame
+  type t = Image.t
 
-  let create () = Frame.create 0 0
+  let create () = Image.create 0 0
 
   let blit = blit
 end
@@ -103,6 +107,7 @@ module FPS = struct
       n, 100
 end
 
+(*
 module IO = struct
   exception Invalid_file
 
@@ -253,3 +258,4 @@ module IO = struct
     end
   end
 end
+ *)
