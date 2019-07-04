@@ -32,5 +32,6 @@ synopsis:
   "The mm library contains high-level to create and manipulate multimedia streams (audio, video, MIDI)"
 conflicts: [
   "ocaml-variants" {= "4.04.2+flambda"}
+  "liquidsoap" {< "1.4.0"}
 ]
 flags: light-uninstall
