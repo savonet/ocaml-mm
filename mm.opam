@@ -14,7 +14,7 @@ install: [
   [make "install"]
 ]
 depends: [
-  "ocaml"
+  "ocaml" {>= "4.08.0"}
   "ocamlfind" {build}
 ]
 depopts: [
