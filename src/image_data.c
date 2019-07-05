@@ -5,7 +5,7 @@
 #include <caml/misc.h>
 #include <caml/mlvalues.h>
 
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "image_data.h"
