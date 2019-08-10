@@ -226,7 +226,8 @@ module IO = struct
 
       method write (buf:buffer) ofs len =
         for i = ofs to ofs + len - 1 do
-          let s = Image.to_RGB24_string buf.(i) in
+          (* let s = Image.to_RGB24_string buf.(i) in *)
+          let s = failwith "TODO: output YUV420 avi" in
           self#output s;
           datalen <- datalen + String.length s;
         done;
