@@ -87,9 +87,9 @@ module RE = struct
   let blit = blit
 end
 
-module Ringbuffer_ext = Ringbuffer.Make_ext (RE)
+(* module Ringbuffer_ext = Ringbuffer.Make_ext (RE) *)
 
-module Ringbuffer = Ringbuffer.Make (RE)
+(* module Ringbuffer = Ringbuffer.Make (RE) *)
 
 module FPS = struct
   type t = float
@@ -104,7 +104,6 @@ module FPS = struct
       n, 100
 end
 
-(*
 module IO = struct
   exception Invalid_file
 
@@ -225,9 +224,9 @@ module IO = struct
       val mutable datalen = 0
       val mutable dataframes = 0
 
-      method write buf ofs len =
+      method write (buf:buffer) ofs len =
         for i = ofs to ofs + len - 1 do
-          let s = Image.RGBA32.to_RGB24_string buf.(i) in
+          let s = Image.to_RGB24_string buf.(i) in
           self#output s;
           datalen <- datalen + String.length s;
         done;
@@ -255,4 +254,3 @@ module IO = struct
     end
   end
 end
- *)

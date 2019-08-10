@@ -132,7 +132,7 @@ let to_32 rgb surface =
   done
 *)
 
-external to_32 : Video.frame -> (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Array1.t -> (int * int * int) -> unit = "caml_sdl_rgb_to32"
+external to_32 : Video.Image.t -> (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Array1.t -> (int * int * int) -> unit = "caml_sdl_rgb_to32"
 
 let to_32 rgb surface =
   let sbuf = Sdlvideo.pixel_data_32 surface in

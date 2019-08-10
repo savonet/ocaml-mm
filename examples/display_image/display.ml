@@ -6,7 +6,7 @@ let read_PPM ?alpha fname =
   let data = Bytes.create len in
   really_input ic data 0 len;
   close_in ic;
-  Img.of_PPM ?alpha data
+  Img.of_PPM ?alpha (Bytes.unsafe_to_string data)
 
 let () =
   let fname = Sys.argv.(1) in

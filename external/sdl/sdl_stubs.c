@@ -43,7 +43,7 @@
 #include <arpa/inet.h>
 #include <assert.h>
 
-#include "image_c.h"
+#include "image_rgb.h"
 
 CAMLprim value caml_sdl_rgb_to32(value _rgb, value _surf, value shift)
 {

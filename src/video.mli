@@ -129,7 +129,6 @@ module FPS : sig
   val to_frac : t -> int * int
 end
 
-(*
 module IO : sig
   exception Invalid_file
 
@@ -163,4 +162,3 @@ module IO : sig
     class to_avi_file : string -> FPS.t -> int -> int -> t
   end
 end
-*)

@@ -2,7 +2,7 @@ SOURCES = ringbuffer.mli ringbuffer.ml IO.ml audio_c.c audio.mli audio.ml \
 image_data.h image_data.c image_pixel.h image_pixel.c image_rgb.h image_rgb.c image_yuv420.h image_yuv420.c \
 image.mli image.ml video.mli video.ml MIDI.mli MIDI.ml synth.mli synth.ml
 RESULT = mm
-LIBINSTALL_FILES := *.cm* *.mli *.so *.a
+LIBINSTALL_FILES := $(wildcard *.mli *.cmi *.cma *.cmxa *.cmx *.cmxs *.a *.so)
 OCAMLFLAGS = @OCAMLFLAGS@
 OCAMLNCFLAGS = @OCAMLNCFLAGS@
 OCAMLLDFLAGS = -linkall

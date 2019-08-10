@@ -32,7 +32,7 @@
  *)
 
 let rw channels samplerate ?(device="default") ?(playback=false) ?(capture=false) ?(blocking=true) ?(buffer_size=1024) ?(periods=4) () =
-object (self)
+object
   (* inherit Audio.IO.rw_bufferized *)
 
   method version = Alsa.get_version ()

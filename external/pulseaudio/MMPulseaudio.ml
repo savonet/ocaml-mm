@@ -34,7 +34,7 @@
 open Pulseaudio
 
 class writer client_name stream_name channels rate =
-object (self)
+object
   val dev =
     let sample =
       {
