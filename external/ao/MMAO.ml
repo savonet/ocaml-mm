@@ -33,7 +33,7 @@
 
 (* unit argument because we might put optional arguments for parameters *)
 class writer channels rate =
-object (self)
+object
   val dev = Ao.open_live ~channels ~rate ~byte_format:`LITTLE_ENDIAN ()
 
   method write buf ofs len =
