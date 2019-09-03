@@ -37,6 +37,8 @@
 #include <caml/memory.h>
 #include <caml/misc.h>
 #include <caml/mlvalues.h>
+#include <caml/bigarray.h>
+#include <caml/threads.h>
 
 #include <stdint.h>
 
@@ -89,20 +91,6 @@ static inline int32_t int32_of_int24(int24_t x) {
 #include <string.h>
 
 #include "config.h"
-
-/* Optimized implementation of Array.blit for float arrays.
- * See http://caml.inria.fr/mantis/view.php?id=2787
- */
-CAMLprim value caml_float_array_blit(value _src, value _src_off,
-                                     value _dst, value _dst_off, value _len) {
-  int src_off = Int_val(_src_off) ;
-  int dst_off = Int_val(_dst_off) ;
-  int len = Int_val(_len) ;
-  int i ;
-  for (i=0 ; i<len ; i++)
-    Store_double_field(_dst,dst_off+i,Double_field(_src,src_off+i)) ;
-  return Val_unit ;
-}
 
 static inline int16_t clip(double s)
 {
@@ -211,7 +199,7 @@ CAMLprim value caml_float_pcm_to_s32le(value a, value _offs, value _dst, value _
   int len = Int_val(_len);
   int nc = Wosize_val(a);
   int dst_len = 4 * len * nc;
-  value src;
+  float *src;
   int32_t *dst = (int32_t*)Bytes_val(_dst);
 
   if (nc == 0) CAMLreturn(Val_int(0));
@@ -221,14 +209,16 @@ CAMLprim value caml_float_pcm_to_s32le(value a, value _offs, value _dst, value _
 
   for (c = 0; c < nc; c++)
   {
-    src = Field(a, c);
+    src = Caml_ba_data_val(Field(a, c));
+    caml_release_runtime_system();
     for (i = 0; i < len; i++)
     {
-      dst[i*nc+c] = s32_clip(Double_field(src, i + offs));
+      dst[i*nc+c] = s32_clip(src[i + offs]);
 #ifdef BIGENDIAN
       dst[i*nc+c] = bswap_32(dst[i*nc+c]);
 #endif
     }
+    caml_acquire_runtime_system();
   }
 
   CAMLreturn(Val_int(dst_len));
@@ -243,7 +233,7 @@ CAMLprim value caml_float_pcm_to_s24le(value a, value _offs, value _dst, value _
   int len = Int_val(_len);
   int nc = Wosize_val(a);
   int dst_len = 3 * len * nc;
-  value src;
+  float *src;
   int24_t *dst = (int24_t*)Bytes_val(_dst);
 
   if (nc == 0) CAMLreturn(Val_int(0));
@@ -253,9 +243,11 @@ CAMLprim value caml_float_pcm_to_s24le(value a, value _offs, value _dst, value _
 
   for (c = 0; c < nc; c++)
   {
-    src = Field(a, c);
+    src = Caml_ba_data_val(Field(a, c));
+    caml_release_runtime_system();
     for (i = 0; i < len; i++)
-      s24_clip(Double_field(src, i + offs), dst[i*nc+c]);
+      s24_clip(src[i + offs], dst[i*nc+c]);
+    caml_acquire_runtime_system();
   }
 
   CAMLreturn(Val_int(dst_len));
@@ -270,7 +262,7 @@ CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _ds
   int len = Int_val(_len);
   int nc = Wosize_val(a);
   int dst_len = 2 * len * nc;
-  value src;
+  float *src;
   int16_t *dst = (int16_t*)Bytes_val(_dst);
 
   if (nc == 0) CAMLreturn(Val_int(0));
@@ -281,10 +273,10 @@ CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _ds
   if (little_endian == 1)
     for (c = 0; c < nc; c++)
     {
-      src = Field(a, c);
+      src = Caml_ba_data_val(Field(a, c));
       for (i = 0; i < len; i++)
       {
-        dst[i*nc+c] = clip(Double_field(src, i + offs));
+        dst[i*nc+c] = clip(src[i + offs]);
 #ifdef BIGENDIAN
         dst[i*nc+c] = bswap_16(dst[i*nc+c]);
 #endif
@@ -293,10 +285,10 @@ CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _ds
   else
     for (c = 0; c < nc; c++)
     {
-      src = Field(a, c);
+      src = Caml_ba_data_val(Field(a, c));
       for (i = 0; i < len; i++)
       {
-        dst[i*nc+c] = clip(Double_field(src, i + offs));
+        dst[i*nc+c] = clip(src[i + offs]);
 #ifndef BIGENDIAN
         dst[i*nc+c] = bswap_16(dst[i*nc+c]);
 #endif
@@ -326,7 +318,7 @@ CAMLprim value caml_float_pcm_to_u8(value a, value _offs,
   int len = Int_val(_len);
   int nc = Wosize_val(a);
   int dst_len = len * nc;
-  value src;
+  float *src;
   uint8_t *dst = (uint8_t*)Bytes_val(_dst);
 
   if (nc == 0) CAMLreturn(Val_int(0));
@@ -336,11 +328,13 @@ CAMLprim value caml_float_pcm_to_u8(value a, value _offs,
 
   for (c = 0; c < nc; c++)
   {
-    src = Field(a, c);
+    src = (float*)Caml_ba_data_val(Field(a, c));
+    caml_release_runtime_system();
     for (i = 0; i < len; i++)
     {
-      dst[i*nc+c] = u8_clip(Double_field(src, i + offs));
+      dst[i*nc+c] = u8_clip(src[i + offs]);
     }
+    caml_acquire_runtime_system();
    }
 
   CAMLreturn(Val_int(dst_len));
@@ -351,7 +345,6 @@ CAMLprim value caml_float_pcm_of_u8_native(
     value _dst, value _dst_off, value _length)
 {
   CAMLparam2(_src, _dst) ;
-  CAMLlocal1(dstc) ;
   const char* src = String_val(_src) ;
   int offset = Int_val(_offset) ;
   int len = Int_val(_length) ;
@@ -359,6 +352,7 @@ CAMLprim value caml_float_pcm_of_u8_native(
   int nc = Wosize_val(_dst) ;
   int dst_len ;
   int i,c ;
+  float * dstc;
 
   if (nc == 0) CAMLreturn(Val_unit);
   dst_len = Wosize_val(Field(_dst, 0)) / Double_wosize ;
@@ -367,10 +361,11 @@ CAMLprim value caml_float_pcm_of_u8_native(
     caml_invalid_argument("convert_native: output buffer too small");
 
   for (c=0 ; c<nc ; c++) {
-    dstc = Field(_dst,c) ;
-    for (i=0 ; i<len; i++) {
-      Store_double_field(dstc, dst_off+i, get_u8(src,offset,nc,c,i)) ;
-    }
+    dstc = (float*)Caml_ba_data_val(Field(_dst,c));
+    caml_release_runtime_system();
+    for (i=0 ; i<len; i++)
+      dstc[dst_off+i] = get_u8(src,offset,nc,c,i) ;
+    caml_acquire_runtime_system();
   }
 
   CAMLreturn(Val_unit) ;
@@ -384,7 +379,6 @@ CAMLprim value caml_float_pcm_of_u8_byte(value* argv, int argn)
 CAMLprim value caml_float_pcm_convert_s32le_native(value _src, value _offset, value _dst, value _dst_off, value _length)
 {
   CAMLparam2(_src, _dst) ;
-  CAMLlocal1(dstc) ;
   const char* src = String_val(_src) ;
   int offset = Int_val(_offset) ;
   int len = Int_val(_length) ;
@@ -392,6 +386,7 @@ CAMLprim value caml_float_pcm_convert_s32le_native(value _src, value _offset, va
   int nc = Wosize_val(_dst) ;
   int dst_len ;
   int i,c ;
+  float *dstc;
 
   if (nc == 0) CAMLreturn(Val_unit);
   dst_len = Wosize_val(Field(_dst, 0)) / Double_wosize ;
@@ -400,9 +395,11 @@ CAMLprim value caml_float_pcm_convert_s32le_native(value _src, value _offset, va
     caml_invalid_argument("convert_native: output buffer too small");
 
   for (c=0 ; c<nc ; c++) {
-    dstc = Field(_dst,c) ;
+    dstc = Caml_ba_data_val(Field(_dst,c));
+    caml_release_runtime_system();
     for (i=0 ; i<len; i++)
-      Store_double_field(dstc, dst_off+i, get_s32le(src,offset,nc,c,i)) ;
+      dstc[dst_off+i] = get_s32le(src,offset,nc,c,i);
+    caml_acquire_runtime_system();
   }
 
   CAMLreturn(Val_unit) ;
@@ -416,7 +413,6 @@ CAMLprim value caml_float_pcm_convert_s32le_byte(value* argv, int argn)
 CAMLprim value caml_float_pcm_convert_s24le_native(value _src, value _offset, value _dst, value _dst_off, value _length)
 {
   CAMLparam2(_src, _dst) ;
-  CAMLlocal1(dstc) ;
   const char* src = String_val(_src) ;
   int offset = Int_val(_offset) ;
   int len = Int_val(_length) ;
@@ -424,6 +420,7 @@ CAMLprim value caml_float_pcm_convert_s24le_native(value _src, value _offset, va
   int nc = Wosize_val(_dst) ;
   int dst_len ;
   int i,c ;
+  float* dstc;
 
   if (nc == 0) CAMLreturn(Val_unit);
   dst_len = Wosize_val(Field(_dst, 0)) / Double_wosize ;
@@ -432,9 +429,11 @@ CAMLprim value caml_float_pcm_convert_s24le_native(value _src, value _offset, va
     caml_invalid_argument("convert_native: output buffer too small");
 
   for (c=0 ; c<nc ; c++) {
-    dstc = Field(_dst,c) ;
+    dstc = Caml_ba_data_val(Field(_dst,c));
+    caml_release_runtime_system();
     for (i=0 ; i<len; i++)
-      Store_double_field(dstc, dst_off+i, get_s24le(src,offset,nc,c,i)) ;
+      dstc[dst_off+i] = get_s24le(src,offset,nc,c,i);
+    caml_acquire_runtime_system();
   }
 
   CAMLreturn(Val_unit) ;
@@ -448,13 +447,13 @@ CAMLprim value caml_float_pcm_convert_s24le_byte(value* argv, int argn)
 CAMLprim value caml_float_pcm_convert_s16_native(value _src, value _offset, value _dst, value _dst_off, value _length, int little_endian)
 {
   CAMLparam2(_src, _dst) ;
-  CAMLlocal1(dstc) ;
   const char* src = String_val(_src) ;
   int offset = Int_val(_offset) ;
   int len = Int_val(_length) ;
   int dst_off = Int_val(_dst_off) ;
   int nc = Wosize_val(_dst) ;
   int dst_len ;
+  float *dstc;
   int i,c ;
 
   if (nc == 0) CAMLreturn(Val_unit);
@@ -465,15 +464,19 @@ CAMLprim value caml_float_pcm_convert_s16_native(value _src, value _offset, valu
 
   if (little_endian == 1)
     for (c=0 ; c<nc ; c++) {
-      dstc = Field(_dst,c) ;
+      dstc = (float*)Caml_ba_data_val(Field(_dst,c));
+      caml_release_runtime_system();
       for (i=0 ; i<len; i++)
-        Store_double_field(dstc, dst_off+i, get_s16le(src,offset,nc,c,i)) ;
+        dstc[dst_off+i] = get_s16le(src,offset,nc,c,i);
+      caml_acquire_runtime_system();
     }
   else
     for (c=0 ; c<nc ; c++) {
-      dstc = Field(_dst,c) ;
+      dstc = (float*)Caml_ba_data_val(Field(_dst,c));
+      caml_release_runtime_system();
       for (i=0 ; i<len; i++)
-        Store_double_field(dstc, dst_off+i, get_s16be(src,offset,nc,c,i)) ;
+        dstc[dst_off+i] = get_s16be(src,offset,nc,c,i);
+      caml_acquire_runtime_system();
   }
 
   CAMLreturn(Val_unit) ;

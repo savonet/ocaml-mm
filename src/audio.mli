@@ -83,7 +83,7 @@ end
 (** Operations on mono buffers (with only one channel). *)
 module Mono : sig
   (** A mono buffer. *)
-  type buffer = float array
+  type buffer = (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t
 
   val create : int -> buffer
 
@@ -179,7 +179,7 @@ module Mono : sig
 	val blackman_nuttall : t -> Complex.t array -> unit
       end
 
-      val notes : int -> t -> ?window:(Complex.t array -> unit) -> ?note_min:int -> ?note_max:int -> ?volume_min:float -> ?filter_harmonics:bool -> float array -> int -> int -> (Note.t * float) list
+      val notes : int -> t -> ?window:(Complex.t array -> unit) -> ?note_min:int -> ?note_max:int -> ?volume_min:float -> ?filter_harmonics:bool -> buffer -> int -> int -> (Note.t * float) list
 
       val loudest_note : (Note.t * float) list -> (Note.t * float) option
 
