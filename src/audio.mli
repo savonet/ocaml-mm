@@ -103,7 +103,7 @@ module Mono : sig
 
   val amplify : float -> buffer -> int -> int -> unit
 
-  val resample : ?mode:[`Nearest | `Linear] -> float -> buffer -> int -> int -> buffer
+  val resample : ?mode:[`Nearest | `Linear] -> float -> buffer -> buffer
 
   val clip : buffer -> int -> int -> unit
 
@@ -353,7 +353,7 @@ module S32LE : sig
   val to_audio : string -> int -> buffer -> int -> int -> unit
 end
 
-val resample : ?mode:[`Nearest | `Linear] -> float -> buffer -> int -> int -> buffer
+val resample : ?mode:[`Nearest | `Linear] -> float -> buffer -> buffer
 
 (** Same as [Array.blit] for audio data. *)
 val blit : buffer -> int -> buffer -> int -> int -> unit

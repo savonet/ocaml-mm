@@ -202,17 +202,18 @@ module Mono = struct
       buf.{i} <- Sample.clip buf.{i}
     done
 
-  let resample ?(mode=`Nearest) ratio inbuf offs len =
+  let resample ?(mode=`Nearest) ratio inbuf =
+    let len = length inbuf in
     if ratio = 1. then
       let outbuf = create len in
-      blit inbuf offs outbuf 0 len;
+      Bigarray.Array1.blit inbuf outbuf;
       outbuf
     else if mode = `Nearest then
       let outlen = int_of_float (float len *. ratio) in
       let outbuf = create outlen in
       for i = 0 to outlen - 1 do
         let pos = min (int_of_float ((float i /. ratio) +. 0.5)) (len - 1) in
-	outbuf.{i} <- inbuf.{pos + offs}
+	Bigarray.Array1.unsafe_set outbuf i (Bigarray.Array1.unsafe_get inbuf pos)
       done;
       outbuf
     else
@@ -222,10 +223,11 @@ module Mono = struct
         let ir = float i /. ratio in
 	let pos = min (int_of_float ir) (len - 1) in
         if pos = len - 1 then
-	  outbuf.{i} <- inbuf.{pos + offs}
+	  Bigarray.Array1.unsafe_set outbuf i (Bigarray.Array1.unsafe_get inbuf pos)
         else
           let a = ir -. float pos in
-          outbuf.{i} <- inbuf.{pos + offs} *. (1. -. a) +. inbuf.{pos + offs} *. a
+          (* TODO: read this again, it looks like a bug here... *)
+          outbuf.{i} <- inbuf.{pos} *. (1. -. a) +. inbuf.{pos} *. a
       done;
       outbuf
 
@@ -943,8 +945,8 @@ let to_mono b =
 
 let of_mono b = [|b|]
 
-let resample ?mode ratio buf ofs len =
-  map (fun buf -> Mono.resample ?mode ratio buf ofs len) buf
+let resample ?mode ratio buf =
+  map (fun buf -> Mono.resample ?mode ratio buf) buf
 
 module U8 = struct
   external to_audio :
