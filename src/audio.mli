@@ -91,6 +91,9 @@ module Mono : sig
 
   val copy : buffer -> buffer
 
+  (** Length in samples. *)
+  val length : buffer -> int
+
   val duration : buffer -> int
 
   val append : buffer -> buffer -> buffer

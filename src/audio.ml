@@ -142,7 +142,9 @@ module Mono = struct
 
   let create n : buffer = Bigarray.Array1.create Bigarray.float32 Bigarray.c_layout n
 
-  let duration (buf : buffer) = Bigarray.Array1.dim buf
+  let length (buf : buffer) = Bigarray.Array1.dim buf
+
+  let duration = length
 
   let clear (b : buffer) ofs len = Bigarray.Array1.fill (Bigarray.Array1.sub b ofs len) 0.
 
@@ -150,14 +152,14 @@ module Mono = struct
     Bigarray.Array1.blit (Bigarray.Array1.sub src soff len) (Bigarray.Array1.sub dst doff len)
 
   let copy buf =
-    let len = duration buf in
+    let len = length buf in
     let ans = create len in
     blit buf 0 ans 0 len;
     ans
 
   let append b1 b2 =
-    let l1 = duration b1 in
-    let l2 = duration b2 in
+    let l1 = length b1 in
+    let l2 = length b2 in
     let ans = create (l1 + l2) in
     blit b1 0 ans 0 l1;
     blit b2 0 ans l1 l2;
@@ -245,7 +247,7 @@ module Mono = struct
 	}
 
     let prepare buf len =
-      if duration buf.buffer >= len then
+      if length buf.buffer >= len then
 	buf.buffer
       else
 	(* TODO: optionally blit the old buffer onto the new one. *)
@@ -259,7 +261,9 @@ module Mono = struct
 	buffer = create len
       }
 
-    let duration buf = duration buf.buffer
+    let length buf = length buf.buffer
+
+    let duration = length
   end
 
   module Analyze = struct
