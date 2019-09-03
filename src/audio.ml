@@ -226,18 +226,18 @@ module Mono = struct
       done;
       outbuf
 
-  module RE =
+  module B =
   struct
-    type t = float
+    type t = buffer
 
-    let create () = 0.
+    let create = create
 
-    let blit = Array.blit
+    let blit = blit
   end
 
-  module Ringbuffer_ext = Ringbuffer.Make_ext (RE)
+  module Ringbuffer_ext = Ringbuffer.Make_ext (B)
 
-  module Ringbuffer = Ringbuffer.Make (RE)
+  module Ringbuffer = Ringbuffer.Make (B)
 
   (* TODO: refined allocation/deallocation policies *)
   module Buffer_ext = struct

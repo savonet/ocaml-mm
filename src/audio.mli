@@ -113,9 +113,9 @@ module Mono : sig
 
   val mult : buffer -> int -> buffer -> int -> int -> unit
 
-  module Ringbuffer_ext : Ringbuffer.R with type elt = float
+  module Ringbuffer_ext : Ringbuffer.R with type buffer = buffer
 
-  module Ringbuffer : Ringbuffer.R with type elt = float
+  module Ringbuffer : Ringbuffer.R with type buffer = buffer
 
   (** Buffers of variable size. These are particularly useful for temporary
       buffers. *)

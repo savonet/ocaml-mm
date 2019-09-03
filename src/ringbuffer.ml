@@ -31,18 +31,16 @@
  *
  *)
 
-module type Elt = sig
+module type Buffer = sig
   type t
 
-  val create : unit -> t
+  val create : int -> t
 
-  val blit : t array -> int -> t array -> int -> int -> unit
+  val blit : t -> int -> t -> int -> int -> unit
 end
 
 module type R = sig
-  type elt
-
-  type buffer = elt array
+  type buffer
 
   type t
 
@@ -65,10 +63,8 @@ module type R = sig
   val transmit : t -> (buffer -> int -> int -> int) -> int
 end
 
-module Make (E:Elt) = struct
-  type elt = E.t
-
-  type buffer = elt array
+module Make (B:Buffer) = struct
+  type buffer = B.t
 
   type t = {
     size : int;
@@ -82,7 +78,7 @@ module Make (E:Elt) = struct
       (* size + 1 so we can store full buffers, while keeping
 	 rpos and wpos different for implementation matters *)
       size = size + 1 ;
-      buffer = Array.make (size + 1) (E.create ());
+      buffer = B.create (size + 1);
       rpos = 0;
       wpos = 0;
     }
@@ -111,11 +107,11 @@ module Make (E:Elt) = struct
     let extra = len - pre in
     if extra > 0 then
       (
-	E.blit t.buffer t.rpos buff off pre;
-	E.blit t.buffer 0 buff (off + pre) extra
+	B.blit t.buffer t.rpos buff off pre;
+	B.blit t.buffer 0 buff (off + pre) extra
       )
     else
-      E.blit t.buffer t.rpos buff off len
+      B.blit t.buffer t.rpos buff off len
 
   let read t buff off len =
     peek t buff off len;
@@ -127,11 +123,11 @@ module Make (E:Elt) = struct
     let extra = len - pre in
     if extra > 0 then
       (
-        E.blit buff off t.buffer t.wpos pre;
-        E.blit buff (off + pre) t.buffer 0 extra
+        B.blit buff off t.buffer t.wpos pre;
+        B.blit buff (off + pre) t.buffer 0 extra
       )
     else
-      E.blit buff off t.buffer t.wpos len;
+      B.blit buff off t.buffer t.wpos len;
     write_advance t len
 
   let transmit t f =
@@ -146,10 +142,8 @@ module Make (E:Elt) = struct
       len
 end
 
-module Make_ext (E:Elt) = struct
-  module R = Make(E)
-
-  type elt = R.elt
+module Make_ext (B:Buffer) = struct
+  module R = Make(B)
 
   type buffer = R.buffer
 
