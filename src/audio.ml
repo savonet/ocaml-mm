@@ -148,6 +148,11 @@ module Mono = struct
 
   let clear (b : buffer) ofs len = Bigarray.Array1.fill (Bigarray.Array1.sub b ofs len) 0.
 
+  let make n x =
+    let buf = create n in
+    Bigarray.Array1.fill buf x;
+    buf
+
   let blit src soff dst doff len =
     Bigarray.Array1.blit (Bigarray.Array1.sub src soff len) (Bigarray.Array1.sub dst doff len)
 

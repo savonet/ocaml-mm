@@ -87,6 +87,8 @@ module Mono : sig
 
   val create : int -> buffer
 
+  val make : int -> float -> buffer
+
   val blit : buffer -> int -> buffer -> int -> int -> unit
 
   val copy : buffer -> buffer
