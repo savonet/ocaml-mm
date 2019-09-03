@@ -358,6 +358,8 @@ val resample : ?mode:[`Nearest | `Linear] -> float -> buffer -> buffer
 (** Same as [Array.blit] for audio data. *)
 val blit : buffer -> int -> buffer -> int -> int -> unit
 
+val sub : buffer -> int -> int -> buffer
+
 val clip : buffer -> int -> int -> unit
 
 (** Amplify a portion of the buffer by a given coefficient. *)
