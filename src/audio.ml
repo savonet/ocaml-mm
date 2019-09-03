@@ -144,8 +144,6 @@ module Mono = struct
 
   let length (buf : buffer) = Bigarray.Array1.dim buf
 
-  let duration = length
-
   let clear (b : buffer) ofs len = Bigarray.Array1.fill (Bigarray.Array1.sub b ofs len) 0.
 
   let make n x =
@@ -267,8 +265,6 @@ module Mono = struct
       }
 
     let length buf = length buf.buffer
-
-    let duration = length
   end
 
   module Analyze = struct
@@ -305,7 +301,7 @@ module Mono = struct
 	  temp = Array.make n Complex.zero;
 	}
 
-      let duration f = f.n
+      let length f = f.n
 
       let complex_create buf ofs len =
 	Array.init len (fun i -> {Complex.re = buf.{ofs + i}; Complex.im = 0.})
@@ -421,9 +417,9 @@ module Mono = struct
       let band_freq sr f k = float k *. float sr /. float f.n
 
       let notes sr f ?(window=Window.cosine) ?(note_min=Note.c0) ?(note_max=128) ?(volume_min=0.01) ?(filter_harmonics=true) buf ofs len =
-        assert (len = duration f);
+        assert (len = length f);
         let bdur = float len /. float sr in
-        let fdf = float (duration f) in
+        let fdf = float (length f) in
         let c = complex_create buf ofs len in
         fft f c;
         let ans = ref [] in
@@ -908,11 +904,11 @@ let create chans n =
 let channels buf =
   Array.length buf
 
-let duration buf =
-  Mono.duration buf.(0)
+let length buf =
+  Mono.length buf.(0)
 
 let create_same buf =
-  create (channels buf) (duration buf)
+  create (channels buf) (length buf)
 
 let append b1 b2 =
   Array.mapi (fun i b1 -> Mono.append b1 b2.(i)) b1
@@ -931,7 +927,7 @@ let to_mono b =
   if channels = 1 then
     b.(0)
   else
-    let len = duration b in
+    let len = length b in
     let chans = float channels in
     let ans = Mono.create len in
     for i = 0 to len - 1 do
@@ -959,9 +955,9 @@ module U8 = struct
 end
 
 module S16LE = struct
-  let length channels samples = channels * samples * 2
+  let size channels samples = channels * samples * 2
 
-  let duration channels len = len / (2 * channels)
+  let length channels len = len / (2 * channels)
 
   external of_audio :
     buffer -> int -> Bytes.t -> int -> int -> unit = "caml_float_pcm_to_s16le"
@@ -976,9 +972,9 @@ module S16LE = struct
 end
 
 module S16BE = struct
-  let length channels samples = channels * samples * 2
+  let size channels samples = channels * samples * 2
 
-  let duration channels len = len / (2 * channels)
+  let length channels len = len / (2 * channels)
 
   external of_audio :
     buffer -> int -> Bytes.t -> int -> int -> unit = "caml_float_pcm_to_s16be"
@@ -1036,7 +1032,7 @@ module Buffer_ext = struct
         buf.buffer <- newbuf;
         newbuf
       | _ ->
-        if duration buf.buffer >= len then
+        if length buf.buffer >= len then
           buf.buffer
         else
           (* TODO: optionally blit the old buffer onto the new one. *)
@@ -1045,7 +1041,7 @@ module Buffer_ext = struct
           buf.buffer <- newbuf;
           newbuf
 
-  let duration buf = duration buf.buffer
+  let length buf = length buf.buffer
 
   let create chans len =
     {
@@ -1572,9 +1568,9 @@ module IO = struct
 
       method sample_rate : int
 
-      method duration : int
+      method length : int
 
-      method duration_time : float
+      method duration : float
 
       method seek : int -> unit
 
@@ -1589,10 +1585,10 @@ module IO = struct
 
       method virtual sample_rate : int
 
-      method virtual duration : int
+      method virtual length : int
 
-      method duration_time =
-        float self#duration /. float self#sample_rate
+      method duration =
+        float self#length /. float self#sample_rate
 
   (*
     method virtual seek : int -> unit
@@ -1617,13 +1613,13 @@ module IO = struct
     (** Size of a sample in bits. *)
       val mutable sample_size = 0
       val mutable bytes_per_sample = 0
-    (** Duration in samples. *)
-      val mutable duration = 0
+      (** Length in samples. *)
+      val mutable length = 0
       val mutable data_offset = 0
 
       method sample_rate = sample_rate
       method channels = channels
-      method duration = duration
+      method length = length
 
       initializer
         if self#input 4 <> "RIFF" then
@@ -1656,7 +1652,7 @@ module IO = struct
       let len_dat = self#input_int in
       data_offset <- self#stream_cur_pos;
       bytes_per_sample <- sample_size / 8 * channels;
-      duration <- len_dat / bytes_per_sample
+      length <- len_dat / bytes_per_sample
 
       method read (buf:buffer) ofs len =
         let sbuflen = len * channels * 2 in

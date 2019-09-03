@@ -96,8 +96,6 @@ module Mono : sig
   (** Length in samples. *)
   val length : buffer -> int
 
-  val duration : buffer -> int
-
   val append : buffer -> buffer -> buffer
 
   (** Clear a portion of a buffer (fill it with zeroes). *)
@@ -126,7 +124,7 @@ module Mono : sig
 
     val create : int -> t
 
-    val duration : t -> int
+    val length : t -> int
 
     val prepare : t -> int -> buffer
   end
@@ -145,8 +143,8 @@ module Mono : sig
       (** Initialize FFT for an analysis of [2^n] samples. *)
       val init : int -> t
 
-      (** Duration of the FFT buffer analysis in samples. *)
-      val duration : t -> int
+      (** Length of the FFT buffer analysis in samples. *)
+      val length : t -> int
 
       (** [complex_create buf ofs len] create a array of complex numbers of size
 	  [len] by copying data from [buf] from ofset [ofs] (the imaginary part
@@ -301,8 +299,8 @@ val append : buffer -> buffer -> buffer
 
 val channels : buffer -> int
 
-(** Duration of a buffer in samples. *)
-val duration : buffer -> int
+(** Length of a buffer in samples. *)
+val length : buffer -> int
 
 (** Convert a buffer to a mono buffer by computing the mean of all channels. *)
 val to_mono : buffer -> Mono.buffer
@@ -318,9 +316,9 @@ module U8 : sig
 end
 
 module S16LE : sig
-  val length : int -> int -> int
+  val size : int -> int -> int
 
-  val duration : int -> int -> int
+  val length : int -> int -> int
 
   val of_audio : buffer -> int -> Bytes.t -> int -> int -> unit
 
@@ -330,9 +328,9 @@ module S16LE : sig
 end
 
 module S16BE : sig
-  val length : int -> int -> int
+  val size : int -> int -> int
 
-  val duration : int -> int -> int
+  val length : int -> int -> int
 
   val of_audio : buffer -> int -> Bytes.t -> int -> int -> unit
 
@@ -380,8 +378,8 @@ module Buffer_ext : sig
       samples. *)
   val create : int -> int -> t
 
-  (** Current duration (in samples) of the buffer. *)
-  val duration : t -> int
+  (** Current length (in samples) of the buffer. *)
+  val length : t -> int
 
   (** Make sure that the buffer can hold at least a given number of samples. *)
   val prepare : t -> ?channels:int -> int -> buffer
@@ -536,11 +534,11 @@ module IO : sig
     (** Sample rate in samples per second. *)
       method sample_rate : int
 
-    (** Duration in samples. *)
-      method duration : int
+    (** Length in samples. *)
+      method length : int
 
     (** Duration in seconds. *)
-      method duration_time : float
+      method duration : float
 
     (** Seek to a given sample. *)
       method seek : int -> unit
