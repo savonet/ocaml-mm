@@ -285,6 +285,8 @@ type buffer = Mono.buffer array
     as duration. *)
 val create : int -> int -> buffer
 
+val make : int -> int -> float -> buffer
+
 (** Create a buffer with the same number of channels and duration as the given
     buffer. *)
 val create_same : buffer -> buffer

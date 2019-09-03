@@ -901,6 +901,9 @@ let map f b = Array.map f b
 let create chans n =
   Array.init chans (fun _ -> Mono.create n)
 
+let make chans n x =
+  Array.init chans (fun _ -> Mono.make n x)
+
 let channels buf =
   Array.length buf
 
