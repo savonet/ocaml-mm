@@ -153,6 +153,8 @@ module Mono = struct
     Bigarray.Array1.fill buf x;
     buf
 
+  let unsafe_get = Bigarray.Array1.unsafe_get
+
   let sub buf off len = Bigarray.Array1.sub buf off len
 
   let blit src soff dst doff len =
@@ -887,7 +889,9 @@ module Mono = struct
 end
 
 (** An audio buffer. *)
-type buffer = Mono.buffer array
+type t = Mono.buffer array
+
+type buffer = t
 
 (** Length of the buffer in samples. *)
 let length b = Array.length b
@@ -917,8 +921,30 @@ let channels buf =
 let length buf =
   Mono.length buf.(0)
 
+let same_length buf =
+  let len = length buf in
+  let ans = ref true in
+  for c = 0 to channels buf - 1 do
+    if Mono.length buf.(c) <> len then ans := false
+  done;
+  !ans
+
 let create_same buf =
   create (channels buf) (length buf)
+
+(* TODO: in C *)
+let interleave buf =
+  assert (same_length buf);
+  let chans = channels buf in
+  let len = length buf in
+  let ibuf = Bigarray.Array1.create Bigarray.float32 Bigarray.c_layout (chans * len) in
+  for c = 0 to chans - 1 do
+    let bufc = buf.(c) in
+    for i = 0 to len - 1 do
+      Bigarray.Array1.unsafe_set ibuf (chans*i+c) (Mono.unsafe_get bufc i)
+    done
+  done;
+  ibuf
 
 let append b1 b2 =
   Array.mapi (fun i b1 -> Mono.append b1 b2.(i)) b1

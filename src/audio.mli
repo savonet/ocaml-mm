@@ -283,7 +283,9 @@ module Mono : sig
 end
 
 (** An audio buffer. *)
-type buffer = Mono.buffer array
+type t = Mono.buffer array
+
+type buffer = t
 
 (** [create chans len] creates a buffer with [chans] channels and [len] samples
     as duration. *)
@@ -314,6 +316,8 @@ val to_mono : buffer -> Mono.buffer
 (** Convert a mono buffer into a buffer. Notice that the original mono buffer is
     not copied an might thus be modified afterwards. *)
 val of_mono : Mono.buffer -> buffer
+
+val interleave : t -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t
 
 module U8 : sig
   val of_audio : buffer -> int -> Bytes.t -> int -> int -> unit
