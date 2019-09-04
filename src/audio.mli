@@ -83,11 +83,15 @@ end
 (** Operations on mono buffers (with only one channel). *)
 module Mono : sig
   (** A mono buffer. *)
-  type buffer = (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t
+  type t = (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t
 
-  val create : int -> buffer
+  type buffer = t
 
-  val make : int -> float -> buffer
+  val create : int -> t
+
+  val make : int -> float -> t
+
+  val sub : t -> int -> int -> t
 
   val blit : buffer -> int -> buffer -> int -> int -> unit
 

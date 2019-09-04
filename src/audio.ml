@@ -138,7 +138,9 @@ module Sample = struct
 end
 
 module Mono = struct
-  type buffer = (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t
+  type t = (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+  type buffer = t
 
   let create n : buffer = Bigarray.Array1.create Bigarray.float32 Bigarray.c_layout n
 
@@ -150,6 +152,8 @@ module Mono = struct
     let buf = create n in
     Bigarray.Array1.fill buf x;
     buf
+
+  let sub buf off len = Bigarray.Array1.sub buf off len
 
   let blit src soff dst doff len =
     Bigarray.Array1.blit (Bigarray.Array1.sub src soff len) (Bigarray.Array1.sub dst doff len)
@@ -227,6 +231,7 @@ module Mono = struct
         else
           let a = ir -. float pos in
           (* TODO: read this again, it looks like a bug here... *)
+          failwith "TODO";
           outbuf.{i} <- inbuf.{pos} *. (1. -. a) +. inbuf.{pos} *. a
       done;
       outbuf
