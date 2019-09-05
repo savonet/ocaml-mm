@@ -265,7 +265,7 @@ module Mono = struct
 
     let prepare buf len =
       if length buf.buffer >= len then
-	buf.buffer
+	sub buf.buffer 0 len
       else
 	(* TODO: optionally blit the old buffer onto the new one. *)
 	(* let oldbuf = buf.buffer in *)
@@ -817,8 +817,7 @@ module Mono = struct
       val tmpbuf = Buffer_ext.create 0
 
       method fill_add (buf : buffer) =
-        let len = length buf in
-        let tmpbuf = sub (Buffer_ext.prepare tmpbuf len) 0 len in
+        let tmpbuf = Buffer_ext.prepare tmpbuf (length buf) in
         g#fill tmpbuf;
         add buf tmpbuf
 
@@ -834,17 +833,16 @@ module Mono = struct
       val tmpbuf2 = Buffer_ext.create 0
 
       method fill buf =
-        let len = length buf in
         g1#fill buf;
-        let tmpbuf = sub (Buffer_ext.prepare tmpbuf len) 0 len in
+        let tmpbuf = Buffer_ext.prepare tmpbuf (length buf) in
         g2#fill tmpbuf;
         f buf tmpbuf
 
       method fill_add buf =
         let len = length buf in
-        let tmpbuf = sub (Buffer_ext.prepare tmpbuf len) 0 len in
+        let tmpbuf = Buffer_ext.prepare tmpbuf len in
         g1#fill tmpbuf;
-        let tmpbuf2 = sub (Buffer_ext.prepare tmpbuf2 len) 0 len in
+        let tmpbuf2 = Buffer_ext.prepare tmpbuf2 len in
         g2#fill tmpbuf2;
         f tmpbuf tmpbuf2;
         add buf tmpbuf
@@ -890,7 +888,7 @@ module Mono = struct
 
       method fill_add buf =
         let len = length buf in
-	let tmpbuf = sub (Buffer_ext.prepare tmpbuf len) 0 len in
+	let tmpbuf = Buffer_ext.prepare tmpbuf len in
 	self#fill tmpbuf;
 	blit tmpbuf buf
 
@@ -1088,7 +1086,7 @@ module Buffer_ext = struct
         newbuf
       | _ ->
         if length buf.buffer >= len then
-          buf.buffer
+          sub buf.buffer 0 len
         else
           (* TODO: optionally blit the old buffer onto the new one. *)
           let oldbuf = buf.buffer in
@@ -1582,9 +1580,9 @@ module Generator = struct
 
     method fill_add (buf:buffer) =
       let len = length buf in
-      let tmpbuf = Mono.sub (Mono.Buffer_ext.prepare tmpbuf len) 0 len in
+      let tmpbuf = Mono.Buffer_ext.prepare tmpbuf len in
       g#fill tmpbuf;
-      for c = 0 to Array.length buf - 1 do
+      for c = 0 to len - 1 do
 	Mono.add buf.(c) tmpbuf
       done
 
@@ -1602,8 +1600,7 @@ module Generator = struct
     val tmpbuf = Buffer_ext.create 0 0
 
     method fill_add buf =
-      let len = length buf in
-      let tmpbuf = sub (Buffer_ext.prepare tmpbuf ~channels:(channels buf) len) 0 len in
+      let tmpbuf = Buffer_ext.prepare tmpbuf ~channels:(channels buf) (length buf) in
       g#fill tmpbuf;
       add buf tmpbuf
 
