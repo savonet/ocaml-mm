@@ -68,11 +68,12 @@ object (self)
   channels <- c;
   rb <- Audio.Ringbuffer_ext.create channels 0
 
-  method private decode = Mad.decode_frame_float self#mf
+  method private decode = Mad.decode_frame_float_ba self#mf
 
   method close = self#stream_close
 
-  method read buf ofs len =
+  method read buf =
+    let len = Audio.length buf in
     let r = ref (-1) in
     while !r <> 0 && Audio.Ringbuffer_ext.read_space rb < len do
       let data =
@@ -81,12 +82,12 @@ object (self)
         with
           | Mad.End_of_stream -> Audio.create (self#channels) 0
       in
-      r := Audio.duration data;
-      Audio.Ringbuffer_ext.write rb data 0 !r
+      r := Audio.length data;
+      Audio.Ringbuffer_ext.write rb data
     done;
     let maxlen = Audio.Ringbuffer_ext.read_space rb in
     let len = min maxlen len in
-    Audio.Ringbuffer_ext.read rb buf ofs len;
+    Audio.Ringbuffer_ext.read rb (Audio.sub buf 0 len);
     len
 
   (* TODO *)

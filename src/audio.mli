@@ -93,33 +93,32 @@ module Mono : sig
 
   val sub : t -> int -> int -> t
 
-  val blit : buffer -> int -> buffer -> int -> int -> unit
+  val blit : t -> t -> unit
 
-  val copy : buffer -> buffer
+  val copy : t -> t
 
   (** Length in samples. *)
-  val length : buffer -> int
+  val length : t -> int
 
-  val append : buffer -> buffer -> buffer
+  val append : t -> t -> t
 
   (** Clear a portion of a buffer (fill it with zeroes). *)
-  val clear : buffer -> int -> int -> unit
+  val clear : t -> unit
 
-  val amplify : float -> buffer -> int -> int -> unit
+  val amplify : float -> t -> unit
 
-  val resample : ?mode:[`Nearest | `Linear] -> float -> buffer -> buffer
+  val resample : ?mode:[`Nearest | `Linear] -> float -> t -> t
 
-  val clip : buffer -> int -> int -> unit
+  val clip : t -> unit
 
-  (** [add b1 o1 b2 o2 len] adds [len] samples of contents of [b2] starting at
-      [o2] to [b1] starting at [o1]. *)
-  val add : buffer -> int -> buffer -> int -> int -> unit
+  (** Samplewise add two buffers of the same length. *)
+  val add : t -> t -> unit
 
-  val mult : buffer -> int -> buffer -> int -> int -> unit
+  val mult : t -> t -> unit
 
-  module Ringbuffer_ext : Ringbuffer.R with type buffer = buffer
+  module Ringbuffer_ext : Ringbuffer.R with type buffer = t
 
-  module Ringbuffer : Ringbuffer.R with type buffer = buffer
+  module Ringbuffer : Ringbuffer.R with type buffer = t
 
   (** Buffers of variable size. These are particularly useful for temporary
       buffers. *)
@@ -136,7 +135,7 @@ module Mono : sig
   (** Functions for analyzing audio data. *)
   module Analyze : sig
     (** Compute the RMS power of a portion of a buffer. *)
-    val rms : buffer -> int -> int -> float
+    val rms : t -> float
 
     (** Simple implementation of the FFT algorithm. For fastest implementations
 	optimized libraries such as fftw are recommended. *)
@@ -150,10 +149,9 @@ module Mono : sig
       (** Length of the FFT buffer analysis in samples. *)
       val length : t -> int
 
-      (** [complex_create buf ofs len] create a array of complex numbers of size
-	  [len] by copying data from [buf] from ofset [ofs] (the imaginary part
-	  is null). *)
-      val complex_create : buffer -> int -> int -> Complex.t array
+      (** [complex_create buf] create a array of complex numbers by copying data
+         from [buf] (the imaginary part is null). *)
+      val complex_create : buffer -> Complex.t array
 
       (** Perform an FFT analysis. *)
       val fft : t -> Complex.t array -> unit
@@ -186,7 +184,7 @@ module Mono : sig
 	val blackman_nuttall : t -> Complex.t array -> unit
       end
 
-      val notes : int -> t -> ?window:(Complex.t array -> unit) -> ?note_min:int -> ?note_max:int -> ?volume_min:float -> ?filter_harmonics:bool -> buffer -> int -> int -> (Note.t * float) list
+      val notes : int -> t -> ?window:(Complex.t array -> unit) -> ?note_min:int -> ?note_max:int -> ?volume_min:float -> ?filter_harmonics:bool -> buffer -> (Note.t * float) list
 
       val loudest_note : (Note.t * float) list -> (Note.t * float) option
 
@@ -196,11 +194,11 @@ module Mono : sig
   module Effect : sig
     (** A compander following the mu-law (see
 	http://en.wikipedia.org/wiki/Mu-law).*)
-    val compand_mu_law : float -> buffer -> int -> int -> unit
+    val compand_mu_law : float -> t -> unit
 
     class type t =
     object
-      method process : buffer -> int -> int -> unit
+      method process : buffer -> unit
     end
 
     class amplify : float -> t
@@ -230,7 +228,7 @@ module Mono : sig
 
       val dead : state -> bool
 
-      val process : t -> state -> buffer -> int -> int -> state
+      val process : t -> state -> buffer -> state
     end
   end
 
@@ -244,10 +242,10 @@ module Mono : sig
       method set_frequency : float -> unit
 
       (** Fill a buffer with generated sound. *)
-      method fill : buffer -> int -> int -> unit
+      method fill : buffer -> unit
 
       (** Same as [fill] but adds the sound to the buffer. *)
-      method fill_add : buffer -> int -> int -> unit
+      method fill_add : buffer -> unit
 
       (** Release the generator (used for generator with envelopes). *)
       method release : unit
@@ -283,46 +281,46 @@ module Mono : sig
 end
 
 (** An audio buffer. *)
-type t = Mono.buffer array
+type t = Mono.t array
 
 type buffer = t
 
 (** [create chans len] creates a buffer with [chans] channels and [len] samples
     as duration. *)
-val create : int -> int -> buffer
+val create : int -> int -> t
 
-val make : int -> int -> float -> buffer
+val make : int -> int -> float -> t
 
 (** Create a buffer with the same number of channels and duration as the given
     buffer. *)
-val create_same : buffer -> buffer
+val create_same : t -> t
 
 (** Clear the buffer (sets all the samples to zero). *)
-val clear : buffer -> int -> int -> unit
+val clear : t -> unit
 
 (** Copy the given buffer. *)
-val copy : buffer -> buffer
+val copy : t -> t
 
-val append : buffer -> buffer -> buffer
+val append : t -> t -> t
 
-val channels : buffer -> int
+val channels : t -> int
 
 (** Length of a buffer in samples. *)
-val length : buffer -> int
+val length : t -> int
 
 (** Convert a buffer to a mono buffer by computing the mean of all channels. *)
-val to_mono : buffer -> Mono.buffer
+val to_mono : t -> Mono.t
 
 (** Convert a mono buffer into a buffer. Notice that the original mono buffer is
     not copied an might thus be modified afterwards. *)
-val of_mono : Mono.buffer -> buffer
+val of_mono : Mono.t -> t
 
 val interleave : t -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t
 
 module U8 : sig
-  val of_audio : buffer -> int -> Bytes.t -> int -> int -> unit
+  val of_audio : t -> int -> Bytes.t -> int -> int -> unit
 
-  val to_audio : string -> int -> buffer -> int -> int -> unit
+  val to_audio : string -> int -> t -> int -> int -> unit
 end
 
 module S16LE : sig
@@ -330,11 +328,11 @@ module S16LE : sig
 
   val length : int -> int -> int
 
-  val of_audio : buffer -> int -> Bytes.t -> int -> int -> unit
+  val of_audio : t -> Bytes.t -> int -> unit
 
-  val make : buffer -> int -> int -> string
+  val make : t -> string
 
-  val to_audio : string -> int -> buffer -> int -> int -> unit
+  val to_audio : string -> int -> t -> int -> int -> unit
 end
 
 module S16BE : sig
@@ -342,44 +340,43 @@ module S16BE : sig
 
   val length : int -> int -> int
 
-  val of_audio : buffer -> int -> Bytes.t -> int -> int -> unit
+  val of_audio : t -> Bytes.t -> int -> unit
 
-  val make : buffer -> int -> int -> string
+  val make : t -> string
 
-  val to_audio : string -> int -> buffer -> int -> int -> unit
+  val to_audio : string -> int -> t -> int -> int -> unit
 end
 
 module S24LE : sig
-  val of_audio : buffer -> int -> Bytes.t -> int -> int -> unit
+  val of_audio : t -> int -> Bytes.t -> int -> int -> unit
 
-  val to_audio : string -> int -> buffer -> int -> int -> unit
+  val to_audio : string -> int -> t -> int -> int -> unit
 end
 
 module S32LE : sig
-  val of_audio : buffer -> int -> Bytes.t -> int -> int -> unit
+  val of_audio : t -> int -> Bytes.t -> int -> int -> unit
 
-  val to_audio : string -> int -> buffer -> int -> int -> unit
+  val to_audio : string -> int -> t -> int -> int -> unit
 end
 
-val resample : ?mode:[`Nearest | `Linear] -> float -> buffer -> buffer
+val resample : ?mode:[`Nearest | `Linear] -> float -> t -> t
 
-(** Same as [Array.blit] for audio data. *)
-val blit : buffer -> int -> buffer -> int -> int -> unit
+val blit : t -> t -> unit
 
-val sub : buffer -> int -> int -> buffer
+val sub : t -> int -> int -> t
 
-val clip : buffer -> int -> int -> unit
+val clip : t -> unit
 
 (** Amplify a portion of the buffer by a given coefficient. *)
-val amplify : float -> buffer -> int -> int -> unit
+val amplify : float -> t -> unit
 
 (** Pan a stereo buffer from left to right (the buffer should have exactly two
     channels!). The coefficient should be between [-1.] and [1.]. *)
-val pan : float -> buffer -> int -> int -> unit
+val pan : float -> t -> unit
 
-val add : buffer -> int -> buffer -> int -> int -> unit
+val add : t -> t -> unit
 
-val add_coeff : buffer -> int -> float -> buffer -> int -> int -> unit
+val add_coeff : t -> float -> t -> unit
 
 (** Buffers of variable size. These are particularly useful for temporary
     buffers. *)
@@ -415,13 +412,13 @@ module Ringbuffer : sig
 
   val write_advance : t -> int -> unit
 
-  val peek : t -> buffer -> int -> int -> unit
+  val peek : t -> buffer -> unit
 
-  val read : t -> buffer -> int -> int -> unit
+  val read : t -> buffer -> unit
 
-  val write : t -> buffer -> int -> int -> unit
+  val write : t -> buffer -> unit
 
-  val transmit : t -> (buffer -> int -> int -> int) -> int
+  val transmit : t -> (buffer -> int) -> int
 end
 
 module Ringbuffer_ext : sig
@@ -439,17 +436,17 @@ module Ringbuffer_ext : sig
 
   val write_advance : t -> int -> unit
 
-  val peek : t -> buffer -> int -> int -> unit
+  val peek : t -> buffer -> unit
 
-  val read : t -> buffer -> int -> int -> unit
+  val read : t -> buffer -> unit
 
-  val write : t -> buffer -> int -> int -> unit
+  val write : t -> buffer -> unit
 
-  val transmit : t -> (buffer -> int -> int -> int) -> int
+  val transmit : t -> (buffer -> int) -> int
 end
 
 module Analyze : sig
-  val rms : buffer -> int -> int -> float array
+  val rms : t -> float array
 end
 
 (** Audio effects. *)
@@ -458,7 +455,7 @@ module Effect : sig
   class type t =
   object
     (** Apply the effect on a buffer. *)
-    method process : buffer -> int -> int -> unit
+    method process : buffer -> unit
   end
 
   class chain : t -> t -> t
@@ -503,7 +500,7 @@ end
 
 (** Sound generators. *)
 module Generator : sig
-  val white_noise : buffer -> int -> int -> unit
+  val white_noise : t -> unit
 
   class type t =
   object
@@ -511,9 +508,9 @@ module Generator : sig
 
     method set_frequency : float -> unit
 
-    method fill : buffer -> int -> int -> unit
+    method fill : buffer -> unit
 
-    method fill_add : buffer -> int -> int -> unit
+    method fill_add : buffer -> unit
 
     method release : unit
 
@@ -560,7 +557,7 @@ module IO : sig
 	called. *)
       method close : unit
 
-      method read : buffer -> int -> int -> int
+      method read : buffer -> int
     end
 
   (** Create a reader object from a wav file. *)
@@ -570,7 +567,7 @@ module IO : sig
   module Writer : sig
     class type t =
     object
-      method write : buffer -> int -> int -> unit
+      method write : buffer -> unit
 
       method close : unit
     end
@@ -583,22 +580,22 @@ module IO : sig
   module RW : sig
     class type t =
     object
-      method read : buffer -> int -> int -> unit
+      method read : buffer -> unit
 
-      method write : buffer -> int -> int -> unit
+      method write : buffer -> unit
 
       method close : unit
     end
 
     class virtual bufferized : int -> min_duration:int -> fill_duration:int -> max_duration:int -> drop_duration:int ->
     object
-      method virtual io_read : buffer -> int -> int -> unit
+      method virtual io_read : buffer -> unit
 
-      method virtual io_write : buffer -> int -> int -> unit
+      method virtual io_write : buffer -> unit
 
-      method read : buffer -> int -> int -> unit
+      method read : buffer -> unit
 
-      method write : buffer -> int -> int -> unit
+      method write : buffer -> unit
     end
   end
 end

@@ -253,13 +253,12 @@ CAMLprim value caml_float_pcm_to_s24le(value a, value _offs, value _dst, value _
   CAMLreturn(Val_int(dst_len));
 }
 
-CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _dst_offs, value _len, int little_endian)
+CAMLprim value caml_float_pcm_to_s16(value a, value _dst, value _dst_offs, int little_endian)
 {
   CAMLparam2(a, _dst);
   int c, i;
-  int offs = Int_val(_offs);
   int dst_offs = Int_val(_dst_offs);
-  int len = Int_val(_len);
+  int len = Caml_ba_array_val(a)->dim[0];
   int nc = Wosize_val(a);
   int dst_len = 2 * len * nc;
   float *src;
@@ -276,7 +275,7 @@ CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _ds
       src = Caml_ba_data_val(Field(a, c));
       for (i = 0; i < len; i++)
       {
-        dst[i*nc+c] = clip(src[i + offs]);
+        dst[i*nc+c] = clip(src[i]);
 #ifdef BIGENDIAN
         dst[i*nc+c] = bswap_16(dst[i*nc+c]);
 #endif
@@ -288,7 +287,7 @@ CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _ds
       src = Caml_ba_data_val(Field(a, c));
       for (i = 0; i < len; i++)
       {
-        dst[i*nc+c] = clip(src[i + offs]);
+        dst[i*nc+c] = clip(src[i]);
 #ifndef BIGENDIAN
         dst[i*nc+c] = bswap_16(dst[i*nc+c]);
 #endif
@@ -298,14 +297,14 @@ CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _ds
   CAMLreturn(Val_int(dst_len));
 }
 
-CAMLprim value caml_float_pcm_to_s16le(value a, value _offs, value _dst, value _dst_offs, value _len)
+CAMLprim value caml_float_pcm_to_s16le(value a, value _dst, value _dst_offs)
 {
-  return caml_float_pcm_to_s16(a, _offs, _dst, _dst_offs, _len, 1);
+  return caml_float_pcm_to_s16(a, _dst, _dst_offs, 1);
 }
 
-CAMLprim value caml_float_pcm_to_s16be(value a, value _offs, value _dst, value _dst_offs, value _len)
+CAMLprim value caml_float_pcm_to_s16be(value a, value _dst, value _dst_offs)
 {
-  return caml_float_pcm_to_s16(a, _offs, _dst, _dst_offs, _len, 0);
+  return caml_float_pcm_to_s16(a, _dst, _dst_offs, 0);
 }
 
 CAMLprim value caml_float_pcm_to_u8(value a, value _offs,

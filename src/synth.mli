@@ -46,14 +46,14 @@ object
   method note_off : int -> float -> unit
 
   (** Fill a buffer with synthesized data adding to the original data of the buffer. *)
-  method fill_add : Audio.buffer -> int -> int -> unit
+  method fill_add : Audio.buffer -> unit
 
   (** Synthesize into an audio buffer. Notice that the delta times in the track
       should be in samples (so they do depend on the samplerate). *)
-  method play : MIDI.buffer -> int -> Audio.buffer -> int -> int -> unit
+  method play : MIDI.buffer -> int -> Audio.buffer -> unit
 
   (** Same as [play] but keeps data originally present in the buffer. *)
-  method play_add : MIDI.buffer -> int -> Audio.buffer -> int -> int -> unit
+  method play_add : MIDI.buffer -> int -> Audio.buffer -> unit
 
   (** Reset the synthesizer (sets all notes off in particular). *)
   method reset : unit
@@ -87,10 +87,10 @@ module Multitrack : sig
   class type t =
   object
     (** Synthesize into an audio buffer. *)
-    method play : MIDI.Multitrack.buffer -> int -> Audio.buffer -> int -> int -> unit
+    method play : MIDI.Multitrack.buffer -> int -> Audio.buffer -> unit
 
     (** Same as [play] but keeps data originally present in the buffer. *)
-    method play_add : MIDI.Multitrack.buffer -> int -> Audio.buffer -> int -> int -> unit
+    method play_add : MIDI.Multitrack.buffer -> int -> Audio.buffer -> unit
   end
 
   (** Create a multichannel synthesizer with given number of channels and a

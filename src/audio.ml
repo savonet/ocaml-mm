@@ -142,69 +142,74 @@ module Mono = struct
 
   type buffer = t
 
-  let create n : buffer = Bigarray.Array1.create Bigarray.float32 Bigarray.c_layout n
+  let create n : t = Bigarray.Array1.create Bigarray.float32 Bigarray.c_layout n
 
-  let length (buf : buffer) = Bigarray.Array1.dim buf
+  let length (buf : t) = Bigarray.Array1.dim buf
+  let buffer_length = length
 
-  let clear (b : buffer) ofs len = Bigarray.Array1.fill (Bigarray.Array1.sub b ofs len) 0.
+  let clear (b : t) = Bigarray.Array1.fill b 0.
 
   let make n x =
     let buf = create n in
     Bigarray.Array1.fill buf x;
     buf
 
-  let unsafe_get = Bigarray.Array1.unsafe_get
+  let unsafe_get (buf : t) = Bigarray.Array1.unsafe_get buf
+
+  let unsafe_set (buf : t) = Bigarray.Array1.unsafe_set buf
 
   let sub buf off len = Bigarray.Array1.sub buf off len
 
-  let blit src soff dst doff len =
-    Bigarray.Array1.blit (Bigarray.Array1.sub src soff len) (Bigarray.Array1.sub dst doff len)
+  let blit src dst = Bigarray.Array1.blit src dst
 
   let copy buf =
     let len = length buf in
     let ans = create len in
-    blit buf 0 ans 0 len;
+    blit buf ans;
     ans
 
   let append b1 b2 =
     let l1 = length b1 in
     let l2 = length b2 in
     let ans = create (l1 + l2) in
-    blit b1 0 ans 0 l1;
-    blit b2 0 ans l1 l2;
+    blit b1 (sub ans 0 l1);
+    blit b2 (sub ans l1 l2);
     ans
 
   (* TODO: implement the following functions on the C side *)
-  let add b1 o1 b2 o2 len =
+  let add b1 b2 =
+    let len = length b1 in
+    assert (length b2 = len);
     for i = 0 to len - 1 do
-      b1.{o1 + i} <- b1.{o1 + i} +. b2.{o2 + i}
+      unsafe_set b1 i (unsafe_get b1 i +. unsafe_get b2 i)
     done
 
-  let add_coeff b1 o1 k b2 o2 len =
+  let add_coeff b1 k b2 =
+    let len = length b1 in
+    assert (length b2 = len);
     for i = 0 to len - 1 do
-      b1.{o1 + i} <- b1.{o1 + i} +. k *. b2.{o2 + i}
+      b1.{i} <- b1.{i} +. k *. b2.{i}
     done
 
-  let add_coeff b1 o1 k b2 o2 len =
-    if k = 0. then
-      ()
-    else if k = 1. then
-      add b1 o1 b2 o2 len
-    else
-      add_coeff b1 o1 k b2 o2 len
+  let add_coeff b1 k b2 =
+    if k = 0. then ()
+    else if k = 1. then add b1 b2
+    else add_coeff b1 k b2
 
-  let mult b1 o1 b2 o2 len =
+  let mult b1 b2 =
+    let len = length b1 in
+    assert (length b2 = len);
     for i = 0 to len - 1 do
-      b1.{o1 + i} <- b1.{o1 + i} *. b2.{o2 + i}
+      b1.{i} <- b1.{i} *. b2.{i}
     done
 
-  let amplify k b ofs len =
-    for i = ofs to ofs + len - 1 do
-      b.{i} <- k *. b.{i}
+  let amplify k b =
+    for i = 0 to length b - 1 do
+      unsafe_set b i (k *. unsafe_get b i)
     done
 
-  let clip buf ofs len =
-    for i = ofs to ofs + len - 1 do
+  let clip buf =
+    for i = 0 to length buf - 1 do
       buf.{i} <- Sample.clip buf.{i}
     done
 
@@ -244,7 +249,7 @@ module Mono = struct
 
     let create = create
 
-    let blit = blit
+    let blit src soff dst doff len = blit (sub src soff len) (sub dst doff len)
   end
 
   module Ringbuffer_ext = Ringbuffer.Make_ext (B)
@@ -277,10 +282,11 @@ module Mono = struct
   end
 
   module Analyze = struct
-    let rms b ofs len =
+    let rms buf =
+      let len = length buf in
       let r = ref 0. in
-      for i = ofs to ofs + len - 1 do
-	let x = b.{i} in
+      for i = 0 to len - 1 do
+	let x = buf.{i} in
 	r := !r +. x *. x
       done;
       sqrt (!r /. float len)
@@ -312,8 +318,8 @@ module Mono = struct
 
       let length f = f.n
 
-      let complex_create buf ofs len =
-	Array.init len (fun i -> {Complex.re = buf.{ofs + i}; Complex.im = 0.})
+      let complex_create buf =
+	Array.init (buffer_length buf) (fun i -> {Complex.re = buf.{i}; Complex.im = 0.})
 
       let ccoef k c =
 	{Complex.re = k *. c.Complex.re; Complex.im = k *. c.Complex.im}
@@ -425,11 +431,12 @@ module Mono = struct
 
       let band_freq sr f k = float k *. float sr /. float f.n
 
-      let notes sr f ?(window=Window.cosine) ?(note_min=Note.c0) ?(note_max=128) ?(volume_min=0.01) ?(filter_harmonics=true) buf ofs len =
+      let notes sr f ?(window=Window.cosine) ?(note_min=Note.c0) ?(note_max=128) ?(volume_min=0.01) ?(filter_harmonics=true) buf =
+        let len = buffer_length buf in
         assert (len = length f);
         let bdur = float len /. float sr in
         let fdf = float (length f) in
-        let c = complex_create buf ofs len in
+        let c = complex_create buf in
         fft f c;
         let ans = ref [] in
         let kstart = max 0 (int_of_float (Note.freq note_min *. bdur)) in
@@ -474,8 +481,8 @@ module Mono = struct
   end
 
   module Effect = struct
-    let compand_mu_law mu buf ofs len =
-      for i = ofs to ofs + len - 1 do
+    let compand_mu_law mu buf =
+      for i = 0 to length buf - 1 do
 	let bufi = buf.{i} in
         let sign = if bufi < 0. then -1. else 1. in
         buf.{i} <- sign *. log (1. +. mu  *. abs_float bufi) /. log (1. +. mu)
@@ -483,7 +490,7 @@ module Mono = struct
 
     class type t =
     object
-      method process : buffer -> int -> int -> unit
+      method process : buffer -> unit
     end
 
     class amplify k : t =
@@ -493,9 +500,9 @@ module Mono = struct
 
     class clip c : t =
     object
-      method process buf ofs len =
-        for i = ofs to ofs + len - 1 do
-          buf.{i} <- max (-.c) (min c buf.{i})
+      method process buf =
+        for i = 0 to length buf - 1 do
+          unsafe_set buf i (max (-.c) (min c (unsafe_get buf i)))
         done
     end
 
@@ -576,8 +583,8 @@ module Mono = struct
       val mutable y1 = 0.
       val mutable y2 = 0.
 
-      method process (buf:buffer) ofs len =
-	for i = ofs to ofs + len - 1 do
+      method process (buf:buffer) =
+	for i = 0 to length buf - 1 do
 	  let x0 = buf.{i} in
 	  let y0 = p0 *. x0 +. p1 *. x1 +. p2 *. x2 -. q1 *. y1 -. q2 *. y2 in
 	  buf.{i} <- y0;
@@ -607,23 +614,24 @@ module Mono = struct
 
       let dead (s,_) = s = 4
 
-      let rec process adsr st (buf:buffer) ofs len =
+      let rec process adsr st (buf:buffer) =
 	let a,(d:int),s,(r:int) = adsr in
-	let state, state_pos = st in
+        let state, state_pos = st in
+        let len = length buf in
 	match state with
           | 0 ->
             let fa = float a in
             for i = 0 to min len (a - state_pos) - 1 do
-              buf.{ofs + i} <- float (state_pos + i) /. fa *. buf.{ofs + i}
+              buf.{i} <- float (state_pos + i) /. fa *. buf.{i}
             done;
             if len < a - state_pos then
               0, state_pos + len
             else
-              process adsr (1,0) buf (ofs + a - state_pos) (len - (a - state_pos))
+              process adsr (1,0) (sub buf (a - state_pos) (len - (a - state_pos)))
           | 1 ->
             let fd = float d in
             for i = 0 to min len (d - state_pos) - 1 do
-              buf.{ofs + i} <- (1. -. float (state_pos + i) /. fd *. (1. -. s)) *. buf.{ofs + i}
+              buf.{i} <- (1. -. float (state_pos + i) /. fd *. (1. -. s)) *. buf.{i}
             done;
             if len < d - state_pos then
               1, state_pos + len
@@ -631,33 +639,33 @@ module Mono = struct
               (
                 (* Negative sustain means release immediately. *)
                 if s >= 0. then
-                  process adsr (2,0) buf (ofs + d - state_pos) (len - (d - state_pos))
+                  process adsr (2,0) (sub buf (d - state_pos) (len - (d - state_pos)))
                 else
-                  process adsr (3,0) buf (ofs + d - state_pos) (len - (d - state_pos))
+                  process adsr (3,0) (sub buf (d - state_pos) (len - (d - state_pos)))
               )
           | 2 ->
-            amplify s buf ofs len;
+            amplify s buf;
             st
           | 3 ->
             let fr = float r in
             for i = 0 to min len (r - state_pos) - 1 do
-              buf.{ofs + i} <- s *. (1. -. float (state_pos + i) /. fr) *. buf.{ofs + i}
+              buf.{i} <- s *. (1. -. float (state_pos + i) /. fr) *. buf.{i}
             done;
             if len < r - state_pos then
               3, state_pos + len
             else
-              process adsr (4,0) buf (ofs + r - state_pos) (len - (r - state_pos))
+              process adsr (4,0) (sub buf (r - state_pos) (len - (r - state_pos)))
           | 4 ->
-            clear buf ofs len;
+            clear buf;
             st
           | _ -> assert false
     end
   end
 
   module Generator = struct
-    let white_noise b ofs len =
-      for i = ofs to ofs + len - 1 do
-        b.{i} <- Random.float 2. -. 1.
+    let white_noise buf =
+      for i = 0 to length buf - 1 do
+        buf.{i} <- Random.float 2. -. 1.
       done
 
     class type t =
@@ -666,9 +674,9 @@ module Mono = struct
 
       method set_frequency : float -> unit
 
-      method fill : buffer -> int -> int -> unit
+      method fill : buffer -> unit
 
-      method fill_add : buffer -> int -> int -> unit
+      method fill_add : buffer -> unit
 
       method release : unit
 
@@ -697,22 +705,22 @@ module Mono = struct
 
       method set_frequency f = freq <- f
 
-      method virtual fill : buffer -> int -> int -> unit
+      method virtual fill : buffer -> unit
 
       (* TODO: might be optimized by various synths *)
-      method fill_add (buf:buffer) ofs len =
-	let tmp = create len in
-	self#fill tmp 0 len;
-	add buf ofs tmp 0 len
+      method fill_add (buf:buffer) =
+	let tmp = create (length buf) in
+	self#fill tmp;
+	add buf tmp
     end
 
     class white_noise ?volume sr =
     object (self)
       inherit base sr ?volume 0.
 
-      method fill buf ofs len =
+      method fill buf =
         let volume = self#volume in
-        for i = ofs to ofs + len - 1 do
+        for i = 0 to length buf - 1 do
           buf.{i} <- volume *. (Random.float 2. -. 1.)
         done
     end
@@ -723,12 +731,13 @@ module Mono = struct
 
       val mutable phase = phase
 
-      method fill buf ofs len =
+      method fill buf =
+        let len = length buf in
 	let sr = float self#sample_rate in
 	let omega = 2. *. pi *. freq /. sr in
         let volume = self#volume in
 	for i = 0 to len - 1 do
-	  buf.{ofs + i} <- volume *. sin (float i *. omega +. phase)
+	  buf.{i} <- volume *. sin (float i *. omega +. phase)
 	done;
 	phase <- mod_float (phase +. float len *. omega) (2. *. pi)
     end
@@ -739,13 +748,14 @@ module Mono = struct
 
       val mutable phase = phase
 
-      method fill buf ofs len =
+      method fill buf =
+        let len = length buf in
 	let sr = float self#sample_rate in
         let volume = self#volume in
 	let omega = freq /. sr in
 	for i = 0 to len - 1 do
 	  let t = fracf (float i *. omega +. phase) in
-	  buf.{ofs + i} <- if t < 0.5 then volume else (-.volume)
+	  buf.{i} <- if t < 0.5 then volume else (-.volume)
 	done;
 	phase <- mod_float (phase +. float len *. omega) 1.
     end
@@ -756,13 +766,14 @@ module Mono = struct
 
       val mutable phase = phase
 
-      method fill buf ofs len =
+      method fill buf =
+        let len = length buf in
         let volume = self#volume in
 	let sr = float self#sample_rate in
 	let omega = freq /. sr in
 	for i = 0 to len - 1 do
 	  let t = fracf (float i *. omega +. phase) in
-	  buf.{ofs + i} <- volume *. (2. *. t -. 1.)
+	  buf.{i} <- volume *. (2. *. t -. 1.)
 	done;
 	phase <- mod_float (phase +. float len *. omega) 1.
     end
@@ -773,13 +784,14 @@ module Mono = struct
 
       val mutable phase = phase
 
-      method fill buf ofs len =
+      method fill buf =
+        let len = length buf in
 	let sr = float self#sample_rate in
         let volume = self#volume in
 	let omega = freq /. sr in
 	for i = 0 to len - 1 do
 	  let t = fracf (float i *. omega +. phase +. 0.25) in
-	  buf.{ofs + i} <- volume *. (if t < 0.5 then 4. *. t -. 1. else 4. *. (1. -. t) -. 1.)
+	  buf.{i} <- volume *. (if t < 0.5 then 4. *. t -. 1. else 4. *. (1. -. t) -. 1.)
 	done;
 	phase <- mod_float (phase +. float len *. omega) 1.
     end
@@ -792,22 +804,23 @@ module Mono = struct
       (* Real frequency: during slides, this is the frequency that gets heard. *)
       val mutable real_freq = 0.
 
-      method fill buf ofs len =
+      method fill buf =
 	assert false
     end
 
     class chain (g:t) (e:Effect.t) : t =
     object
-      method fill buf ofs len =
-        g#fill buf ofs len;
-        e#process buf ofs len
+      method fill buf =
+        g#fill buf;
+        e#process buf
 
       val tmpbuf = Buffer_ext.create 0
 
-      method fill_add buf ofs len =
-        let tmpbuf = Buffer_ext.prepare tmpbuf len in
-        g#fill tmpbuf 0 len;
-        add buf ofs tmpbuf 0 len
+      method fill_add (buf : buffer) =
+        let len = length buf in
+        let tmpbuf = sub (Buffer_ext.prepare tmpbuf len) 0 len in
+        g#fill tmpbuf;
+        add buf tmpbuf
 
       method set_volume = g#set_volume
       method set_frequency = g#set_frequency
@@ -820,19 +833,21 @@ module Mono = struct
       val tmpbuf = Buffer_ext.create 0
       val tmpbuf2 = Buffer_ext.create 0
 
-      method fill buf ofs len =
-        g1#fill buf ofs len;
-        let tmpbuf = Buffer_ext.prepare tmpbuf len in
-        g2#fill tmpbuf 0 len;
-        f buf ofs tmpbuf 0 len
+      method fill buf =
+        let len = length buf in
+        g1#fill buf;
+        let tmpbuf = sub (Buffer_ext.prepare tmpbuf len) 0 len in
+        g2#fill tmpbuf;
+        f buf tmpbuf
 
-      method fill_add buf ofs len =
-        let tmpbuf = Buffer_ext.prepare tmpbuf len in
-        g1#fill tmpbuf 0 len;
-        let tmpbuf2 = Buffer_ext.prepare tmpbuf2 len in
-        g2#fill tmpbuf2 0 len;
-        f tmpbuf 0 tmpbuf2 0 len;
-        add buf ofs tmpbuf 0 len
+      method fill_add buf =
+        let len = length buf in
+        let tmpbuf = sub (Buffer_ext.prepare tmpbuf len) 0 len in
+        g1#fill tmpbuf;
+        let tmpbuf2 = sub (Buffer_ext.prepare tmpbuf2 len) 0 len in
+        g2#fill tmpbuf2;
+        f tmpbuf tmpbuf2;
+        add buf tmpbuf
 
       method set_volume v =
         g1#set_volume v;
@@ -869,14 +884,15 @@ module Mono = struct
 
       method set_frequency = g#set_frequency
 
-      method fill buf ofs len =
-	g#fill buf ofs len;
-	adsr_st <- Effect.ADSR.process adsr adsr_st buf ofs len
+      method fill buf =
+	g#fill buf;
+	adsr_st <- Effect.ADSR.process adsr adsr_st buf
 
-      method fill_add buf ofs len =
-	let tmpbuf = Buffer_ext.prepare tmpbuf len in
-	self#fill tmpbuf 0 len;
-	blit tmpbuf 0 buf ofs len
+      method fill_add buf =
+        let len = length buf in
+	let tmpbuf = sub (Buffer_ext.prepare tmpbuf len) 0 len in
+	self#fill tmpbuf;
+	blit tmpbuf buf
 
       method release =
 	adsr_st <- Effect.ADSR.release adsr_st;
@@ -899,9 +915,6 @@ let length b = Array.length b
 (** Iterate a function on each channel of the buffer. *)
 let iter f b = Array.iter f b
 
-(** Iterate a function on a portion of the buffer. *)
-let iterp f b ofs len = Array.iter (fun b -> f b ofs len) b
-
 let iter2 f b1 b2 =
   for c = 0 to Array.length b1 - 1 do
     f b1.(c) b2.(c)
@@ -920,6 +933,8 @@ let channels buf =
 
 let length buf =
   Mono.length buf.(0)
+
+let buffer_length = length
 
 let same_length buf =
   let len = length buf in
@@ -949,14 +964,14 @@ let interleave buf =
 let append b1 b2 =
   Array.mapi (fun i b1 -> Mono.append b1 b2.(i)) b1
 
-let clear = iterp Mono.clear
+let clear = iter Mono.clear
 
-let clip = iterp Mono.clip
+let clip = iter Mono.clip
 
 let copy b = Array.init (Array.length b) (fun i -> Mono.copy b.(i))
 
-let blit b1 o1 b2 o2 len =
-  iter2 (fun b1 b2 -> Mono.blit b1 o1 b2 o2 len) b1 b2
+let blit b1 b2 =
+  iter2 (fun b1 b2 -> Mono.blit b1 b2) b1 b2
 
 let sub b ofs len =
   Array.map (fun buf -> Bigarray.Array1.sub buf ofs len) b
@@ -999,12 +1014,13 @@ module S16LE = struct
   let length channels len = len / (2 * channels)
 
   external of_audio :
-    buffer -> int -> Bytes.t -> int -> int -> unit = "caml_float_pcm_to_s16le"
+    buffer -> Bytes.t -> int -> unit = "caml_float_pcm_to_s16le"
 
-  let make buf ofs len =
+  let make buf =
+    let len = buffer_length buf in
     let slen = length (channels buf) len in
     let sbuf = Bytes.create slen in
-    of_audio buf ofs sbuf 0 len;
+    of_audio buf sbuf 0;
     Bytes.to_string sbuf
 
   external to_audio : string -> int -> buffer -> int -> int -> unit = "caml_float_pcm_convert_s16le_byte" "caml_float_pcm_convert_s16le_native"
@@ -1016,12 +1032,13 @@ module S16BE = struct
   let length channels len = len / (2 * channels)
 
   external of_audio :
-    buffer -> int -> Bytes.t -> int -> int -> unit = "caml_float_pcm_to_s16be"
+    buffer -> Bytes.t -> int -> unit = "caml_float_pcm_to_s16be"
 
-  let make buf ofs len =
+  let make buf =
+    let len = buffer_length buf in
     let slen = length (channels buf) len in
     let sbuf = Bytes.create slen in
-    of_audio buf ofs sbuf 0 len;
+    of_audio buf sbuf 0;
     Bytes.to_string sbuf
 
   external to_audio : string -> int -> buffer -> int -> int -> unit = "caml_float_pcm_convert_s16be_byte" "caml_float_pcm_convert_s16be_native"
@@ -1039,22 +1056,21 @@ module S32LE = struct
   external to_audio : string -> int -> buffer -> int -> int -> unit = "caml_float_pcm_convert_s32le_byte" "caml_float_pcm_convert_s32le_native"
 end
 
-let add b1 o1 b2 o2 len = iter2 (fun b1 b2 -> Mono.add b1 o1 b2 o2 len) b1 b2
+let add b1 b2 = iter2 Mono.add b1 b2
 
-let add_coeff b1 o1 k b2 o2 len = iter2 (fun b1 b2 -> Mono.add_coeff b1 o1 k b2 o2 len) b1 b2
+let add_coeff b1 k b2 = iter2 (fun b1 b2 -> Mono.add_coeff b1 k b2) b1 b2
 
-let amplify k buf ofs len =
-  if k <> 1. then
-    iter (fun buf -> Mono.amplify k buf ofs len) buf
+let amplify k buf =
+  if k <> 1. then iter (fun buf -> Mono.amplify k buf) buf
 
 (* x between -1 and 1 *)
-let pan x buf ofs len =
+let pan x buf =
   if x > 0. then
     let x = 1. -. x in
-    Mono.amplify x buf.(0) ofs len
+    Mono.amplify x buf.(0)
   else if x < 0. then
     let x = 1. +. x in
-    Mono.amplify x buf.(1) ofs len
+    Mono.amplify x buf.(1)
 
 (* TODO: we cannot share this with mono, right? *)
 module Buffer_ext = struct
@@ -1128,33 +1144,35 @@ module Ringbuffer = struct
     if t.wpos + n < t.size then t.wpos <- t.wpos + n
     else t.wpos <- t.wpos + n - t.size
 
-  let peek t buff off len =
+  let peek t buf =
+    let len = length buf in
     assert (len <= read_space t);
     let pre = t.size - t.rpos in
     let extra = len - pre in
     if extra > 0 then
       (
-	blit t.buffer t.rpos buff off pre;
-	blit t.buffer 0 buff (off + pre) extra
+	blit (sub t.buffer t.rpos pre) (sub buf 0 pre);
+	blit (sub t.buffer 0 extra) (sub buf pre extra)
       )
     else
-      blit t.buffer t.rpos buff off len
+      blit (sub t.buffer t.rpos len) buf
 
-  let read t buff off len =
-    peek t buff off len;
-    read_advance t len
+  let read t buf =
+    peek t buf;
+    read_advance t (length buf)
 
-  let write t buff off len =
+  let write t buf =
+    let len = length buf in
     assert (len <= write_space t);
     let pre = t.size - t.wpos in
     let extra = len - pre in
     if extra > 0 then
       (
-        blit buff off t.buffer t.wpos pre;
-        blit buff (off + pre) t.buffer 0 extra
+        blit (sub buf 0 pre) (sub t.buffer t.wpos pre);
+        blit (sub buf pre extra) (sub t.buffer 0 extra)
       )
     else
-      blit buff off t.buffer t.wpos len;
+      blit buf (sub t.buffer t.wpos len);
     write_advance t len
 
   let transmit t f =
@@ -1163,7 +1181,7 @@ module Ringbuffer = struct
 	if t.wpos >= t.rpos then t.wpos - t.rpos
 	else t.size - t.rpos
       in
-      let len = f t.buffer t.rpos len0 in
+      let len = f (sub t.buffer t.rpos len0) in
       assert (len <= len0);
       read_advance t len;
       len
@@ -1180,7 +1198,7 @@ module Ringbuffer_ext = struct
       else
 	let rb = Ringbuffer.create (Ringbuffer.channels buf.ringbuffer) (Ringbuffer.read_space buf.ringbuffer + len) in
 	while Ringbuffer.read_space buf.ringbuffer <> 0 do
-	  ignore (Ringbuffer.transmit buf.ringbuffer (fun buf ofs len -> Ringbuffer.write rb buf ofs len; len));
+	  ignore (Ringbuffer.transmit buf.ringbuffer (fun buf -> Ringbuffer.write rb buf; length buf));
 	done;
 	buf.ringbuffer <- rb;
 	rb
@@ -1191,9 +1209,9 @@ module Ringbuffer_ext = struct
 
     let read rb = Ringbuffer.read rb.ringbuffer
 
-    let write rb buf ofs len =
-      let rb = prepare rb len in
-      Ringbuffer.write rb buf ofs len
+    let write rb buf =
+      let rb = prepare rb (length buf) in
+      Ringbuffer.write rb buf
 
     let transmit rb = Ringbuffer.transmit rb.ringbuffer
 
@@ -1212,30 +1230,30 @@ module Ringbuffer_ext = struct
 end
 
 module Analyze = struct
-  let rms buf ofs len =
-    Array.init (channels buf) (fun i -> Mono.Analyze.rms buf.(i) ofs len)
+  let rms buf =
+    Array.init (channels buf) (fun i -> Mono.Analyze.rms buf.(i))
 end
 
 module Effect = struct
   class type t =
   object
-    method process : buffer -> int -> int -> unit
+    method process : buffer -> unit
   end
 
   class chain (e1:t) (e2:t) =
   object
-    method process buf ofs len =
-      e1#process buf ofs len;
-      e2#process buf ofs len
+    method process buf =
+      e1#process buf;
+      e2#process buf
   end
 
   class of_mono chans (g:unit -> Mono.Effect.t) =
   object
     val g = Array.init chans (fun _ -> g ())
 
-    method process buf ofs len =
+    method process buf =
       for c = 0 to chans - 1 do
-	g.(c)#process buf.(c) ofs len
+	g.(c)#process buf.(c)
       done
   end
 
@@ -1259,11 +1277,11 @@ module Effect = struct
     val rb = Ringbuffer_ext.create chans 0
 
     initializer
-      Ringbuffer_ext.write rb (create chans delay) 0 delay
+      Ringbuffer_ext.write rb (create chans delay)
 
-    method process buf ofs len =
-      Ringbuffer_ext.write rb buf ofs len;
-      Ringbuffer_ext.read rb buf ofs len
+    method process buf =
+      Ringbuffer_ext.write rb buf;
+      Ringbuffer_ext.read rb buf
   end
 
   class delay chans sample_rate delay once feedback =
@@ -1281,22 +1299,23 @@ module Effect = struct
 
     val tmpbuf = Buffer_ext.create chans 0
 
-    method process buf ofs len =
+    method process buf =
       if once then
-	Ringbuffer_ext.write rb buf ofs len;
+	Ringbuffer_ext.write rb buf;
       (* Make sure that we have a past of exactly d samples. *)
       if Ringbuffer_ext.read_space rb < delay then
-	Ringbuffer_ext.write rb (create chans delay) 0 delay;
+	Ringbuffer_ext.write rb (create chans delay);
       if Ringbuffer_ext.read_space rb > delay then
 	Ringbuffer_ext.read_advance rb (Ringbuffer_ext.read_space rb - delay);
+      let len = length buf in
       if len > delay then
-	add_coeff buf (ofs + delay) feedback buf ofs (len - delay);
+	add_coeff (sub buf delay (len-delay)) feedback (sub buf 0 (len - delay));
       let rlen = min delay len in
       let tmpbuf = Buffer_ext.prepare tmpbuf rlen in
-      Ringbuffer_ext.read rb tmpbuf 0 rlen;
-      add_coeff buf ofs feedback tmpbuf 0 rlen;
+      Ringbuffer_ext.read rb (sub tmpbuf 0 rlen);
+      add_coeff (sub buf 0 rlen) feedback (sub tmpbuf 0 rlen);
       if not once then
-	Ringbuffer_ext.write rb buf ofs len
+	Ringbuffer_ext.write rb buf
   end
 
   class delay_ping_pong chans sample_rate delay once feedback =
@@ -1317,11 +1336,11 @@ module Effect = struct
       d1#set_feedback f;
       d2#set_feedback f
 
-    method process buf ofs len =
+    method process buf =
       assert (channels buf = 2);
       (* Add original on channel 0. *)
-      d1'#process [|buf.(0)|] ofs len;
-      d2#process [|buf.(1)|] ofs len
+      d1'#process [|buf.(0)|];
+      d2#process [|buf.(1)|]
   end
 
   let delay chans sample_rate d ?(once=false) ?(ping_pong=false) feedback =
@@ -1365,7 +1384,7 @@ module Effect = struct
     (** Current gain. *)
     val mutable g = 1.
 
-    method process (buf:buffer) ofs len =
+    method process (buf:buffer) =
       let ratio = (ratio -. 1.) /. ratio in
       (* Attack and release "per sample decay". *)
       let g_attack = if attack = 0. then 0. else exp (-1. /. (samplerate *. attack)) in
@@ -1375,7 +1394,7 @@ module Effect = struct
       (* Knees. *)
       let knee_min = lin_of_dB (threshold -. knee) in
       let knee_max = lin_of_dB (threshold +. knee) in
-      for i = ofs to ofs + len - 1 do
+      for i = 0 to length buf - 1 do
 
         (* Input level. *)
         let lev_in =
@@ -1478,10 +1497,10 @@ module Effect = struct
     (** Is it enabled? (disabled if below the threshold) *)
     val mutable enabled = true
 
-    method process (buf:buffer) ofs len =
+    method process (buf:buffer) =
       for c = 0 to channels - 1 do
 	let bufc = buf.(c) in
-	for i = ofs to ofs + len - 1 do
+	for i = 0 to length buf - 1 do
 	  let bufci = bufc.{i} in
 	  if rms_collected >= rms_len then
 	    (
@@ -1527,9 +1546,9 @@ module Effect = struct
 end
 
 module Generator = struct
-  let white_noise buf ofs len =
+  let white_noise buf =
     for c = 0 to channels buf - 1 do
-      Mono.Generator.white_noise buf.(c) ofs len
+      Mono.Generator.white_noise buf.(c)
     done
 
   class type t =
@@ -1542,9 +1561,9 @@ module Generator = struct
 
     method dead : bool
 
-    method fill : buffer -> int -> int -> unit
+    method fill : buffer -> unit
 
-    method fill_add : buffer -> int -> int -> unit
+    method fill_add : buffer -> unit
   end
 
   class of_mono (g : Mono.Generator.t) =
@@ -1555,17 +1574,18 @@ module Generator = struct
 
     method set_frequency = g#set_frequency
 
-    method fill buf ofs len =
-      g#fill buf.(0) ofs len;
+    method fill buf =
+      g#fill buf.(0);
       for c = 1 to channels buf - 1 do
-	Mono.blit buf.(0) ofs buf.(c) ofs len
+	Mono.blit buf.(0) buf.(c)
       done
 
-    method fill_add (buf:buffer) ofs len =
-      let tmpbuf = Mono.Buffer_ext.prepare tmpbuf len in
-      g#fill tmpbuf 0 len;
+    method fill_add (buf:buffer) =
+      let len = length buf in
+      let tmpbuf = Mono.sub (Mono.Buffer_ext.prepare tmpbuf len) 0 len in
+      g#fill tmpbuf;
       for c = 0 to Array.length buf - 1 do
-	Mono.add buf.(c) ofs tmpbuf 0 len
+	Mono.add buf.(c) tmpbuf
       done
 
     method release = g#release
@@ -1575,16 +1595,17 @@ module Generator = struct
 
   class chain (g : t) (e : Effect.t) : t =
   object
-    method fill buf ofs len =
-      g#fill buf ofs len;
-      e#process buf ofs len
+    method fill buf =
+      g#fill buf;
+      e#process buf
 
     val tmpbuf = Buffer_ext.create 0 0
 
-    method fill_add buf ofs len =
-      let tmpbuf = Buffer_ext.prepare tmpbuf ~channels:(channels buf) len in
-      g#fill tmpbuf 0 len;
-      add buf ofs tmpbuf 0 len
+    method fill_add buf =
+      let len = length buf in
+      let tmpbuf = sub (Buffer_ext.prepare tmpbuf ~channels:(channels buf) len) 0 len in
+      g#fill tmpbuf;
+      add buf tmpbuf
 
     method set_volume = g#set_volume
     method set_frequency = g#set_frequency
@@ -1615,7 +1636,7 @@ module IO = struct
 
       method close : unit
 
-      method read : buffer -> int -> int -> int
+      method read : buffer -> int
     end
 
     class virtual base =
@@ -1693,15 +1714,16 @@ module IO = struct
       bytes_per_sample <- sample_size / 8 * channels;
       length <- len_dat / bytes_per_sample
 
-      method read (buf:buffer) ofs len =
+      method read (buf:buffer) =
+        let len = buffer_length buf in
         let sbuflen = len * channels * 2 in
         let sbuf = self#input sbuflen in
         let sbuflen = String.length sbuf in
         let len = sbuflen / (channels * 2) in
         begin
           match sample_size with
-            | 16 -> S16LE.to_audio sbuf 0 buf ofs len
-            | 8 -> U8.to_audio sbuf 0 buf ofs len
+            | 16 -> S16LE.to_audio sbuf 0 buf 0 len
+            | 8 -> U8.to_audio sbuf 0 buf 0 len
             | _ -> assert false
         end ;
         len
@@ -1724,7 +1746,7 @@ module IO = struct
   module Writer = struct
     class type t =
     object
-      method write : buffer -> int -> int -> unit
+      method write : buffer -> unit
 
       method close : unit
     end
@@ -1769,8 +1791,8 @@ module IO = struct
 
       val mutable datalen = 0
 
-      method write buf ofs len =
-        let s = S16LE.make buf ofs len in
+      method write buf =
+        let s = S16LE.make buf in
         self#output s;
         datalen <- datalen + String.length s
 
@@ -1793,17 +1815,17 @@ module IO = struct
   module RW = struct
     class type t =
     object
-      method read : buffer -> int -> int -> unit
+      method read : buffer -> unit
 
-      method write : buffer -> int -> int -> unit
+      method write : buffer -> unit
 
       method close : unit
     end
 
     class virtual bufferized channels ~min_duration ~fill_duration ~max_duration ~drop_duration =
     object
-      method virtual io_read : buffer -> int -> int -> unit
-      method virtual io_write : buffer -> int -> int -> unit
+      method virtual io_read : buffer -> unit
+      method virtual io_write : buffer -> unit
 
       initializer
         assert (fill_duration <= max_duration);
@@ -1811,20 +1833,22 @@ module IO = struct
 
       val rb = Ringbuffer.create channels max_duration
 
-      method read buf ofs len =
+      method read buf =
+        let len = length buf in
         let rs = Ringbuffer.read_space rb in
         if rs < min_duration + len then
           (
             let ps = min_duration + len - rs in
-            Ringbuffer.write rb (create channels ps) 0 ps
+            Ringbuffer.write rb (create channels ps)
           );
-        Ringbuffer.read rb buf ofs len
+        Ringbuffer.read rb buf
 
-      method write buf ofs len =
+      method write buf =
+        let len = length buf in
         let ws = Ringbuffer.write_space rb in
         if ws + len > max_duration then
           Ringbuffer.read_advance rb (ws - drop_duration);
-        Ringbuffer.write rb buf ofs len
+        Ringbuffer.write rb buf
     end
   end
 end
