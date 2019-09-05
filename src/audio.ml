@@ -213,14 +213,14 @@ module Mono = struct
       buf.{i} <- Sample.clip buf.{i}
     done
 
-  let resample ?(mode=`Nearest) ratio inbuf =
+  let resample ?(mode=`Linear) ratio inbuf =
     let len = length inbuf in
     if ratio = 1. then
       let outbuf = create len in
       Bigarray.Array1.blit inbuf outbuf;
       outbuf
     else if mode = `Nearest then
-      let outlen = int_of_float (float len *. ratio) in
+      let outlen = int_of_float (float len *. ratio +. 0.5) in
       let outbuf = create outlen in
       for i = 0 to outlen - 1 do
         let pos = min (int_of_float ((float i /. ratio) +. 0.5)) (len - 1) in
@@ -237,9 +237,7 @@ module Mono = struct
 	  Bigarray.Array1.unsafe_set outbuf i (Bigarray.Array1.unsafe_get inbuf pos)
         else
           let a = ir -. float pos in
-          (* TODO: read this again, it looks like a bug here... *)
-          failwith "TODO";
-          outbuf.{i} <- inbuf.{pos} *. (1. -. a) +. inbuf.{pos} *. a
+          outbuf.{i} <- inbuf.{pos} *. (1. -. a) +. inbuf.{pos + 1} *. a
       done;
       outbuf
 
