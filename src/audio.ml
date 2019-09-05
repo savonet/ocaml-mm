@@ -190,13 +190,13 @@ module Mono = struct
       buf.(i) <- Sample.clip buf.(i)
     done
 
-  let resample ?(mode=`Nearest) ratio inbuf offs len =
+  let resample ?(mode=`Linear) ratio inbuf offs len =
     if ratio = 1. then
       let outbuf = create len in
       blit inbuf offs outbuf 0 len;
       outbuf
     else if mode = `Nearest then
-      let outlen = int_of_float (float len *. ratio) in
+      let outlen = int_of_float (float len *. ratio +. 0.5) in
       let outbuf = create outlen in
       for i = 0 to outlen - 1 do
         let pos = min (int_of_float ((float i /. ratio) +. 0.5)) (len - 1) in
@@ -213,7 +213,7 @@ module Mono = struct
 	  outbuf.(i) <- inbuf.(pos + offs)
         else
           let a = ir -. float pos in
-          outbuf.(i) <- inbuf.(pos + offs) *. (1. -. a) +. inbuf.(pos + offs) *. a
+          outbuf.(i) <- inbuf.(pos + offs) *. (1. -. a) +. inbuf.(pos + offs + 1) *. a
       done;
       outbuf
 
