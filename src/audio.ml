@@ -974,6 +974,18 @@ let interleave buf =
   done;
   ibuf
 
+(* TODO: in C *)
+let deinterleave chans ibuf =
+  let len = Bigarray.Array1.dim ibuf / chans in
+  let buf = Array.init chans (fun _ -> Mono.create len) in
+  for c = 0 to chans - 1 do
+    let bufc = buf.(c) in
+    for i = 0 to len - 1 do
+      Bigarray.Array1.unsafe_set bufc i (Bigarray.Array1.unsafe_get ibuf (chans * i + c))
+    done
+  done;
+  buf
+
 let append b1 b2 =
   Array.mapi (fun i b1 -> Mono.append b1 b2.(i)) b1
 

@@ -325,6 +325,8 @@ val of_mono : Mono.t -> t
 
 val interleave : t -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t
 
+val deinterleave : int -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t -> t
+
 module U8 : sig
   val of_audio : t -> int -> Bytes.t -> int -> int -> unit
 
