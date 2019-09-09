@@ -158,6 +158,17 @@ module Mono = struct
 
   let unsafe_set (buf : t) = Bigarray.Array1.unsafe_set buf
 
+  let of_array a =
+    let len = Array.length a in
+    let buf = create len in
+    for i = 0 to len - 1 do
+      unsafe_set buf i a.(i)
+    done;
+    buf
+
+  let to_array buf =
+    Array.init (length buf) (fun i -> unsafe_get buf i)
+
   let sub buf off len = Bigarray.Array1.sub buf off len
 
   let blit src dst = Bigarray.Array1.blit src dst
@@ -923,6 +934,12 @@ let create chans n =
 
 let make chans n x =
   Array.init chans (fun _ -> Mono.make n x)
+
+let of_array a =
+  Array.map Mono.of_array a
+
+let to_array a =
+  Array.map Mono.to_array a
 
 let channels buf =
   Array.length buf

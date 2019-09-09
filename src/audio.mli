@@ -91,6 +91,10 @@ module Mono : sig
 
   val make : int -> float -> t
 
+  val of_array : float array -> t
+
+  val to_array : t -> float array
+
   val sub : t -> int -> int -> t
 
   val blit : t -> t -> unit
@@ -290,6 +294,10 @@ type buffer = t
 val create : int -> int -> t
 
 val make : int -> int -> float -> t
+
+val of_array : float array array -> t
+
+val to_array : t -> float array array
 
 (** Create a buffer with the same number of channels and duration as the given
     buffer. *)
