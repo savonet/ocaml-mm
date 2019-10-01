@@ -32,10 +32,7 @@
  *)
 
 module Image = struct
-  include Image.RGBA32
-  (* TODO: remove when switching to YUV420 *)
-  let blit src ?blank ?x ?y dst = blit ?blank ?x ?y src dst
-  let add src ?x ?y dst = add ?x ?y src dst
+  include Image.YUV420
 
   let create w h = create w h
 end
@@ -229,7 +226,8 @@ module IO = struct
 
       method write (buf:buffer) ofs len =
         for i = ofs to ofs + len - 1 do
-          let s = Image.to_RGB24_string buf.(i) in
+          (* let s = Image.to_RGB24_string buf.(i) in *)
+          let s = failwith "TODO: output YUV420 avi" in
           self#output s;
           datalen <- datalen + String.length s;
         done;

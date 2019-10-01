@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "mm"
-version: "0.5.0"
+version: "0.6.0"
 maintainer: "Romain Beauxis <toots@rastageeks.org>"
 authors: "The Savonet Team <savonet-users@lists.sourceforge.net>"
 homepage: "https://github.com/savonet/ocaml-mm"
@@ -32,6 +32,5 @@ dev-repo: "git+https://github.com/savonet/ocaml-mm.git"
 synopsis:
   "The mm library contains high-level to create and manipulate multimedia streams (audio, video, MIDI)"
 conflicts: [
-  "ocaml-variants" {= "4.04.2+flambda"}
-  "liquidsoap" {< "1.4.0"}
+  "liquidsoap" {< "1.5.0"}
 ]

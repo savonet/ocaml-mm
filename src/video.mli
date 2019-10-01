@@ -35,7 +35,7 @@
 
 (** Images of videos. *)
 module Image : sig
-  type t = Image.RGBA32.t
+  type t = Image.YUV420.t
 
   val create : int -> int -> t
 
@@ -64,7 +64,7 @@ module Image : sig
   val randomize : t -> unit
 
   (** [blit_all src dst] blits an entire image. *)
-  val blit : t -> ?blank:bool -> ?x:int -> ?y:int -> t -> unit
+  val blit : t -> t -> unit
 
   val get_pixel_rgba : t -> int -> int -> int * int * int * int
 
