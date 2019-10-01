@@ -1,6 +1,7 @@
 0.6.0 (unreleased)
 =====
 * Use bigarrays to implement mono audio buffers, should be more efficient.
+* Use `YUV420` for video frames.
 
 0.5.0 (18-08-2019)
 =====
