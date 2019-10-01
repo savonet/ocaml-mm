@@ -33,27 +33,22 @@
 
 (** Operations on ringbuffers. *)
 
-(** Signature for modules describing elements of ringbuffers (used by functors
-    creating ringbuffers). *)
-module type Elt = sig
-  (** Type of an element. *)
+(** Underlying buffers of ringbuffers. *)
+module type Buffer = sig
+  (** Type of a buffer. *)
   type t
 
-  (** Generate an element. *)
-  val create : unit -> t
+  (** Create a buffer of given length. *)
+  val create : int -> t
 
-  (** Blitting function. [Array.blit] should be used in most cases unless some
-      optimizations are required. *)
-  val blit : t array -> int -> t array -> int -> int -> unit
+  (** Blitting function. *)
+  val blit : t -> int -> t -> int -> int -> unit
 end
 
 (** Signature for ringbuffer modules. *)
 module type R = sig
-  (** Type of elements contained in the ringbuffer. *)
-  type elt
-
   (** A buffer of elements. *)
-  type buffer = elt array
+  type buffer
 
   (** A ringbuffer. *)
   type t
@@ -87,8 +82,8 @@ module type R = sig
 end
 
 (** Create a ringbuffer. *)
-module Make : functor (E:Elt) -> R with type elt = E.t
+module Make : functor (B:Buffer) -> R with type buffer = B.t
 
 (** Create an extensible ringbuffer: the size of the ringbuffer is extended if
     write space is too small at some point. *)
-module Make_ext : functor (E:Elt) -> R with type elt = E.t
+module Make_ext : functor (B:Buffer) -> R with type buffer = B.t
