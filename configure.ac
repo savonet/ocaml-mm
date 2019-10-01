@@ -1,8 +1,24 @@
 AC_INIT([ocaml-mm],[0.5.1],[savonet-users@lists.sourceforge.net])
 VERSION=$PACKAGE_VERSION
 AC_MSG_RESULT(configuring $PACKAGE_STRING)
+min_ocaml_version=4.08.0
 
 AC_BASE_CHECKS()
+
+OCAML_VERSION="`$OCAMLC -version`"
+OCAML_MAJOR="`echo $OCAML_VERSION | cut -d'.' -f 1`"
+AC_SUBST(OCAML_MAJOR)
+OCAML_MINOR="`echo $OCAML_VERSION | cut -d'.' -f 2`"
+AC_SUBST(OCAML_MINOR)
+OCAML_REVISION="`echo $OCAML_VERSION | cut -d'.' -f 3`"
+AC_SUBST(OCAML_REVISION)
+AC_MSG_CHECKING([for ocamlc version])
+AC_MSG_RESULT([$OCAML_MAJOR.$OCAML_MINOR.$OCAML_REVISION])
+
+AC_OCAML_COMPARE_VERSION([$OCAML_MAJOR.$OCAML_MINOR.$OCAML_REVISION],[$min_ocaml_version])
+if test -z "${VERSION_OK}"; then
+  AC_MSG_ERROR([version $min_ocaml_version or greater of the OCaml compiler is required to build liquidsoap])
+fi
 
 # Include a config.h
 AC_CONFIG_HEADERS([config.h:config.h.in])

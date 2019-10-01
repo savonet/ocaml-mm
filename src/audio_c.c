@@ -95,13 +95,18 @@ static inline int32_t int32_of_int24(int24_t x) {
  */
 CAMLprim value caml_float_array_blit(value _src, value _src_off,
                                      value _dst, value _dst_off, value _len) {
+  CAMLparam5(_src, _src_off, _dst, _dst_off, _len);
   int src_off = Int_val(_src_off) ;
   int dst_off = Int_val(_dst_off) ;
   int len = Int_val(_len) ;
+  if (src_off+len > Wosize_val(_src) / Double_wosize)
+    failwith("blit: invalid source");
+  if (dst_off+len > Wosize_val(_dst) / Double_wosize)
+    failwith("blit: invalid destination");
   int i ;
   for (i=0 ; i<len ; i++)
     Store_double_field(_dst,dst_off+i,Double_field(_src,src_off+i)) ;
-  return Val_unit ;
+  CAMLreturn(Val_unit);
 }
 
 static inline int16_t clip(double s)
