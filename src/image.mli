@@ -421,5 +421,5 @@ module Generic : sig
   val to_YUV420 : t -> YUV420.t
 
   (** Convert a generic image from a format to another. *)
-  val convert : ?copy:bool -> ?proportional:bool -> ?scale_kind:RGBA32.Scale.kind -> t -> t -> unit
+  val convert : ?proportional:bool -> ?scale_kind:RGBA32.Scale.kind -> t -> t -> unit
 end

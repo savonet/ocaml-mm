@@ -367,17 +367,6 @@ module Mono = struct
 	in
 	fft f.temp d 0 f.n
 
-      let ifft f d =
-	let n = float f.n in
-	let normc c = {Complex.re = c.Complex.re /. n; Complex.im = (-.c.Complex.im) /. n} in
-	for i = 0 to Array.length d - 1 do
-	  d.(i) <- Complex.conj d.(i)
-	done;
-	fft f d;
-	for i = 0 to Array.length d - 1 do
-	  d.(i) <- normc d.(i)
-	done
-
       (* See http://en.wikipedia.org/wiki/Window_function *)
       module Window = struct
 	let iter f d =
@@ -385,14 +374,6 @@ module Mono = struct
 	  let n = float len in
 	  for i = 0 to len - 1 do
 	    let k = f (float i) n in
-	    d.(i) <- ccoef k d.(i)
-	  done
-
-	let iteri f d =
-	  let len = Array.length d in
-	  let n = float len in
-	  for i = 0 to len - 1 do
-	    let k = f i n in
 	    d.(i) <- ccoef k d.(i)
 	  done
 
@@ -424,28 +405,27 @@ module Mono = struct
 	  let a2 = 0.38 in
 	  iter (fun i n -> a0 -. a1 *. abs_float (i /. n -. 0.5) -. a2 *. cos (2. *. pi *. i /. n)) d
 
-	let blackman ?(alpha=0.16) f d =
+	let blackman ?(alpha=0.16) d =
 	  let a = alpha in
 	  let a0 = (1. -. a) /. 2. in
 	  let a1 = 1. /. 2. in
 	  let a2 = a /. 2. in
 	  iter (fun i n -> a0 -. a1 *. cos (2. *. pi *. i /. n) +. a2 *. cos (4. *. pi *. i /. n)) d
-	  (* iteri (fun i n -> a0 -. a1 *. circle.(i) *)
 
 	(* TODO: use circle to compute cosines *)
-	let low_res a0 a1 a2 a3 f d =
+	let low_res a0 a1 a2 a3 d =
 	  iter (fun i n -> a0 -. a1 *. cos (2. *. pi *. i /. n) +. a2 *. cos (4. *. pi *. i /. n) -. a3 *. cos (6. *. pi *. i /. n)) d
 
-	let nuttall f d = low_res 0.355768 0.487396 0.144232 0.012604 f d
+	let nuttall d = low_res 0.355768 0.487396 0.144232 0.012604 d
 
-	let blackman_harris f d = low_res 0.35875 0.48829 0.14128 0.01168 f d
+	let blackman_harris d = low_res 0.35875 0.48829 0.14128 0.01168 d
 
-	let blackman_nuttall f d = low_res 0.3635819 0.4891775 0.1365995 0.0106411 f d
+	let blackman_nuttall d = low_res 0.3635819 0.4891775 0.1365995 0.0106411 d
       end
 
       let band_freq sr f k = float k *. float sr /. float f.n
 
-      let notes sr f ?(window=Window.cosine) ?(note_min=Note.c0) ?(note_max=128) ?(volume_min=0.01) ?(filter_harmonics=true) buf =
+      let notes sr f ?(note_min=Note.c0) ?(note_max=128) ?(volume_min=0.01) ?(filter_harmonics=true) buf =
         let len = buffer_length buf in
         assert (len = length f);
         let bdur = float len /. float sr in
@@ -807,18 +787,6 @@ module Mono = struct
 	phase <- mod_float (phase +. float len *. omega) 1.
     end
 
-    class tb303 sr =
-    object (self)
-      (* Freq of 0. means no slide for next note. *)
-      inherit base sr 0.
-
-      (* Real frequency: during slides, this is the frequency that gets heard. *)
-      val mutable real_freq = 0.
-
-      method fill buf =
-	assert false
-    end
-
     class chain (g:t) (e:Effect.t) : t =
     object
       method fill buf =
@@ -917,9 +885,6 @@ end
 type t = Mono.buffer array
 
 type buffer = t
-
-(** Length of the buffer in samples. *)
-let length b = Array.length b
 
 (** Iterate a function on each channel of the buffer. *)
 let iter f b = Array.iter f b
@@ -1303,7 +1268,7 @@ module Effect = struct
 
   class delay_only chans sample_rate delay =
     let delay = int_of_float (float sample_rate *. delay) in
-  object (self)
+  object
     val mutable delay = delay
 
     method set_delay d = delay <- int_of_float (float sample_rate *. d)
@@ -1320,7 +1285,7 @@ module Effect = struct
 
   class delay chans sample_rate delay once feedback =
     let delay = int_of_float (float sample_rate *. delay) in
-  object (self)
+  object
     val mutable delay = delay
 
     method set_delay d = delay <- int_of_float (float sample_rate *. d)
@@ -1389,7 +1354,7 @@ module Effect = struct
     (** Number of samples for computing rms. *)
     let rmsn = samples_of_seconds samplerate rms_window in
     let samplerate = float samplerate in
-  object (self)
+  object
     val mutable attack = attack
     method set_attack a = attack <- a
     val mutable release = release
@@ -1514,7 +1479,7 @@ module Effect = struct
     (* TODO: is this the right conversion? *)
     let kup = kup ** (seconds_of_samples samplerate rms_len) in
     let kdown = kdown ** (seconds_of_samples samplerate rms_len) in
-  object (self)
+  object
 
     (** Square of the currently computed rms. *)
     val mutable rms = Array.make channels 0.

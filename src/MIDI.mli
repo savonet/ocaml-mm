@@ -129,6 +129,6 @@ module IO : sig
       method close : unit
     end
 
-    class to_file : int -> ?tracks:int -> string -> t
+    class to_file : int -> string -> t
   end
 end

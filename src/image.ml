@@ -797,11 +797,11 @@ module YUV420 = struct
   module Effect = struct
     external greyscale : t -> unit = "caml_yuv_greyscale"
 
-    let sepia img = failwith "Not implemented: sepia"
+    let sepia _ = failwith "Not implemented: sepia"
 
-    let invert img = failwith "Not implemented: invert"
+    let invert _ = failwith "Not implemented: invert"
 
-    let lomo img = failwith "Not implemented: lomo"
+    let lomo _ = failwith "Not implemented: lomo"
   end
 end
 
@@ -994,7 +994,7 @@ module Generic = struct
 
   external rgb32_to_rgba32 : data -> int -> data -> int -> int * int -> unit = "caml_RGB32_to_RGBA32"
 
-  let convert ?(copy=false) ?(proportional=true) ?scale_kind src dst =
+  let convert ?(proportional=true) ?scale_kind src dst =
     match src.data, dst.data with
       | RGB s, RGB d when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.RGBA32 ->
         let src = to_RGBA32 src in

@@ -79,6 +79,7 @@ let blank vid off len =
 let randomize vid off len =
   iter Image.randomize vid off len
 
+(*
 module RE = struct
   type t = Image.t
 
@@ -86,6 +87,7 @@ module RE = struct
 
   let blit = blit
 end
+*)
 
 (* module Ringbuffer_ext = Ringbuffer.Make_ext (RE) *)
 
@@ -224,7 +226,7 @@ module IO = struct
       val mutable datalen = 0
       val mutable dataframes = 0
 
-      method write (buf:buffer) ofs len =
+      method write (_:buffer) ofs len =
         for i = ofs to ofs + len - 1 do
           (* let s = Image.to_RGB24_string buf.(i) in *)
           let s = failwith "TODO: output YUV420 avi" in

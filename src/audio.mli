@@ -181,16 +181,16 @@ module Mono : sig
 
 	val bartlett_hann : Complex.t array -> unit
 
-	val blackman : ?alpha:float -> t -> Complex.t array -> unit
+	val blackman : ?alpha:float -> Complex.t array -> unit
 
-	val nuttall : t -> Complex.t array -> unit
+	val nuttall : Complex.t array -> unit
 
-	val blackman_harris : t -> Complex.t array -> unit
+	val blackman_harris : Complex.t array -> unit
 
-	val blackman_nuttall : t -> Complex.t array -> unit
+	val blackman_nuttall : Complex.t array -> unit
       end
 
-      val notes : int -> t -> ?window:(Complex.t array -> unit) -> ?note_min:int -> ?note_max:int -> ?volume_min:float -> ?filter_harmonics:bool -> buffer -> (Note.t * float) list
+      val notes : int -> t -> ?note_min:int -> ?note_max:int -> ?volume_min:float -> ?filter_harmonics:bool -> buffer -> (Note.t * float) list
 
       val loudest_note : (Note.t * float) list -> (Note.t * float) option
 

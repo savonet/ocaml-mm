@@ -58,8 +58,6 @@ type event =
   | Key_signature of int * bool
   | Custom of string
 
-type delta = int
-
 (* Tempo is in microseconds per quarter. *)
 let samples_of_delta samplerate division tempo delta =
   match division with
@@ -104,13 +102,13 @@ let encode_event chan e =
   (
     match e with
       | Note_off (n,v) ->
-        s.[0] <- coi (0x8 lsl 4 + chan);
-        s.[1] <- coi n;
-        s.[2] <- bof v
+        Bytes.set s 0 (coi (0x8 lsl 4 + chan));
+        Bytes.set s 1 (coi n);
+        Bytes.set s 2 (bof v)
       | Note_on (n,v) ->
-        s.[0] <- coi (0x9 lsl 4 + chan);
-        s.[1] <- coi n;
-        s.[2] <- bof v
+        Bytes.set s 0 (coi (0x9 lsl 4 + chan));
+        Bytes.set s 1 (coi n);
+        Bytes.set s 2 (bof v)
       | _ ->
       (* TODO *)
         assert false
@@ -185,13 +183,6 @@ let insert b te =
 
 let data buf = buf.data
 
-let append b1 b2 =
-  let d = duration b1 in
-  {
-    data = b1.data@(List.map (fun (t,e) -> t+d,e) b2.data);
-    duration = d + duration b2;
-  }
-
 module Multitrack = struct
   type t = buffer array
   type buffer = t
@@ -208,12 +199,6 @@ module Multitrack = struct
         Array.iter (fun buf -> clear buf ofs len) buf
       | Some c ->
         clear buf.(c) ofs len
-
-  let clear_all buf =
-    Array.iter clear_all buf
-
-  let append t1 t2 =
-    Array.init (channels t1) (fun c -> append t1.(c) t2.(c))
 end
 
 module IO = struct
@@ -289,7 +274,7 @@ module IO = struct
 	    let ans = Bytes.create len in
             if !pos + len >= Array.length data then raise Invalid_data;
             for i = 0 to len - 1 do
-              ans.[i] <- char_of_int data.(!pos + i)
+              Bytes.set ans i (char_of_int data.(!pos + i))
             done;
             pos := !pos + len;
             Bytes.to_string ans
@@ -567,7 +552,7 @@ module IO = struct
       method close : unit
     end
 
-    class to_file samplerate ?(tracks=16) fname =
+    class to_file samplerate fname =
       (* frames per second *)
       let fps = 25 in
       (* ticks per frame *)

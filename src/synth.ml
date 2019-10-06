@@ -77,7 +77,7 @@ object (self)
     in
     notes <- note :: notes
 
-  method note_off n (v:float) =
+  method note_off n _ =
     (* TODO: remove only one note *)
     (* TODO: merge the two iterations on the list *)
     List.iter (fun note -> if note.note = n then note.generator#release) notes;
@@ -140,11 +140,6 @@ let might_adsr adsr g =
     | None -> g
     | Some a -> new Audio.Mono.Generator.adsr a g
 
-let simple_gen g ?adsr sr ?(volume=1.) ?(phase=0.) f =
-    let g = g sr ?volume:(Some volume) ?phase:(Some phase) f in
-    let g = might_adsr adsr g in
-    new Audio.Generator.of_mono g
-
 class sine ?adsr sr =
   create_mono
     (fun f v ->
@@ -178,8 +173,7 @@ object (self)
   method fill_add buf =
     g#fill_add buf
 
-  (* TODO *)
-  method play_add (evs:MIDI.buffer) (eofs:int) (buf:Audio.buffer) : unit =
+  method play_add (_:MIDI.buffer) (_:int) (_:Audio.buffer) : unit =
     assert false
 
   method play evs eofs buf : unit =
