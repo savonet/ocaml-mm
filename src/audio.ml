@@ -1038,12 +1038,12 @@ module S16LE = struct
 
   let length channels len = len / (2 * channels)
 
-  external of_audio :
-    buffer -> Bytes.t -> int -> unit = "caml_float_pcm_to_s16le"
+  external of_audio : bool -> buffer -> Bytes.t -> int -> unit = "caml_float_pcm_to_s16"
+  let of_audio = of_audio true
 
   let make buf =
     let len = buffer_length buf in
-    let slen = length (channels buf) len in
+    let slen = size (channels buf) len in
     let sbuf = Bytes.create slen in
     of_audio buf sbuf 0;
     Bytes.to_string sbuf
@@ -1056,12 +1056,12 @@ module S16BE = struct
 
   let length channels len = len / (2 * channels)
 
-  external of_audio :
-    buffer -> Bytes.t -> int -> unit = "caml_float_pcm_to_s16be"
+  external of_audio : bool -> buffer -> Bytes.t -> int -> unit = "caml_float_pcm_to_s16"
+  let of_audio = of_audio false
 
   let make buf =
     let len = buffer_length buf in
-    let slen = length (channels buf) len in
+    let slen = size (channels buf) len in
     let sbuf = Bytes.create slen in
     of_audio buf sbuf 0;
     Bytes.to_string sbuf

@@ -6,7 +6,7 @@ let periods = 4
 
 let () =
   let fft = FFT.init 11 in
-  let blen = FFT.duration fft in
+  let blen = FFT.length fft in
   let alsa_in = MMAlsa.rw channels sample_rate ~capture:true ~buffer_size:(periods*blen) ~periods () in
   let alsa_out = MMAlsa.rw channels sample_rate ~playback:true ~blocking:false ~buffer_size:(periods*blen) ~periods () in
   let buf = Audio.create channels blen in

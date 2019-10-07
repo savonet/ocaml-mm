@@ -253,18 +253,19 @@ CAMLprim value caml_float_pcm_to_s24le(value a, value _offs, value _dst, value _
   CAMLreturn(Val_int(dst_len));
 }
 
-CAMLprim value caml_float_pcm_to_s16(value a, value _dst, value _dst_offs, int little_endian)
+CAMLprim value caml_float_pcm_to_s16(value _le, value a, value _dst, value _dst_offs)
 {
-  CAMLparam2(a, _dst);
-  int c, i;
+  CAMLparam4(_le, a, _dst, _dst_offs);
+  int little_endian = Bool_val(_le);
   int dst_offs = Int_val(_dst_offs);
-  int len = Caml_ba_array_val(a)->dim[0];
   int nc = Wosize_val(a);
+  if (nc == 0) CAMLreturn(Val_int(0));
+
+  int len = Caml_ba_array_val(Field(a,0))->dim[0];
   int dst_len = 2 * len * nc;
   float *src;
   int16_t *dst = (int16_t*)Bytes_val(_dst);
-
-  if (nc == 0) CAMLreturn(Val_int(0));
+  int c, i;
 
   if (caml_string_length(_dst) < dst_offs + dst_len)
     caml_invalid_argument("pcm_to_s16: destination buffer too short");
@@ -295,16 +296,6 @@ CAMLprim value caml_float_pcm_to_s16(value a, value _dst, value _dst_offs, int l
    }
 
   CAMLreturn(Val_int(dst_len));
-}
-
-CAMLprim value caml_float_pcm_to_s16le(value a, value _dst, value _dst_offs)
-{
-  return caml_float_pcm_to_s16(a, _dst, _dst_offs, 1);
-}
-
-CAMLprim value caml_float_pcm_to_s16be(value a, value _dst, value _dst_offs)
-{
-  return caml_float_pcm_to_s16(a, _dst, _dst_offs, 0);
 }
 
 CAMLprim value caml_float_pcm_to_u8(value a, value _offs,

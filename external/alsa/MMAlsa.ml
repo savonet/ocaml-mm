@@ -65,7 +65,9 @@ object
     Alsa.Pcm.set_params dev params;
     Alsa.Pcm.set_nonblock dev (not blocking)
 
-  method read buf ofs len = Alsa.Pcm.readn_float dev buf ofs len
+  method read buf =
+    let len = Audio.length buf in
+    Alsa.Pcm.readn_float dev buf 0 len
 
   method write buf ofs len = Alsa.Pcm.writen_float dev buf ofs len
 
