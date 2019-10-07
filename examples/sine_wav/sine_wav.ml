@@ -1,4 +1,4 @@
-let total_duration = 5
+let total_duration = 10
 
 let () =
   let channels = 2 in
@@ -9,9 +9,9 @@ let () =
   let buf = Audio.create channels blen in
   let sine = new Audio.Generator.of_mono (new Audio.Mono.Generator.sine sample_rate 440.) in
   for i = 0 to sample_rate / blen * total_duration - 1 do
-    sine#fill buf 0 blen;
-    wav#write buf 0 blen;
-    oss#write buf 0 blen
+    sine#fill buf;
+    wav#write buf;
+    oss#write buf
   done;
   wav#close;
   oss#close
