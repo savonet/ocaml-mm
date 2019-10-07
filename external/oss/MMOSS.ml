@@ -55,8 +55,8 @@ object (self)
       w := !w + self#stream_write buf (ofs + !w) (len - !w)
     done
 
-  method write buf ofs len =
-    let s = Audio.S16LE.make buf ofs len in
+  method write buf =
+    let s = Audio.S16LE.make buf in
     self#stream_really_write s 0 (String.length s)
 
   method close =
@@ -75,18 +75,19 @@ object (self)
   method channels = channels
   method sample_rate = sample_rate
 
-  method duration : int = assert false
-  method duration_time : float = assert false
+  method length : int = assert false
+  method duration : float = assert false
 
-  method read buf ofs len =
+  method read buf =
+    let len = Audio.length buf in
     let slen = Audio.S16LE.length channels len in
     let s = Bytes.create slen in
     let r = self#stream_read s 0 slen in
-    let len = Audio.S16LE.duration channels r in
-    Audio.S16LE.to_audio (Bytes.to_string s) 0 buf ofs len;
+    let len = Audio.S16LE.length channels r in
+    Audio.S16LE.to_audio (Bytes.unsafe_to_string s) 0 buf 0 len;
     len
 
-  method seek (n:int) : unit = assert false
+  method seek (_:int) : unit = assert false
 
   method close =
     self#stream_close
