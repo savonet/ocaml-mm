@@ -30,7 +30,7 @@ let blen = sample_rate / 3
 let no = Audio.create channels blen
 let gen i =
   let buf = Audio.create channels blen in
-  (i 440. 1.)#fill buf 0 blen;
+  (i 440. 1.)#fill buf;
   buf
 
 let bd = gen bd
@@ -50,7 +50,7 @@ let () =
   let buf = Audio.append bd sd in
   while true do
     (* wav#write buf 0 blen; *)
-    oss#write buf 0 (Audio.duration buf)
+    oss#write buf
   done;
   (* wav#close; *)
   oss#close
