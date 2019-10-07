@@ -41,8 +41,8 @@ object (self)
   val mutable channels = 0
   method channels = channels
   (* TODO *)
-  method duration : int = raise Not_found
-  method duration_time : float = raise Not_found
+  method length : int = failwith "TODO"
+  method duration : float = failwith "TODO"
   method sample_rate = 44100
 
   val mutable rb = Audio.Ringbuffer_ext.create 0 0
@@ -60,7 +60,7 @@ object (self)
         let n = self#stream_read s 0 n in
         Bytes.to_string s, n)
   in
-  let _, c, _ = Mad.get_output_format f in
+  (* let _, c, _ = Mad.get_output_format f in *)
   (* TODO: we should decode a frame in order to get the real number of
      channels... *)
   let c = 2 in
@@ -91,7 +91,7 @@ object (self)
     len
 
   (* TODO *)
-  method seek (n:int) : unit = assert false
+  method seek (_:int) : unit = failwith "TODO"
 end
 
 class reader_of_file fname =
