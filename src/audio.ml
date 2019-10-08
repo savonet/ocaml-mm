@@ -677,10 +677,7 @@ module Mono = struct
   end
 
   module Generator = struct
-    let white_noise buf =
-      for i = 0 to length buf - 1 do
-        buf.{i} <- Random.float 2. -. 1.
-      done
+    let white_noise buf = noise buf
 
     class type t =
     object
