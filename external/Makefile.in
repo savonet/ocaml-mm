@@ -28,6 +28,6 @@ ifeq "@W_V4L@" "yes"
 endif
 
 all clean doc:
-	for d in $(LIBS); do $(MAKE) -C $$d $@; done
+	for d in $(LIBS); do $(MAKE) -C $$d $@ || exit 1; done
 
 .PHONY: all

@@ -36,8 +36,8 @@ class writer channels rate =
 object
   val dev = Ao.open_live ~channels ~rate ~byte_format:`LITTLE_ENDIAN ()
 
-  method write buf ofs len =
-    let s = Audio.S16LE.make buf ofs len in
+  method write buf =
+    let s = Audio.S16LE.make buf in
     Ao.play dev s
 
   method close =
