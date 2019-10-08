@@ -1080,17 +1080,17 @@ end
 module S24LE = struct
   let size channels samples = channels * samples * 3
 
-  external of_audio : buffer -> int -> Bytes.t -> int -> int -> unit = "caml_float_pcm_to_s24le"
+  external of_audio : buffer -> Bytes.t -> int -> unit = "caml_float_pcm_to_s24le"
 
-  external to_audio : string -> int -> buffer -> int -> int -> unit = "caml_float_pcm_convert_s24le_byte" "caml_float_pcm_convert_s24le_native"
+  external to_audio : string -> int -> buffer -> unit = "caml_float_pcm_convert_s24le"
 end
 
 module S32LE = struct
-  let size channels samples = channels * samples * 3
+  let size channels samples = channels * samples * 4
 
-  external of_audio : buffer -> int -> Bytes.t -> int -> int -> unit = "caml_float_pcm_to_s32le"
+  external of_audio : buffer -> Bytes.t -> int -> unit = "caml_float_pcm_to_s32le"
 
-  external to_audio : string -> int -> buffer -> int -> int -> unit = "caml_float_pcm_convert_s32le_byte" "caml_float_pcm_convert_s32le_native"
+  external to_audio : string -> int -> buffer -> unit = "caml_float_pcm_convert_s32le"
 end
 
 let add b1 b2 = iter2 Mono.add b1 b2

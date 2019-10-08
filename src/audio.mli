@@ -364,17 +364,17 @@ end
 module S24LE : sig
   val size : int -> int -> int
 
-  val of_audio : t -> int -> Bytes.t -> int -> int -> unit
+  val of_audio : t -> Bytes.t -> int -> unit
 
-  val to_audio : string -> int -> t -> int -> int -> unit
+  val to_audio : string -> int -> t -> unit
 end
 
 module S32LE : sig
   val size : int -> int -> int
 
-  val of_audio : t -> int -> Bytes.t -> int -> int -> unit
+  val of_audio : t -> Bytes.t -> int -> unit
 
-  val to_audio : string -> int -> t -> int -> int -> unit
+  val to_audio : string -> int -> t -> unit
 end
 
 val resample : ?mode:[`Nearest | `Linear] -> float -> t -> t

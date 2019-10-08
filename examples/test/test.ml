@@ -1,14 +1,15 @@
-let approx eps buf buf' =
-  let ans = ref true in
-  for c = 0 to Audio.channels buf - 1 do
-    for i = 0 to Audio.length buf - 1 do
-      ans := !ans && abs_float (buf.(c).{i} -. buf'.(c).{i}) < eps;
-      if not !ans then Printf.printf "%f vs %f\n%!" buf.(c).{i} buf'.(c).{i};
-    done
-  done;
-  !ans
-
+(* Testing audio float/int conversions *)
 let () =
+  let approx eps buf buf' =
+    let ans = ref true in
+    for c = 0 to Audio.channels buf - 1 do
+      for i = 0 to Audio.length buf - 1 do
+        ans := !ans && abs_float (buf.(c).{i} -. buf'.(c).{i}) < eps;
+        if not !ans then Printf.printf "%f vs %f\n%!" buf.(c).{i} buf'.(c).{i};
+      done
+    done;
+    !ans
+  in
   let buflen = 1024 in
   let channels = 2 in
   let buf = Audio.create channels buflen in
@@ -29,4 +30,14 @@ let () =
   let s = Bytes.create (Audio.U8.size channels buflen) in
   Audio.U8.of_audio buf s 0;
   Audio.U8.to_audio (Bytes.unsafe_to_string s) 0 buf';
-  assert (approx 0.01 buf buf')
+  assert (approx 0.01 buf buf');
+  (* S24LE *)
+  let s = Bytes.create (Audio.S24LE.size channels buflen) in
+  Audio.S24LE.of_audio buf s 0;
+  Audio.S24LE.to_audio (Bytes.unsafe_to_string s) 0 buf';
+  assert (approx 0.000001 buf buf');
+  (* S32LE *)
+  let s = Bytes.create (Audio.S32LE.size channels buflen) in
+  Audio.S32LE.of_audio buf s 0;
+  Audio.S32LE.to_audio (Bytes.unsafe_to_string s) 0 buf';
+  assert (approx 0.000000001 buf buf')
