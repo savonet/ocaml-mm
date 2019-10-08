@@ -1,11 +1,9 @@
-# $Id: Makefile.in 2660 2006-07-18 17:23:31Z dbaelde $
-
 PROGNAME := ocaml-mm
 DISTFILES := @AUTOCONF_INSTALL_FILES@ CHANGES COPYING Makefile.in README \
 	bootstrap configure configure.ac  \
 	src/*.ml src/*.mli src/*.c src/Makefile.in src/META.in \
 	src/OCamlMakefile src/*.h examples/* external/* config.h.in
-	
+
 VERSION = @VERSION@
 
 all clean install uninstall:
@@ -13,6 +11,9 @@ all clean install uninstall:
 
 distclean: clean
 	$(MAKE) -C examples clean
+
+test:
+	$(MAKE) -C examples test
 
 doc:
 	$(MAKE) -C src htdoc

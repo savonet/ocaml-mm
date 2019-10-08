@@ -115,6 +115,8 @@ module Mono : sig
 
   val clip : t -> unit
 
+  val noise : t -> unit
+
   (** Samplewise add two buffers of the same length. *)
   val add : t -> t -> unit
 
@@ -328,9 +330,11 @@ val interleave : t -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.
 val deinterleave : int -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t -> t
 
 module U8 : sig
-  val of_audio : t -> int -> Bytes.t -> int -> int -> unit
+  val size : int -> int -> int
 
-  val to_audio : string -> int -> t -> int -> int -> unit
+  val of_audio : t -> Bytes.t -> int -> unit
+
+  val to_audio : string -> int -> t -> unit
 end
 
 module S16LE : sig
@@ -342,7 +346,7 @@ module S16LE : sig
 
   val make : t -> string
 
-  val to_audio : string -> int -> t -> int -> int -> unit
+  val to_audio : string -> int -> t -> unit
 end
 
 module S16BE : sig
@@ -354,16 +358,20 @@ module S16BE : sig
 
   val make : t -> string
 
-  val to_audio : string -> int -> t -> int -> int -> unit
+  val to_audio : string -> int -> t -> unit
 end
 
 module S24LE : sig
+  val size : int -> int -> int
+
   val of_audio : t -> int -> Bytes.t -> int -> int -> unit
 
   val to_audio : string -> int -> t -> int -> int -> unit
 end
 
 module S32LE : sig
+  val size : int -> int -> int
+
   val of_audio : t -> int -> Bytes.t -> int -> int -> unit
 
   val to_audio : string -> int -> t -> int -> int -> unit
@@ -376,6 +384,8 @@ val blit : t -> t -> unit
 val sub : t -> int -> int -> t
 
 val clip : t -> unit
+
+val noise : t -> unit
 
 (** Amplify a portion of the buffer by a given coefficient. *)
 val amplify : float -> t -> unit

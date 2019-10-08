@@ -12,4 +12,4 @@ before_install:
   - opam install -q -y ocamlfind base-bytes
   - eval `opam config env`
 
-script: ./bootstrap && ./configure && make
+script: ./bootstrap && ./configure && make && make -C examples test-base

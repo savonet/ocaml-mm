@@ -224,6 +224,11 @@ module Mono = struct
       buf.{i} <- Sample.clip buf.{i}
     done
 
+  let noise buf =
+    for i = 0 to length buf - 1 do
+      buf.{i} <- Random.float 2. -. 1.
+    done
+
   let resample ?(mode=`Linear) ratio inbuf =
     let len = length inbuf in
     if ratio = 1. then
@@ -993,6 +998,8 @@ let clear = iter Mono.clear
 
 let clip = iter Mono.clip
 
+let noise = iter Mono.noise
+
 let copy b = Array.init (Array.length b) (fun i -> Mono.copy b.(i))
 
 let blit b1 b2 =
@@ -1023,14 +1030,11 @@ let resample ?mode ratio buf =
   map (fun buf -> Mono.resample ?mode ratio buf) buf
 
 module U8 = struct
-  external to_audio :
-    string -> int -> buffer -> int -> int -> unit
-    = "caml_float_pcm_of_u8_byte"
-      "caml_float_pcm_of_u8_native"
+  let size channels samples = channels * samples
 
-  external of_audio :
-    buffer -> int -> Bytes.t -> int -> int -> unit
-    = "caml_float_pcm_to_u8"
+  external of_audio : buffer -> Bytes.t -> int -> unit = "caml_float_pcm_to_u8"
+
+  external to_audio : string -> int -> buffer -> unit = "caml_float_pcm_of_u8"
 end
 
 module S16LE = struct
@@ -1048,7 +1052,9 @@ module S16LE = struct
     of_audio buf sbuf 0;
     Bytes.to_string sbuf
 
-  external to_audio : string -> int -> buffer -> int -> int -> unit = "caml_float_pcm_convert_s16le_byte" "caml_float_pcm_convert_s16le_native"
+  external to_audio : bool -> string -> int -> buffer -> unit = "caml_float_pcm_convert_s16"
+
+  let to_audio = to_audio true
 end
 
 module S16BE = struct
@@ -1066,16 +1072,22 @@ module S16BE = struct
     of_audio buf sbuf 0;
     Bytes.to_string sbuf
 
-  external to_audio : string -> int -> buffer -> int -> int -> unit = "caml_float_pcm_convert_s16be_byte" "caml_float_pcm_convert_s16be_native"
+  external to_audio : bool -> string -> int -> buffer -> unit = "caml_float_pcm_convert_s16"
+
+  let to_audio = to_audio false
 end
 
 module S24LE = struct
+  let size channels samples = channels * samples * 3
+
   external of_audio : buffer -> int -> Bytes.t -> int -> int -> unit = "caml_float_pcm_to_s24le"
 
   external to_audio : string -> int -> buffer -> int -> int -> unit = "caml_float_pcm_convert_s24le_byte" "caml_float_pcm_convert_s24le_native"
 end
 
 module S32LE = struct
+  let size channels samples = channels * samples * 3
+
   external of_audio : buffer -> int -> Bytes.t -> int -> int -> unit = "caml_float_pcm_to_s32le"
 
   external to_audio : string -> int -> buffer -> int -> int -> unit = "caml_float_pcm_convert_s32le_byte" "caml_float_pcm_convert_s32le_native"
@@ -1746,8 +1758,8 @@ module IO = struct
         let len = sbuflen / (channels * 2) in
         begin
           match sample_size with
-            | 16 -> S16LE.to_audio sbuf 0 buf 0 len
-            | 8 -> U8.to_audio sbuf 0 buf 0 len
+            | 16 -> S16LE.to_audio sbuf 0 buf
+            | 8 -> U8.to_audio sbuf 0 buf
             | _ -> assert false
         end ;
         len
