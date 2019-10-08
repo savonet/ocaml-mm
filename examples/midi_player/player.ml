@@ -17,11 +17,11 @@ let () =
   while !r <> 0 do
     r := f#read sample_rate mbuf 0 blen;
     MIDI.Multitrack.clear ~channel:9 mbuf 0 blen;
-    synth#play mbuf 0 buf 0 blen;
+    synth#play mbuf 0 buf;
     (* Audio.amplify 0.5 buf 0 blen; *)
-    agc#process buf 0 blen;
-    wav#write buf 0 blen;
-    oss#write buf 0 blen
+    agc#process buf;
+    wav#write buf;
+    oss#write buf
   done;
   wav#close;
   oss#close;

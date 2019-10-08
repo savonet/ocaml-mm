@@ -1,7 +1,8 @@
 SOURCES = test.ml
 RESULT = test
 INCDIRS = ../../src ../../external/oss ../../../ocaml-gstreamer/src/
-LIBS = unix bigarray mm mm.oss gstreamer
+LIBS = bigarray mm mm.oss gstreamer
+THREADS = yes
 OCAMLNCFLAGS = -p
 
 all: pnc

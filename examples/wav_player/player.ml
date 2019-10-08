@@ -9,11 +9,11 @@ let () =
   let bqf = new Audio.Effect.biquad_filter f#channels f#sample_rate `High_pass 400. 1. in
   let loop = ref true in
   while !loop do
-    let r = f#read buf 0 blen in
+    let r = f#read buf in
     loop := r <> 0;
     (* delay#process buf 0 r; *)
     (* bqf#process buf 0 r; *)
-    oss#write buf 0 r
+    oss#write (Audio.sub buf 0 r)
   done;
   oss#close;
   f#close

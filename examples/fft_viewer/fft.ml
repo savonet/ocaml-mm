@@ -14,11 +14,11 @@ let () =
   Graphics.open_graph "";
   let i = ref 0 in
   while !loop do
-    Audio.blit buf blen buf 0 blen;
-    let n = f#read buf blen blen in
-    oss#write buf blen n;
+    Audio.blit (Audio.sub buf blen blen) (Audio.sub buf 0 blen);
+    let n = f#read (Audio.sub buf blen blen) in
+    oss#write (Audio.sub buf blen n);
     for o = 0 to fft_times_per_buf - 1 do
-      let c = FFT.complex_create (Audio.to_mono buf) (o * blen / fft_times_per_buf) blen in
+      let c = FFT.complex_create (Audio.Mono.sub (Audio.to_mono buf) (o * blen / fft_times_per_buf) blen) in
       FFT.Window.cosine c;
       FFT.fft fft c;
       for j = 0 to Graphics.size_y () - 1 do

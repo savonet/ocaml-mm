@@ -1618,7 +1618,7 @@ module Generator = struct
       let len = length buf in
       let tmpbuf = Mono.Buffer_ext.prepare tmpbuf len in
       g#fill tmpbuf;
-      for c = 0 to len - 1 do
+      for c = 0 to channels buf - 1 do
 	Mono.add buf.(c) tmpbuf
       done
 

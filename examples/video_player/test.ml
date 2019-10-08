@@ -24,23 +24,23 @@ let () =
 
   let sdl = new MMSDL.writer_to_screen width height in
   let oss = new MMOSS.writer audio_channels audio_rate in
-  let vid = Video.create 1 in
 
   ignore (Element.set_state bin State_playing);
   while true do
     (* Video *)
-    let b = App_sink.pull_buffer (App_sink.of_element videosink) in
-    let img = Image.Generic.make_rgb Image.Generic.Pixel.RGB24 width height b in
-    let out = Image.RGBA32.create width height in
-    Image.Generic.convert ~copy:true ~proportional:true img (Image.Generic.of_RGBA32 out);
-    vid.(0) <- out;
+    (* let b = App_sink.pull_buffer (App_sink.of_element videosink) in *)
+    (* let img = Image.Generic.make Image.Generic.Pixel.YUVJ420 width height b in *)
+    (* let out = Video.Image.create width height in *)
+    let out = assert false in
+    (* Image.Generic.convert ~copy:true ~proportional:true img (Image.Generic.of_YUV420 out); *)
+    let vid = Video.single out in
     sdl#write vid 0 1;
 
     (* Audio *)
     let b = App_sink.pull_buffer_string (App_sink.of_element audiosink) in
-    let samples = Audio.S16LE.duration audio_channels (String.length b) in
+    let samples = Audio.S16LE.length audio_channels (String.length b) in
     let buf = Audio.create audio_channels samples in
-    Audio.S16LE.to_audio b 0 buf 0 samples;
-    oss#write buf 0 samples
+    Audio.S16LE.to_audio b 0 buf;
+    oss#write buf
   done;
   ignore (Element.set_state bin State_null)

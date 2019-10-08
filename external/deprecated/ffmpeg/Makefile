@@ -10,4 +10,4 @@ all: ncl
 
 include OCamlMakefile
 include ../Makefile.defs
-INCDIRS += ../../src
+INCDIRS += ../../src ../../../src

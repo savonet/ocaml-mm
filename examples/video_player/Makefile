@@ -1,7 +1,9 @@
 SOURCES = test.ml
 RESULT = test
 INCDIRS = ../../src ../../external/sdl ../../external/oss ../../../ocaml-gstreamer/src/ +sdl
-LIBS = unix bigarray mm sdl mm.sdl mm.oss gstreamer
+LIBS = mm sdl mm.sdl mm.oss gstreamer
+PACKS = sdl
+THREADS = yes
 OCAMLNCFLAGS = -p
 ANNOTATE = yes
 

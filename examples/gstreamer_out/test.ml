@@ -19,7 +19,7 @@ let () =
     let s = App_sink.pull_buffer_string (App_sink.of_element sink) in
     let buflen = String.length s / 4 in
     let buf = Audio.create channels buflen in
-    Audio.S16LE.to_audio s 0 buf 0 buflen;
-    oss#write buf 0 buflen
+    Audio.S16LE.to_audio s 0 buf;
+    oss#write buf
   done;
   ignore (Element.set_state bin State_null)

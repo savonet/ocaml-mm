@@ -20,14 +20,14 @@ let () =
     (
       try
         assert (alsa_out#wait 1000);
-        let w = alsa_out#write buf 0 blen in
+        let w = alsa_out#write buf in
         Printf.printf "Wrote: %d\n%!" w
       with
         | Alsa.Buffer_xrun as e ->
           alsa_out#recover e;
-          ignore (alsa_out#write buf 0 blen)
+          ignore (alsa_out#write buf)
     );
-    let r = alsa_in#read buf 0 blen in
+    let r = alsa_in#read buf in
     (* Printf.printf "Read: %d\n%!" r *) ()
   done;
   alsa_in#close;
