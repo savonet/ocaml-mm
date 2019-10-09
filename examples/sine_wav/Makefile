@@ -1,7 +1,7 @@
 SOURCES = sine_wav.ml
 RESULT = sine_wav
-INCDIRS = ../../src ../../external/oss
-LIBS = unix mm mm.oss
+INCDIRS = $(shell ocamlfind query ao) ../../src ../../external/ao
+LIBS = unix mm ao mm.ao
 
 all: nc
 
