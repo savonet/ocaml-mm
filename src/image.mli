@@ -43,6 +43,8 @@ module Data : sig
 
   val to_string : t -> string
 
+  val to_bytes : t -> bytes
+
   val length : t -> int
 
   val blit : t -> int -> t -> int -> int -> unit

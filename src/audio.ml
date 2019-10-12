@@ -1012,7 +1012,7 @@ module S16LE = struct
     let slen = size (channels buf) len in
     let sbuf = Bytes.create slen in
     of_audio buf sbuf 0;
-    Bytes.to_string sbuf
+    Bytes.unsafe_to_string sbuf
 
   external to_audio : bool -> string -> int -> buffer -> unit = "caml_float_pcm_convert_s16"
 
@@ -1032,7 +1032,7 @@ module S16BE = struct
     let slen = size (channels buf) len in
     let sbuf = Bytes.create slen in
     of_audio buf sbuf 0;
-    Bytes.to_string sbuf
+    Bytes.unsafe_to_string sbuf
 
   external to_audio : bool -> string -> int -> buffer -> unit = "caml_float_pcm_convert_s16"
 

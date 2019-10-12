@@ -54,6 +54,8 @@ module Data = struct
 
   external to_string : t -> string = "caml_data_to_string"
 
+  external to_bytes : t -> bytes = "caml_data_to_string"
+
   external of_string : string -> t = "caml_data_of_string"
 
   let blit_all src dst = Bigarray.Array1.blit src dst
