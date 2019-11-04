@@ -996,6 +996,21 @@ module Generic = struct
 
   external rgb32_to_rgba32 : data -> int -> data -> int -> int * int -> unit = "caml_RGB32_to_RGBA32"
 
+  let blank img =
+    match img.data with
+    | RGB rgb ->
+      (
+        match rgb.rgb_pixel with
+        | Pixel.RGBA32 -> RGBA32.blank (to_RGBA32 img)
+        | _ -> failwith "Not implemented"
+      )
+    | YUV yuv ->
+      (
+        match yuv.yuv_pixel with
+        | Pixel.YUVJ420 -> YUV420.blank (to_YUV420 img)
+        | _ -> failwith "Not implemented"
+      )
+
   let convert ?(proportional=true) ?scale_kind src dst =
     match src.data, dst.data with
       | RGB s, RGB d when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.RGBA32 ->

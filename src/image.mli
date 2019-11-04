@@ -309,7 +309,6 @@ module YUV420 : sig
 
   val scale : ?proportional:bool -> t -> t -> unit
 
-  (** [blit_all src dst] blits an entire image. *)
   val blank_all : t -> unit
 
   (** Add the fist image to the second. *)
@@ -421,6 +420,8 @@ module Generic : sig
   val of_YUV420 : YUV420.t -> t
 
   val to_YUV420 : t -> YUV420.t
+
+  val blank : t -> unit
 
   (** Convert a generic image from a format to another. *)
   val convert : ?proportional:bool -> ?scale_kind:RGBA32.Scale.kind -> t -> t -> unit
