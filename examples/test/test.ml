@@ -70,4 +70,5 @@ let () =
     for i = 0 to width - 1 do
       Image.YUV420.set_pixel_rgba img i j (0xff,0xff,0xff,0xff)
     done
-  done
+  done;
+  Image.YUV420.blank img
