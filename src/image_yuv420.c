@@ -15,6 +15,7 @@
 
 #define max(a,b) (a>b)?a:b
 #define min(a,b) (a<b)?a:b
+#define round(r,n) (((n+(r-1))/r)*r)
 
 CAMLprim value caml_yuv420_fill(value img, value p)
 {
@@ -26,8 +27,8 @@ CAMLprim value caml_yuv420_fill(value img, value p)
   int y_stride = YUV420_y_stride(img);
   int uv_stride = YUV420_uv_stride(img);
   memset(YUV420_y(img), y, height*y_stride);
-  memset(YUV420_u(img), u, (height/2)*uv_stride);
-  memset(YUV420_v(img), v, (height/2)*uv_stride);
+  memset(YUV420_u(img), u, round(2,height/2)*uv_stride);
+  memset(YUV420_v(img), v, round(2,height/2)*uv_stride);
   CAMLreturn(Val_unit);
 }
 

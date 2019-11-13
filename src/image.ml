@@ -614,9 +614,11 @@ module YUV420 = struct
     let align = 4 in
     let y_stride, uv_stride = default_stride width y_stride uv_stride in
     let y = Data.aligned align (height*y_stride) in
-    let height = Data.round 2 height in
-    let u = Data.aligned align ((height/2)*uv_stride) in
-    let v = Data.aligned align ((height/2)*uv_stride) in
+    let u, v =
+      let height = Data.round 2 height in
+      Data.aligned align ((height/2)*uv_stride),
+      Data.aligned align ((height/2)*uv_stride)
+    in
     make width height y y_stride u v uv_stride
 
   let ensure_alpha img =
