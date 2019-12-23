@@ -171,6 +171,7 @@ module RGBA32 : sig
 
   val randomize : t -> unit
 
+  (** [scale src dst] scales the image [src] to [dst]. *)
   val scale : ?proportional:bool -> t -> t -> unit
 
   module Scale : sig
