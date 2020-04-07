@@ -337,9 +337,27 @@ CAMLprim value caml_yuv_greyscale(value img)
   CAMLreturn(Val_unit);
 }
 
+#define PIXEL_PRECISON 0x10000
+CAMLprim value caml_yuv_scale_alpha(value img, value _a)
+{
+  CAMLparam2(img, _a);
+  yuv420 yuv;
+  yuv420_of_value(&yuv,img);
+  int a = Double_val(_a) * PIXEL_PRECISON;
+  int i, j;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < yuv.height; j++)
+    for (i = 0; i < yuv.width; i++)
+      A(yuv, i, j) = CLIP(A(yuv, i, j) * a / PIXEL_PRECISON);
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value caml_yuv_disk_alpha(value img, value _x, value _y, value _r)
 {
-  CAMLparam1(img);
+  CAMLparam4(img, _x, _y, _r);
   yuv420 yuv;
   yuv420_of_value(&yuv,img);
   int x = Int_val(_x);

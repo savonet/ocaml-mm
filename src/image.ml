@@ -794,6 +794,14 @@ module YUV420 = struct
     if proportional then scale_proportional src dst
     else scale_full src dst
 
+  external scale_alpha : t -> float -> unit = "caml_yuv_scale_alpha"
+  let scale_alpha img a =
+    if a <> 1. then
+      (
+        ensure_alpha img;
+        scale_alpha img a
+      )
+
   external disk_alpha : t -> int -> int -> int -> unit = "caml_yuv_disk_alpha"
   let disk_alpha img x y r =
     ensure_alpha img;
@@ -807,6 +815,12 @@ module YUV420 = struct
     let invert _ = failwith "Not implemented: invert"
 
     let lomo _ = failwith "Not implemented: lomo"
+
+    module Alpha = struct
+      let scale = scale_alpha
+
+      let disk = disk_alpha
+    end
   end
 end
 

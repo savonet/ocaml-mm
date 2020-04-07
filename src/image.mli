@@ -346,6 +346,14 @@ module YUV420 : sig
     val invert : t -> unit
 
     val lomo : t -> unit
+
+    (** Effects on alpha channel. *)
+    module Alpha : sig
+      (** Scale alpha channel with a given coefficient. *)
+      val scale : t -> float -> unit
+
+      val disk : t -> int -> int -> int -> unit
+    end
   end
 end
 
