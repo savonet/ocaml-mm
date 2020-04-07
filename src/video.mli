@@ -81,6 +81,12 @@ module Image : sig
     val invert : t -> unit
 
     val lomo : t -> unit
+
+    module Alpha : sig
+      val scale : t -> float -> unit
+
+      val disk : t -> int -> int -> int -> unit
+    end
   end
 end
 
