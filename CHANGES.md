@@ -1,8 +1,9 @@
 0.6.0 (unreleased)
 =====
-* Use `YUV420` for video frames.
-* Use bigarrays to implement mono audio buffers, should be more efficient.
-* Add `Image.Generic.blank`.
+- Use `YUV420` for video frames.
+- Use bigarrays to implement mono audio buffers, should be more efficient.
+- Add `Image.Generic.blank`.
+- Add `scale` and `disk` effects on alpha channel for YUV420.
 
 0.5.0 (18-08-2019)
 =====
