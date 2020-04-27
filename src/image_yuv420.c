@@ -243,11 +243,22 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst)
           int js = j-y;
           int a = A(src,is,js);
 
-          Y(dst,i,j) = CLIP((Y(src,is,js) * a + Y(dst,i,j) * (0xff - a)) / 0xff);
-          // TODO: don't do u/v twice
-          U(dst,i,j) = CLIP((U(src,is,js) * a + U(dst,i,j) * (0xff - a)) / 0xff);
-          V(dst,i,j) = CLIP((V(src,is,js) * a + V(dst,i,j) * (0xff - a)) / 0xff);
-          if (dst.alpha) A(dst,i,j) = 0xff-((0xff-a)*(0xff-A(dst,i,j)))/0xff;
+          if (a == 0) {}
+          else if (a == 0xff)
+            {
+              Y(dst,i,j) = Y(src,is,js);
+              U(dst,i,j) = U(src,is,js);
+              V(dst,i,j) = V(src,is,js);
+              if (dst.alpha) A(dst,i,j) = 0xff;
+            }
+          else
+            {
+              Y(dst,i,j) = CLIP((Y(src,is,js) * a + Y(dst,i,j) * (0xff - a)) / 0xff);
+              // TODO: don't do u/v twice
+              U(dst,i,j) = CLIP((U(src,is,js) * a + U(dst,i,j) * (0xff - a)) / 0xff);
+              V(dst,i,j) = CLIP((V(src,is,js) * a + V(dst,i,j) * (0xff - a)) / 0xff);
+              if (dst.alpha) A(dst,i,j) = 0xff-((0xff-a)*(0xff-A(dst,i,j)))/0xff;
+            }
         }
   caml_leave_blocking_section();
 
