@@ -4,6 +4,7 @@
 - Use bigarrays to implement mono audio buffers, should be more efficient.
 - Add `Image.Generic.blank`.
 - Add `scale` and `disk` effects on alpha channel for YUV420.
+- Make sure `to_mono` initializes an audio array with zeroes.
 
 0.5.0 (18-08-2019)
 =====

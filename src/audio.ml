@@ -978,6 +978,7 @@ let to_mono b =
     let len = length b in
     let chans = float channels in
     let ans = Mono.create len in
+    Mono.clear ans;
     for i = 0 to len - 1 do
       for c = 0 to channels - 1 do
 	ans.{i} <- ans.{i} +. b.(c).{i}
