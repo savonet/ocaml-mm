@@ -1061,3 +1061,37 @@ module Generic = struct
           raise Not_implemented
       | _ -> raise Not_implemented
 end
+
+module type CanvasImage = sig
+  type t
+
+  val width : t -> int
+
+  val height : t -> int
+end
+
+module Canvas (I : CanvasImage) = struct
+  type element =
+    {
+      offset : int * int;
+      image : I.t
+    }
+
+  type t =
+    {
+      size : int * int;
+      elements : element list;
+    }
+
+  let create w h =
+    { size = w, h; elements = [] }
+
+  let make image =
+    let size = I.width image, I.height image in
+    let e = { offset = (0,0); image } in
+    { size; elements = [e]}
+
+  let add c c' =
+    assert (c.size = c'.size);
+    { size = c.size; elements = c.elements@c'.elements }
+end

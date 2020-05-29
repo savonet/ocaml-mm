@@ -31,6 +31,8 @@
  *
  *)
 
+module Img = Image
+
 module Image = struct
   include Image.YUV420
 
@@ -78,6 +80,15 @@ let blank vid off len =
 
 let randomize vid off len =
   iter Image.randomize vid off len
+
+module Canvas = struct
+  module Image = Img.Canvas(Img.YUV420)
+
+  type t = Image.t array
+
+  let make len width height =
+    Array.init len (fun _ -> Image.create width height)
+end
 
 (*
 module RE = struct

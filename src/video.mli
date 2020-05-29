@@ -123,6 +123,12 @@ val blank : t -> int -> int -> unit
 
 val randomize : t -> int -> int -> unit
 
+module Canvas : sig
+  type t
+
+  val make : int -> int -> int -> t
+end
+
 (* module Ringbuffer_ext : Ringbuffer.R with type elt = frame *)
 
 (* module Ringbuffer : Ringbuffer.R with type elt = frame *)

@@ -435,3 +435,21 @@ module Generic : sig
   (** Convert a generic image from a format to another. *)
   val convert : ?proportional:bool -> ?scale_kind:RGBA32.Scale.kind -> t -> t -> unit
 end
+
+module type CanvasImage = sig
+  type t
+
+  val width : t -> int
+
+  val height : t -> int
+end
+
+module Canvas (I : CanvasImage) : sig
+  type t
+
+  val create : int -> int -> t
+
+  val make : I.t -> t
+
+  val add : t -> t -> t
+end
