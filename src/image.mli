@@ -442,6 +442,14 @@ module type CanvasImage = sig
   val width : t -> int
 
   val height : t -> int
+
+  val size : t -> int
+
+  val create : int -> int -> t
+
+  val copy : t -> t
+
+  val randomize : t -> unit
 end
 
 module Canvas (I : CanvasImage) : sig
@@ -451,5 +459,15 @@ module Canvas (I : CanvasImage) : sig
 
   val make : I.t -> t
 
+  val size : t -> int
+
   val add : t -> t -> t
+
+  val blank : t -> unit
+
+  val blit_all : t -> t -> unit
+
+  val copy : t -> t
+
+  val randomize : t -> unit
 end

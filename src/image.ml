@@ -1068,30 +1068,69 @@ module type CanvasImage = sig
   val width : t -> int
 
   val height : t -> int
+
+  val size : t -> int
+
+  val create : int -> int -> t
+
+  val copy : t -> t
+
+  val randomize : t -> unit
 end
 
 module Canvas (I : CanvasImage) = struct
-  type element =
-    {
-      offset : int * int;
-      image : I.t
-    }
+  (** Elements. *)
+  module E = struct
+    type t =
+      {
+        offset : int * int;
+        image : I.t
+      }
+
+    let make image = { offset = (0,0); image }
+
+    let copy e = { e with image = I.copy e.image }
+
+    let size e = I.size e.image
+  end
 
   type t =
     {
-      size : int * int;
-      elements : element list;
+      dim : int * int;
+      mutable elements : E.t list; (** List of images. The first one is bottommost. *)
     }
 
   let create w h =
-    { size = w, h; elements = [] }
+    { dim = w, h; elements = [] }
+
+  let dim c = c.dim
+
+  let width c = fst (dim c)
+
+  let height c = snd (dim c)
+
+  let size c =
+    List.fold_left (fun n e -> n + E.size e) 0 c.elements
 
   let make image =
-    let size = I.width image, I.height image in
-    let e = { offset = (0,0); image } in
-    { size; elements = [e]}
+    let dim = I.width image, I.height image in
+    { dim; elements = [E.make image] }
 
   let add c c' =
-    assert (c.size = c'.size);
-    { size = c.size; elements = c.elements@c'.elements }
+    assert (c.dim = c'.dim);
+    { dim = c.dim; elements = c.elements@c'.elements }
+
+  let blank c =
+    c.elements <- []
+
+  let copy c =
+    { dim = dim c; elements = List.map E.copy c.elements }
+
+  let blit_all src dst =
+    dst.elements <- List.map E.copy src.elements
+
+  let randomize c =
+    let img = I.create (width c) (height c) in
+    I.randomize img;
+    c.elements <- [E.make img]
 end

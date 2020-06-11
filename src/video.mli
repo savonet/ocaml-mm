@@ -124,9 +124,15 @@ val blank : t -> int -> int -> unit
 val randomize : t -> int -> int -> unit
 
 module Canvas : sig
-  type t
+  type t = Image.Canvas.t
+
+  val size : t -> int
 
   val make : int -> int -> int -> t
+
+  val copy : t -> t
+
+  val blit : t -> int -> t -> int -> int -> unit
 end
 
 (* module Ringbuffer_ext : Ringbuffer.R with type elt = frame *)

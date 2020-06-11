@@ -33,62 +33,79 @@
 
 module Img = Image
 
+(** Images from which are made videos. *)
+module type Image = sig
+  type t
+
+  val create : int -> int -> t
+
+  val size : t -> int
+
+  val blit_all : t -> t -> unit
+
+  val copy : t -> t
+
+  val blank : t -> unit
+
+  val randomize : t -> unit
+end
+
+
 module Image = struct
   include Image.YUV420
 
   let create w h = create w h
 end
 
-type t = Image.t array
-
-type buffer = t
-
-let make len width height =
-  Array.init len (fun _ -> Image.create width height)
-
-let single img = [|img|]
-
-let blit sbuf sofs dbuf dofs len =
-  for i = 0 to len - 1 do
-    Image.blit_all sbuf.(sofs + i) dbuf.(dofs + i)
-  done
-
-let copy vid =
-  Array.map Image.copy vid
-
-let length vid =
-  Array.length vid
-
-let size vid =
-  let n = ref 0 in
-  for i = 0 to Array.length vid - 1 do
-    n := !n + Image.size vid.(i)
-  done;
-  !n
-
-let get vid i = vid.(i)
-
-let set vid i img = vid.(i) <- img
-
-let iter f vid off len =
-  for i = off to off + len - 1 do
-    f vid.(i)
-  done
-
-let blank vid off len =
-  iter Image.blank vid off len
-
-let randomize vid off len =
-  iter Image.randomize vid off len
-
-module Canvas = struct
-  module Image = Img.Canvas(Img.YUV420)
+module Make(Image : Image) = struct
+  module Image = Image
 
   type t = Image.t array
 
+  type buffer = t
+
   let make len width height =
     Array.init len (fun _ -> Image.create width height)
+
+  let single img = [|img|]
+
+  let blit sbuf sofs dbuf dofs len =
+    for i = 0 to len - 1 do
+      Image.blit_all sbuf.(sofs + i) dbuf.(dofs + i)
+    done
+
+  let copy vid =
+    Array.map Image.copy vid
+
+  let length vid =
+    Array.length vid
+
+  let size vid =
+    let n = ref 0 in
+    for i = 0 to Array.length vid - 1 do
+      n := !n + Image.size vid.(i)
+    done;
+    !n
+
+  let get vid i = vid.(i)
+
+  let set vid i img = vid.(i) <- img
+
+  let iter f vid off len =
+    for i = off to off + len - 1 do
+      f vid.(i)
+    done
+
+  let blank vid off len =
+    iter Image.blank vid off len
+
+  let randomize vid off len =
+    iter Image.randomize vid off len
 end
+
+include Make(Image)
+
+module Canvas = Make(Img.Canvas(Image))
 
 (*
 module RE = struct
