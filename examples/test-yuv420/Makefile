@@ -1,7 +1,8 @@
 SOURCES = test.ml
 RESULT = test
 INCDIRS = ../../src
-LIBS = unix bigarray graphics mm
+LIBS = mm
+PACKS = unix bigarray graphics
 
 all: nc
 

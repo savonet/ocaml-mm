@@ -2,8 +2,8 @@ open Image
 
 let () =
   print_endline "Testing YUV420.";
-  let width = 5 in
-  let height = 5 in
+  let width = 17 in
+  let height = 21 in
   let img = Image.YUV420.create width height in
   for j = 0 to height - 1 do
     for i = 0 to width - 1 do
