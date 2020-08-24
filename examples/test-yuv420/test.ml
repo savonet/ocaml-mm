@@ -1,5 +1,17 @@
 open Image
 
+let () =
+  print_endline "Testing YUV420.";
+  let width = 5 in
+  let height = 5 in
+  let img = Image.YUV420.create width height in
+  for j = 0 to height - 1 do
+    for i = 0 to width - 1 do
+      Image.YUV420.set_pixel_rgba img i j (0xff,0xff,0xff,0xff)
+    done
+  done;
+  Image.YUV420.blank img
+
 let ppm f =
   let buf =
     let fi = open_in f in
