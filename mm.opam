@@ -31,6 +31,3 @@ bug-reports: "https://github.com/savonet/ocaml-mm/issues"
 dev-repo: "git+https://github.com/savonet/ocaml-mm.git"
 synopsis:
   "The mm library contains high-level to create and manipulate multimedia streams (audio, video, MIDI)"
-conflicts: [
-  "liquidsoap" {< "1.5.0"}
-]
