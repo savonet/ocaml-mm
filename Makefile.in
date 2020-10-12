@@ -1,5 +1,5 @@
 PROGNAME := ocaml-mm
-DISTFILES := @AUTOCONF_INSTALL_FILES@ CHANGES COPYING Makefile.in README \
+DISTFILES := @AUTOCONF_INSTALL_FILES@ CHANGES.md COPYING Makefile.in README.md \
 	bootstrap configure configure.ac  \
 	src/*.ml src/*.mli src/*.c src/Makefile.in src/META.in \
 	src/OCamlMakefile src/*.h examples/* external/* config.h.in
