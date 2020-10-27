@@ -27,6 +27,9 @@ depopts: [
   "ocamlsdl"
   "theora"
 ]
+depexts: [
+  ["automake" "autoconf"] {os-distribution = "alpine"}
+]
 bug-reports: "https://github.com/savonet/ocaml-mm/issues"
 dev-repo: "git+https://github.com/savonet/ocaml-mm.git"
 synopsis:
