@@ -807,6 +807,11 @@ module YUV420 = struct
     ensure_alpha img;
     disk_alpha img x y r
 
+  external box_alpha : t -> int -> int -> int -> int -> float -> unit = "caml_yuv_box_alpha_bytecode" "caml_yuv_box_alpha_native"
+  let box_alpha img x y r =
+    ensure_alpha img;
+    box_alpha img x y r
+
   module Effect = struct
     external greyscale : t -> unit = "caml_yuv_greyscale"
 

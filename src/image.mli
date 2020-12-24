@@ -323,6 +323,10 @@ module YUV420 : sig
 
   val disk_alpha : t -> int -> int -> int -> unit
 
+  (* [box_alpha img x y width height alpha] Set alpha value
+     on a given image box. *)
+  val box_alpha : t -> int -> int -> int -> int -> float -> unit
+
   val randomize : t -> unit
 
   val get_pixel_y : t -> int -> int -> int
