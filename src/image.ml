@@ -591,6 +591,8 @@ module YUV420 = struct
 
   let alpha img = img.alpha
 
+  let set_alpha img alpha = img.alpha <- alpha
+
   let size img =
     Data.size img.y + Data.size img.u + Data.size img.v
 

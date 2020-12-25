@@ -291,6 +291,8 @@ module YUV420 : sig
 
   val alpha : t -> Data.t option
 
+  val set_alpha : t -> Data.t option -> unit
+
   val dimensions : t -> int * int
 
   (** Size in bytes. *)
