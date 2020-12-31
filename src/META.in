@@ -1,6 +1,0 @@
-name="mm"
-version="@PACKAGE_VERSION@"
-description="OCaml multimedia library"
-requires="unix bigarray"
-archive(byte) = "mm.cma"
-archive(native) = "mm.cmxa"
