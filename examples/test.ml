@@ -1,4 +1,6 @@
 open Gstreamer
+open Mm_audio
+open Mm_video
 
 let width = 320
 let height = 240
@@ -23,11 +25,11 @@ let () =
   Printf.printf "%s\n%!" pipeline;
   let bin = Pipeline.parse_launch pipeline in
 
-  let videosink = Bin.get_by_name (Bin.of_element bin) "videosink" in
+  let _ = Bin.get_by_name (Bin.of_element bin) "videosink" in
   let audiosink = Bin.get_by_name (Bin.of_element bin) "audiosink" in
 
-  let sdl = new MMSDL.writer_to_screen width height in
-  let oss = new MMOSS.writer audio_channels audio_rate in
+  let sdl = new Mm_sdl.writer_to_screen width height in
+  let oss = new Mm_oss.writer audio_channels audio_rate in
 
   ignore (Element.set_state bin State_playing);
   while true do

@@ -1,3 +1,5 @@
+open Mm_image
+
 module Img = Image.RGBA32
 
 let read_PPM ?alpha fname =

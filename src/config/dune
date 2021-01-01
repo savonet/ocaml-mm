@@ -8,8 +8,8 @@
 
 (executable
  (name setup)
- (modules setup setup_alsa setup_ao setup_mad setup_ogg setup_oss
-   setup_pulseaudio setup_sdl setup_theora)
+ (modules setup setup_alsa setup_ao setup_mad setup_oss setup_pulseaudio
+   setup_sdl setup_theora)
  (libraries
   (select
    setup_alsa.ml
@@ -26,11 +26,6 @@
    from
    (mm.mad -> setup_mad.enabled.ml)
    (-> setup_mad.disabled.ml))
-  (select
-   setup_ogg.ml
-   from
-   (mm.ogg -> setup_ogg.enabled.ml)
-   (-> setup_ogg.disabled.ml))
   (select
    setup_oss.ml
    from

@@ -1,9 +1,11 @@
+open Mm_audio
+
 module FFT = Audio.Mono.Analyze.FFT
 
 let () =
   let fname = Sys.argv.(1) in
   let f = new Audio.IO.Reader.of_wav_file fname in
-  let oss = new MMOSS.writer f#channels f#sample_rate in
+  let oss = new Mm_oss.writer f#channels f#sample_rate in
   Printf.printf "Opened WAV file with %d channels at %dHz.\n%!" f#channels
     f#sample_rate;
   let fft_n = 11 in

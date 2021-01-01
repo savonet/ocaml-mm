@@ -63,6 +63,7 @@
  (foreign_stubs
   (language c)
   (names oss_stubs))
- (enabled_if (= %{system} linux)) 
+ (enabled_if
+  (= %{system} linux))
  (synopsis
    "High-level APIs to create and manipulate multimedia streams -- optional oss module"))

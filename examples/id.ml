@@ -1,6 +1,8 @@
 (** Perform and FFT followed by an IFFT, so it should be roughly the
     identity... *)
 
+open Mm_audio
+
 module FFT = Audio.Mono.Analyze.FFT
 
 let () =

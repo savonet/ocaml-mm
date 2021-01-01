@@ -1,7 +1,9 @@
+open Mm_audio
+
 let sample_rate = 44100
 let channels = 2
 
-let sd freq v =
+let sd freq _ =
   let lpf =
     new Audio.Mono.Effect.biquad_filter sample_rate `Low_pass (freq *. 5.) 2.
   in
@@ -12,7 +14,7 @@ let sd freq v =
   let g = new Audio.Generator.of_mono g in
   g
 
-let bd freq v =
+let bd freq _ =
   let lpf =
     new Audio.Mono.Effect.biquad_filter sample_rate `Low_pass (freq *. 1.) 2.
   in
@@ -41,7 +43,7 @@ let bd = gen bd
 let sd = gen sd
 
 let () =
-  let oss = new MMOSS.writer channels sample_rate in
+  let oss = new Mm_oss.writer channels sample_rate in
   (* let wav = new Audio.IO.Writer.to_wav_file channels sample_rate "out.wav" in *)
   (* let buf = Audio.create channels blen in *)
   (* let mbuf = MIDI.create blen in *)
