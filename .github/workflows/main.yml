@@ -14,5 +14,5 @@ jobs:
       if: matrix.os == 'macos-latest'
     - run: opam depext -yti mm alsa ao mad pulseaudio ocamlsdl theora
       if: matrix.os != 'macos-latest'
-    - run: dune build
+    - run: eval $(opam env) && dune build
       if: matrix.os != 'macos-latest'
