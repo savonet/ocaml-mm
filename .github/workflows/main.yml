@@ -10,9 +10,9 @@ jobs:
     - uses: actions/checkout@v1
     - uses: avsm/setup-ocaml@master
     - run: opam pin add -n .
-    - run: opam depext -yti mm ao mad pulseaudio theora graphics # SDL fails to link on OSX
+    - run: opam depext -yti mm ao mad pulseaudio theora graphics gstreamer # SDL fails to link on OSX
       if: matrix.os == 'macos-latest'
-    - run: opam depext -yti mm alsa ao mad pulseaudio ocamlsdl theora graphics
+    - run: opam depext -yti mm alsa ao mad pulseaudio ocamlsdl theora graphics gstreamer
       if: matrix.os != 'macos-latest'
     - run: eval $(opam env) && dune build
       if: matrix.os != 'macos-latest'
