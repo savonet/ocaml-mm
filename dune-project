@@ -19,5 +19,5 @@
   ao
   (mad (>= 0.5.0))
   pulseaudio
-  sdl
+  ocamlsdl
   theora))
