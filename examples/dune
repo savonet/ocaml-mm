@@ -1,0 +1,11 @@
+(executable
+ (name autotune)
+ (modules autotune)
+ (optional)
+ (libraries mm.audio mm.alsa))
+
+(executable
+ (name dictee)
+ (modules dictee)
+ (optional)
+ (libraries mm.audio mm.midi mm.mad mm.oss))
