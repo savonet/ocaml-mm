@@ -5,13 +5,14 @@ jobs:
     runs-on: ${{ matrix.operating-system }}
     strategy:
       matrix:
-        operating-system: [ubuntu-latest, macos-latest]
-        ocaml-version: ['4.09.0']
+        operating-system: [ubuntu-20.04, macos-latest]
     steps:
     - uses: actions/checkout@v1
     - uses: avsm/setup-ocaml@master
       with:
         ocaml-version: ${{ matrix.ocaml-version }}
     - run: opam pin add -n .
-    - run: opam depext -yt mm
-    - run: opam install -t .
+    - run: opam depext -yt mm ao mad pulseaudio theora # SDL fails to link on OSX
+      if: matrix.os == 'macos-latest'
+    - run: opam depext -yt mm alsa ao mad pulseaudio sdl theora
+      if: matrix.os != 'macos-latest'

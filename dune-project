@@ -17,9 +17,7 @@
  (depopts
   alsa
   ao
-  (ffmpeg (>= 1.0.0))
   (mad (>= 0.5.0))
-  ogg
   pulseaudio
   sdl
   theora))
