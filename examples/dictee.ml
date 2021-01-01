@@ -1,3 +1,5 @@
+open Mm_audio
+open Mm_midi
 module FFT = Audio.Mono.Analyze.FFT
 
 let polyphony = 1
@@ -15,8 +17,8 @@ let rec list_head_n n l =
 
 let () =
   let fname = Sys.argv.(1) in
-  let f = new MMMad.reader_of_file fname in
-  let oss = new MMOSS.writer f#channels f#sample_rate in
+  let f = new Mm_mad.reader_of_file fname in
+  let oss = new Mm_oss.writer f#channels f#sample_rate in
   let wav =
     new Audio.IO.Writer.to_wav_file f#channels f#sample_rate "out.wav"
   in

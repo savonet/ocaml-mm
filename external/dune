@@ -60,6 +60,9 @@
  (public_name mm.oss)
  (modules mm_oss)
  (libraries mm.base mm.audio)
+ (foreign_stubs
+  (language c)
+  (names oss_stubs))
  (enabled_if (= %{system} linux)) 
  (synopsis
    "High-level APIs to create and manipulate multimedia streams -- optional oss module"))
