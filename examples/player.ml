@@ -8,9 +8,7 @@ let () =
   let buf = Audio.create f#channels blen in
   Printf.printf "Opened WAV file with %d channels at %dHz.\n%!" f#channels
     f#sample_rate;
-  let _ =
-    Audio.Effect.delay f#channels f#sample_rate 0.2 ~ping_pong:true 0.5
-  in
+  let _ = Audio.Effect.delay f#channels f#sample_rate 0.2 ~ping_pong:true 0.5 in
   let _ =
     new Audio.Effect.biquad_filter f#channels f#sample_rate `High_pass 400. 1.
   in
