@@ -9,8 +9,6 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - uses: avsm/setup-ocaml@master
-      with:
-        ocaml-version: ${{ matrix.ocaml-version }}
     - run: opam pin add -n .
     - run: opam depext -yt mm ao mad pulseaudio theora # SDL fails to link on OSX
       if: matrix.os == 'macos-latest'
