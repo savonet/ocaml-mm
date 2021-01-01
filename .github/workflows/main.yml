@@ -12,5 +12,5 @@ jobs:
     - run: opam pin add -n .
     - run: opam depext -yt mm ao mad pulseaudio theora # SDL fails to link on OSX
       if: matrix.os == 'macos-latest'
-    - run: opam depext -yt mm alsa ao mad pulseaudio sdl theora
+    - run: opam depext -yt mm alsa ao mad pulseaudio ocamlsdl theora
       if: matrix.os != 'macos-latest'
