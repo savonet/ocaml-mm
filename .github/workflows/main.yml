@@ -10,7 +10,7 @@ jobs:
     - uses: actions/checkout@v1
     - uses: avsm/setup-ocaml@master
     - run: opam pin add -n .
-    - run: opam depext -yt mm ao mad pulseaudio theora # SDL fails to link on OSX
+    - run: opam depext -yti mm ao mad pulseaudio theora # SDL fails to link on OSX
       if: matrix.os == 'macos-latest'
-    - run: opam depext -yt mm alsa ao mad pulseaudio ocamlsdl theora
+    - run: opam depext -yti mm alsa ao mad pulseaudio ocamlsdl theora
       if: matrix.os != 'macos-latest'
