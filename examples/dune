@@ -1,0 +1,53 @@
+(executable
+ (name autotune)
+ (modules autotune)
+ (optional)
+ (libraries mm.audio mm.alsa))
+
+(executable
+ (name dictee)
+ (modules dictee)
+ (optional)
+ (libraries mm.audio mm.midi mm.mad mm.oss))
+
+(executable
+ (name display)
+ (modules display)
+ (optional)
+ (libraries graphics mm.image))
+
+(executable
+ (name drums)
+ (modules drums)
+ (optional)
+ (libraries mm.audio mm.oss))
+
+(executable
+ (name fft)
+ (modules fft)
+ (optional)
+ (libraries graphics mm.audio mm.oss))
+
+(executable
+ (name id)
+ (modules id)
+ (optional)
+ (libraries mm.audio))
+
+(executable
+ (name player)
+ (modules player)
+ (optional)
+ (libraries mm.audio mm.oss))
+
+(executable
+ (name sine_wav)
+ (modules sine_wav)
+ (optional)
+ (libraries mm.audio mm.ao))
+
+(executable
+ (name test)
+ (modules test)
+ (optional)
+ (libraries gstreamer mm.audio mm.video mm.sdl mm.oss))

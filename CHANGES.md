@@ -1,3 +1,9 @@
+0.7.0 (unreleased)
+======
+* Switch to dune!
+* Add set_alpha
+* Add box_alpha
+
 0.6.0 (12-10-2020)
 =====
 - Use `YUV420` for video frames.

@@ -33,58 +33,48 @@
 
 (** Operations on video data. *)
 
+open Mm_image
+
 (** Images of videos. *)
 module Image : sig
   type t = Image.YUV420.t
 
   val create : int -> int -> t
-
   val of_RGB24_string : string -> int -> t
 
   (** Convert to format useable by [Graphics.make_image]. *)
   val to_int_image : t -> int array array
 
   val copy : t -> t
-
   val width : t -> int
-
   val height : t -> int
-
   val dimensions : t -> int * int
 
   (** Size in bytes. *)
   val size : t -> int
 
   val blank : t -> unit
-
   val fill_alpha : t -> int -> unit
-
   val scale : ?proportional:bool -> t -> t -> unit
-
   val randomize : t -> unit
 
   (** [blit_all src dst] blits an entire image. *)
   val blit : t -> t -> unit
 
   val get_pixel_rgba : t -> int -> int -> int * int * int * int
-
-  val set_pixel_rgba : t -> int -> int -> (int * int * int * int) -> unit
+  val set_pixel_rgba : t -> int -> int -> int * int * int * int -> unit
 
   (** Add the fist image to the second. *)
   val add : t -> ?x:int -> ?y:int -> t -> unit
 
   module Effect : sig
     val greyscale : t -> unit
-
     val sepia : t -> unit
-
     val invert : t -> unit
-
     val lomo : t -> unit
 
     module Alpha : sig
       val scale : t -> float -> unit
-
       val disk : t -> int -> int -> int -> unit
     end
   end
@@ -116,11 +106,8 @@ val size : t -> int
 val get : t -> int -> Image.t
 
 val set : t -> int -> Image.t -> unit
-
 val iter : (Image.t -> unit) -> t -> int -> int -> unit
-
 val blank : t -> int -> int -> unit
-
 val randomize : t -> int -> int -> unit
 
 (* module Ringbuffer_ext : Ringbuffer.R with type elt = frame *)
@@ -140,30 +127,29 @@ module IO : sig
 
   module Reader : sig
     class type t =
-    object
-      method width : int
+      object
+        method width : int
 
-      method height : int
+        method height : int
 
-    (** Number of frames per second. *)
-      method frame_rate : FPS.t
+        (** Number of frames per second. *)
+        method frame_rate : FPS.t
+        (* method set_target_size : int -> int -> unit *)
 
-    (* method set_target_size : int -> int -> unit *)
+        (** Read a given number of frames. *)
+        method read : buffer -> int -> int -> int
 
-    (** Read a given number of frames. *)
-      method read : buffer -> int -> int -> int
-
-      method close : unit
-    end
+        method close : unit
+      end
   end
 
   module Writer : sig
     class type t =
-    object
-      method write : buffer -> int -> int -> unit
+      object
+        method write : buffer -> int -> int -> unit
 
-      method close : unit
-    end
+        method close : unit
+      end
 
     class to_avi_file : string -> FPS.t -> int -> int -> t
   end

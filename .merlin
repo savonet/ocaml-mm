@@ -1,5 +1,0 @@
-B src/**
-S src/**
-B external/**
-S external/**
-PKG alsa gstreamer

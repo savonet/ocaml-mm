@@ -31,33 +31,35 @@
  *
  *)
 
+open Mm_audio
+
 (** Operations on synthesizers. *)
 
 (** A synthesizer. *)
 class type t =
-object
-  (** Set the global volume of the synth. *)
-  method set_volume : float -> unit
+  object
+    (** Set the global volume of the synth. *)
+    method set_volume : float -> unit
 
-  (** Play a note. *)
-  method note_on : int -> float -> unit
+    (** Play a note. *)
+    method note_on : int -> float -> unit
 
-  (** Stop playing a note. *)
-  method note_off : int -> float -> unit
+    (** Stop playing a note. *)
+    method note_off : int -> float -> unit
 
-  (** Fill a buffer with synthesized data adding to the original data of the buffer. *)
-  method fill_add : Audio.buffer -> unit
+    (** Fill a buffer with synthesized data adding to the original data of the buffer. *)
+    method fill_add : Audio.buffer -> unit
 
-  (** Synthesize into an audio buffer. Notice that the delta times in the track
+    (** Synthesize into an audio buffer. Notice that the delta times in the track
       should be in samples (so they do depend on the samplerate). *)
-  method play : MIDI.buffer -> int -> Audio.buffer -> unit
+    method play : MIDI.buffer -> int -> Audio.buffer -> unit
 
-  (** Same as [play] but keeps data originally present in the buffer. *)
-  method play_add : MIDI.buffer -> int -> Audio.buffer -> unit
+    (** Same as [play] but keeps data originally present in the buffer. *)
+    method play_add : MIDI.buffer -> int -> Audio.buffer -> unit
 
-  (** Reset the synthesizer (sets all notes off in particular). *)
-  method reset : unit
-end
+    (** Reset the synthesizer (sets all notes off in particular). *)
+    method reset : unit
+  end
 
 (** A synthesizer. *)
 type synth = t
@@ -85,13 +87,13 @@ class monophonic : Audio.Generator.t -> t
 module Multitrack : sig
   (** A multichannel synthesizer. *)
   class type t =
-  object
-    (** Synthesize into an audio buffer. *)
-    method play : MIDI.Multitrack.buffer -> int -> Audio.buffer -> unit
+    object
+      (** Synthesize into an audio buffer. *)
+      method play : MIDI.Multitrack.buffer -> int -> Audio.buffer -> unit
 
-    (** Same as [play] but keeps data originally present in the buffer. *)
-    method play_add : MIDI.Multitrack.buffer -> int -> Audio.buffer -> unit
-  end
+      (** Same as [play] but keeps data originally present in the buffer. *)
+      method play_add : MIDI.Multitrack.buffer -> int -> Audio.buffer -> unit
+    end
 
   (** Create a multichannel synthesizer with given number of channels and a
       function returning the synthesizer on each channel. *)
