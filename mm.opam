@@ -12,13 +12,9 @@ depends: [
   "dune" {>= "2.0"}
   "dune-configurator"
 ]
-depopts: [
-  "alsa"
-  "ao"
-  "mad" {>= "0.5.0"}
-  "pulseaudio"
-  "ocamlsdl"
-  "theora"
+depopts: ["alsa" "ao" "mad" "pulseaudio" "ocamlsdl" "theora"]
+conflicts: [
+  "mad" {< "0.5.0"}
 ]
 build: [
   ["dune" "subst"] {pinned}
@@ -35,3 +31,6 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/savonet/ocaml-mm.git"
+depexts: [
+  ["linux-headers"] {os-family = "alpine"}
+]

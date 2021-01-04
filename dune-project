@@ -17,7 +17,9 @@
  (depopts
   alsa
   ao
-  (mad (>= 0.5.0))
+  mad
   pulseaudio
   ocamlsdl
-  theora))
+  theora)
+(conflicts
+  (mad (< 0.5.0))))
