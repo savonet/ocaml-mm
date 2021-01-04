@@ -31,6 +31,9 @@
  *
  *)
 
+let option_value o ~default = match o with Some v -> v | None -> default
+let option_get = function Some v -> v | None -> invalid_arg "option is None"
+
 module Data = struct
   type t =
     (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
@@ -534,9 +537,9 @@ module YUV420 = struct
 
   let default_stride width y_stride uv_stride =
     let align = 4 in
-    let y_stride = Option.value ~default:(Data.round align width) y_stride in
+    let y_stride = option_value ~default:(Data.round align width) y_stride in
     let uv_stride =
-      Option.value ~default:(Data.round align ((width + 1) / 2)) uv_stride
+      option_value ~default:(Data.round align ((width + 1) / 2)) uv_stride
     in
     (y_stride, uv_stride)
 
@@ -562,8 +565,8 @@ module YUV420 = struct
 
   let of_YUV420_string ?y_stride ?uv_stride s width height =
     (* let y_stride, uv_stride = default_stride width y_stride uv_stride in *)
-    let y_stride = Option.value ~default:width y_stride in
-    let uv_stride = Option.value ~default:(width / 2) uv_stride in
+    let y_stride = option_value ~default:width y_stride in
+    let uv_stride = option_value ~default:(width / 2) uv_stride in
     let data = Data.of_string s in
     make_data width height data y_stride uv_stride
 
@@ -619,7 +622,7 @@ module YUV420 = struct
     if a = 0xff then img.alpha <- None
     else (
       ensure_alpha img;
-      Bigarray.Array1.fill (Option.get img.alpha) a )
+      Bigarray.Array1.fill (option_get img.alpha) a )
 
   let blank img = fill img (Pixel.yuv_of_rgb (0, 0, 0))
   let blank_all = blank
@@ -671,7 +674,7 @@ module YUV420 = struct
     if img.alpha <> None || a <> 0xff then
       (
         ensure_alpha img;
-        Bigarray.Array1.set (Option.get img.alpha) (j * width + i) a
+        Bigarray.Array1.set (option_get img.alpha) (j * width + i) a
       );
     let y,u,v = Pixel.yuv_of_rgb (r,g,b) in
     Bigarray.Array1.set data (j * width + i) y;

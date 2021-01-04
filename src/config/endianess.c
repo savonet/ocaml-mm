@@ -1,4 +1,5 @@
 #include <caml/memory.h>
+#include <stdint.h>
 
 enum
 {
