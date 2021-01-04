@@ -1,4 +1,4 @@
-0.7.0 (unreleased)
+0.7.0 (04-01-2021)
 ======
 * Switch to dune!
 * Add set_alpha
