@@ -1,3 +1,7 @@
+0.7.1 (unreleased)
+=====
+* Use only our own custom byte swap implementations.
+
 0.7.0 (04-01-2021)
 ======
 * Switch to dune!
