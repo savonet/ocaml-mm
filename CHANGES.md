@@ -1,4 +1,4 @@
-0.7.1 (unreleased)
+0.7.1 (10-01-2021)
 =====
 * Use only our own custom byte swap implementations.
 
