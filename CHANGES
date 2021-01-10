@@ -1,4 +1,4 @@
-0.5.1 (unreleased)
+0.5.1 (10-01-2021)
 =====
 * Use only our own byteswap routines.
 
