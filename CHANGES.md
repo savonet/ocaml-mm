@@ -1,4 +1,14 @@
-0.6.0 (unreleased)
+0.7.1 (10-01-2021)
+=====
+* Use only our own custom byte swap implementations.
+
+0.7.0 (04-01-2021)
+======
+* Switch to dune!
+* Add set_alpha
+* Add box_alpha
+
+0.6.0 (12-10-2020)
 =====
 - Use `YUV420` for video frames.
 - Use bigarrays to implement mono audio buffers, should be more efficient.

@@ -80,6 +80,10 @@
 #define min(a,b) (a<b)?a:b
 #endif
 
+#ifndef Bytes_val
+#define Bytes_val String_val
+#endif
+
 /* Remark, this returns an integer, which means that it might be ordered in
    little-endian... */
 static inline int int_rgb8_of_pixel(frame *rgb, int i, int j)
@@ -597,7 +601,7 @@ CAMLprim value caml_rgb_to_bmp(value _rgb)
   caml_leave_blocking_section();
 
   ans = caml_alloc_string(122 + 4 * len);
-  memcpy(String_val(ans), bmp, 122 + 4 * len);
+  memcpy(Bytes_val(ans), bmp, 122 + 4 * len);
   free(bmp);
 
   CAMLreturn(ans);
@@ -628,7 +632,7 @@ CAMLprim value caml_image_to_rgb24(value _rgb)
   caml_leave_blocking_section();
 
   ans = caml_alloc_string(3 * len);
-  memcpy(String_val(ans), bmp, 3 * len);
+  memcpy(Bytes_val(ans), bmp, 3 * len);
   free(bmp);
 
   CAMLreturn(ans);

@@ -10,6 +10,10 @@
 
 #include "image_data.h"
 
+#ifndef Bytes_val
+#define Bytes_val String_val
+#endif
+
 CAMLprim value caml_data_aligned(value _alignment, value _len)
 {
   CAMLparam2(_alignment, _len);
@@ -43,7 +47,7 @@ CAMLprim value caml_data_to_string(value _data)
   unsigned char* data = Caml_ba_data_val(_data);
   long len = Caml_ba_array_val(_data)->dim[0];
   ans = caml_alloc_string(len);
-  memcpy(String_val(ans), data, len);
+  memcpy(Bytes_val(ans), data, len);
   CAMLreturn(ans);
 }
 

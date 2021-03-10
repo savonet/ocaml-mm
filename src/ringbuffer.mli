@@ -82,8 +82,8 @@ module type R = sig
 end
 
 (** Create a ringbuffer. *)
-module Make : functor (B:Buffer) -> R with type buffer = B.t
+module Make : functor (B : Buffer) -> R with type buffer = B.t
 
 (** Create an extensible ringbuffer: the size of the ringbuffer is extended if
     write space is too small at some point. *)
-module Make_ext : functor (B:Buffer) -> R with type buffer = B.t
+module Make_ext : functor (B : Buffer) -> R with type buffer = B.t

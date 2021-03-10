@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 #include "image_pixel.h"
 #include "image_rgb.h"
@@ -387,4 +388,31 @@ CAMLprim value caml_yuv_disk_alpha(value img, value _x, value _y, value _r)
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);
+}
+
+#define crop(x, m) (x > m ? m : (x < 0 ? 0 : x))
+
+CAMLprim value caml_yuv_box_alpha_native(value img, value _x, value _y, value _w, value _h, value _a)
+{
+  CAMLparam1(img);
+  yuv420 yuv;
+  yuv420_of_value(&yuv,img);
+  int x = crop(Int_val(_x), yuv.width);
+  int y = crop(Int_val(_y), yuv.height);
+  int w = crop(Int_val(_w), yuv.width);
+  int h = max(Int_val(_h), yuv.height);
+  int a = CLIP(Double_val(_a) * PIXEL_PRECISON);
+  int i, j;
+
+  caml_enter_blocking_section();
+  for (j = y; j < h; j++)
+    for (i = x; i < w; i++)
+      A(yuv, i, j) = a;
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_yuv_box_alpha_bytecode(value * argv, int argn) {
+  return caml_yuv_box_alpha_native(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }

@@ -62,29 +62,15 @@ static inline int32_t int32_of_int24(int24_t x) {
   return INT24_MAX < tmp ? (0xff000000 | tmp) : tmp; 
 }
 
-#ifdef __linux__
-  #include <byteswap.h>
-#endif
+#define bswap_16(x) \
+  ((int16_t)((((int16_t)(x) & 0xff00) >> 8) | \
+             (((int16_t)(x) & 0x00ff) << 8)))
 
-#if defined(__APPLE__)
-  #include <libkern/OSByteOrder.h>
-  #define bswap_16 OSSwapInt16
-  #define bswap_32 OSSwapInt32
-#endif
-
-#ifndef bswap_16
-  #define bswap_16(x) \
-    ((int16_t)((((int16_t)(x) & 0xff00) >> 8) | \
-               (((int16_t)(x) & 0x00ff) << 8)))
-#endif
-
-#ifndef bswap_32
-  #define bswap_32(x) \
-    ((int32_t)((((int32_t)(x)  & 0xff000000) >> 24) | \
-                (((int32_t)(x) & 0x00ff0000) >>  8) | \
-                (((int32_t)(x) & 0x0000ff00) <<  8) | \
-                (((int32_t)(x) & 0x000000ff) << 24)))
-#endif
+#define bswap_32(x) \
+  ((int32_t)((((int32_t)(x)  & 0xff000000) >> 24) | \
+              (((int32_t)(x) & 0x00ff0000) >>  8) | \
+              (((int32_t)(x) & 0x0000ff00) <<  8) | \
+              (((int32_t)(x) & 0x000000ff) << 24)))
 
 #include <assert.h>
 #include <stdio.h>
