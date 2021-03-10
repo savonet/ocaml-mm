@@ -385,3 +385,39 @@ module Generic : sig
   val convert :
     ?proportional:bool -> ?scale_kind:RGBA32.Scale.kind -> t -> t -> unit
 end
+
+module type CanvasImage = sig
+  type t
+
+  val width : t -> int
+
+  val height : t -> int
+
+  val size : t -> int
+
+  val create : int -> int -> t
+
+  val copy : t -> t
+
+  val randomize : t -> unit
+end
+
+module Canvas (I : CanvasImage) : sig
+  type t
+
+  val create : int -> int -> t
+
+  val make : I.t -> t
+
+  val size : t -> int
+
+  val add : t -> t -> t
+
+  val blank : t -> unit
+
+  val blit_all : t -> t -> unit
+
+  val copy : t -> t
+
+  val randomize : t -> unit
+end
