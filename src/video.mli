@@ -40,7 +40,7 @@ module Image : sig
   type t = Image.YUV420.t
 
   val create : int -> int -> t
-  val of_RGB24_string : string -> int -> t
+  (* val of_RGB24_string : string -> int -> t *)
 
   (** Convert to format useable by [Graphics.make_image]. *)
   val to_int_image : t -> int array array
@@ -48,16 +48,17 @@ module Image : sig
   val copy : t -> t
   val width : t -> int
   val height : t -> int
-  val dimensions : t -> int * int
+  (* val dimensions : t -> int * int *)
 
   (** Size in bytes. *)
   val size : t -> int
 
   val blank : t -> unit
   val fill_alpha : t -> int -> unit
-  val scale : ?proportional:bool -> t -> t -> unit
+  (* val scale : ?proportional:bool -> t -> t -> unit *)
   val randomize : t -> unit
 
+  (*
   (** [blit_all src dst] blits an entire image. *)
   val blit : t -> t -> unit
 
@@ -78,6 +79,7 @@ module Image : sig
       val disk : t -> int -> int -> int -> unit
     end
   end
+  *)
 end
 
 (** A video buffer. *)
@@ -111,7 +113,7 @@ val blank : t -> int -> int -> unit
 val randomize : t -> int -> int -> unit
 
 module Canvas : sig
-  type t = Mm_image.Image.Canvas(Image).t
+  type t = Mm_image.Image.Canvas(Image).t array
 
   val size : t -> int
 

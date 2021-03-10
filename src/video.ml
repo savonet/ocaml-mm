@@ -32,9 +32,7 @@
  *)
 
 open Mm_base
-open Mm_image
-
-module Img = Image
+(* open Mm_image *)
 
 (** Images from which are made videos. *)
 module type Image = sig
@@ -53,14 +51,14 @@ module type Image = sig
   val randomize : t -> unit
 end
 
-module DefaultImage = struct
-  include Image.YUV420
+module Image = struct
+  include Mm_image.Image.YUV420
 
   let create w h = create w h
 end
 
 module Make(Image : Image) = struct
-  module Image = Image
+  module I = Image
 
   type t = Image.t array
 
@@ -105,9 +103,9 @@ module Make(Image : Image) = struct
     iter Image.randomize vid off len
 end
 
-include Make(DefaultImage)
+include Make(Image)
 
-module Canvas = Make(Img.Canvas(DefaultImage))
+module Canvas = Make(Mm_image.Image.Canvas(Image))
 
 (*
 module RE = struct
