@@ -22,4 +22,5 @@
   ocamlsdl
   theora)
 (conflicts
-  (mad (< 0.5.0))))
+  (mad (< 0.5.0))
+  (alsa (< 0.3.0))))
