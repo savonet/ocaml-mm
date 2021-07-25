@@ -1,3 +1,7 @@
+0.7.2 ()
+=====
+* Fix offsets in to_{s16, u8} functions.
+
 0.7.1 (10-01-2021)
 =====
 * Use only our own custom byte swap implementations.

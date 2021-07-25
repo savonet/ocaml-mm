@@ -245,8 +245,10 @@ CAMLprim value caml_float_pcm_to_s16(value _le, value a, value _dst, value _dst_
   int16_t *dst = (int16_t*)Bytes_val(_dst);
   int c, i;
 
-  if (caml_string_length(_dst) < dst_offs + len*nc*2)
+  if (caml_string_length(_dst) < 2*nc*(dst_offs + len))
     caml_invalid_argument("pcm_to_s16: destination buffer too short");
+
+  dst = dst + nc*dst_offs;
 
   if (little_endian == 1)
     for (c = 0; c < nc; c++)
@@ -320,12 +322,13 @@ CAMLprim value caml_float_pcm_to_u8(value a, value _dst, value _dst_offs)
   if (nc == 0)
     CAMLreturn(Val_unit);
   int len = Caml_ba_array_val(Field(a,0))->dim[0];
-  int dst_len = len * nc;
   float *src;
   uint8_t *dst = (uint8_t*)Bytes_val(_dst);
 
-  if (caml_string_length(_dst) < dst_offs + dst_len)
-    caml_invalid_argument("pcm_to_u8: destination buffer too short");
+  if (caml_string_length(_dst) < nc*(dst_offs + len))
+    caml_invalid_argument("pcm_to_s16: destination buffer too short");
+
+  dst = dst + nc*dst_offs;
 
   for (c = 0; c < nc; c++)
   {
