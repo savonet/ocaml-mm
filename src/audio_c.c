@@ -191,13 +191,13 @@ static inline uint8_t u8_clip(double s)
 CAMLprim value caml_float_pcm_to_s32le(value a, value _offs, value _dst, value _dst_offs, value _len)
 {
   CAMLparam2(a, _dst);
+  CAMLlocal1(src);
   int c, i;
   int offs = Int_val(_offs);
   int dst_offs = Int_val(_dst_offs);
   int len = Int_val(_len);
   int nc = Wosize_val(a);
   int dst_len = 4 * len * nc;
-  value src;
   int32_t *dst = (int32_t*)Bytes_val(_dst);
 
   if (nc == 0) CAMLreturn(Val_int(0));
@@ -223,13 +223,13 @@ CAMLprim value caml_float_pcm_to_s32le(value a, value _offs, value _dst, value _
 CAMLprim value caml_float_pcm_to_s24le(value a, value _offs, value _dst, value _dst_offs, value _len)
 {
   CAMLparam2(a, _dst);
+  CAMLlocal1(src);
   int c, i;
   int offs = Int_val(_offs);
   int dst_offs = Int_val(_dst_offs);
   int len = Int_val(_len);
   int nc = Wosize_val(a);
   int dst_len = 3 * len * nc;
-  value src;
   int24_t *dst = (int24_t*)Bytes_val(_dst);
 
   if (nc == 0) CAMLreturn(Val_int(0));
@@ -250,13 +250,13 @@ CAMLprim value caml_float_pcm_to_s24le(value a, value _offs, value _dst, value _
 CAMLprim value caml_float_pcm_to_s16(value a, value _offs, value _dst, value _dst_offs, value _len, int little_endian)
 {
   CAMLparam2(a, _dst);
+  CAMLlocal1(src);
   int c, i;
   int offs = Int_val(_offs);
   int dst_offs = Int_val(_dst_offs);
   int len = Int_val(_len);
   int nc = Wosize_val(a);
   int dst_len = 2 * len * nc;
-  value src;
   int16_t *dst = (int16_t*)Bytes_val(_dst);
 
   if (nc == 0) CAMLreturn(Val_int(0));
@@ -306,13 +306,13 @@ CAMLprim value caml_float_pcm_to_u8(value a, value _offs,
                                     value _dst, value _dst_offs, value _len)
 {
   CAMLparam2(a, _dst);
+  CAMLlocal1(src);
   int c, i;
   int offs = Int_val(_offs);
   int dst_offs = Int_val(_dst_offs);
   int len = Int_val(_len);
   int nc = Wosize_val(a);
   int dst_len = len * nc;
-  value src;
   uint8_t *dst = (uint8_t*)Bytes_val(_dst);
 
   if (nc == 0) CAMLreturn(Val_int(0));
