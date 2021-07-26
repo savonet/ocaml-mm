@@ -1,4 +1,4 @@
-(lang dune 2.0)
+(lang dune 2.8)
 (version 0.7.2)
 (name mm)
 (source (github savonet/ocaml-mm))
@@ -12,7 +12,7 @@
  (name mm)
  (synopsis "The mm library contains high-level to create and manipulate multimedia streams (audio, video, MIDI)")
  (depends
-  (dune (>= 2.0))
+  dune
   dune-configurator)
  (depopts
   alsa

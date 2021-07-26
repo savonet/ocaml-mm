@@ -5,7 +5,7 @@
  (optional)
  (libraries mad mm.base mm.audio)
  (synopsis
-   "High-level APIs to create and manipulate multimedia streams -- optional mad module"))
+  "High-level APIs to create and manipulate multimedia streams -- optional mad module"))
 
 (library
  (name mm_theora)
@@ -14,7 +14,7 @@
  (optional)
  (libraries theora mm.image mm.video)
  (synopsis
-   "High-level APIs to create and manipulate multimedia streams -- optional theora module"))
+  "High-level APIs to create and manipulate multimedia streams -- optional theora module"))
 
 (library
  (name mm_ao)
@@ -23,7 +23,7 @@
  (optional)
  (libraries ao mm.audio)
  (synopsis
-   "High-level APIs to create and manipulate multimedia streams -- optional ao module"))
+  "High-level APIs to create and manipulate multimedia streams -- optional ao module"))
 
 (library
  (name mm_pulseaudio)
@@ -32,7 +32,7 @@
  (optional)
  (libraries pulseaudio mm.audio)
  (synopsis
-   "High-level APIs to create and manipulate multimedia streams -- optional pulseaudio module"))
+  "High-level APIs to create and manipulate multimedia streams -- optional pulseaudio module"))
 
 (library
  (name mm_sdl)
@@ -44,7 +44,7 @@
   (language c)
   (names sdl_stubs))
  (synopsis
-   "High-level APIs to create and manipulate multimedia streams -- optional sdl module"))
+  "High-level APIs to create and manipulate multimedia streams -- optional sdl module"))
 
 (library
  (name mm_alsa)
@@ -53,7 +53,7 @@
  (optional)
  (libraries alsa mm.audio)
  (synopsis
-   "High-level APIs to create and manipulate multimedia streams -- optional alsa module"))
+  "High-level APIs to create and manipulate multimedia streams -- optional alsa module"))
 
 (library
  (name mm_oss)
@@ -67,4 +67,4 @@
   (= %{system} linux))
  (optional)
  (synopsis
-   "High-level APIs to create and manipulate multimedia streams -- optional oss module"))
+  "High-level APIs to create and manipulate multimedia streams -- optional oss module"))

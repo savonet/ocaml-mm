@@ -4,7 +4,7 @@
  (libraries unix)
  (modules ringbuffer iO)
  (synopsis
-   "High-level APIs to create and manipulate multimedia streams -- base modules"))
+  "High-level APIs to create and manipulate multimedia streams -- base modules"))
 
 (library
  (name mm_audio)
@@ -16,7 +16,7 @@
   (language c)
   (names audio_c))
  (synopsis
-   "High-level APIs to create and manipulate multimedia streams -- audio module"))
+  "High-level APIs to create and manipulate multimedia streams -- audio module"))
 
 (library
  (name mm_image)
@@ -28,7 +28,7 @@
   (language c)
   (names image_data image_pixel image_rgb image_yuv420))
  (synopsis
-   "High-level APIs to create and manipulate multimedia streams -- image module"))
+  "High-level APIs to create and manipulate multimedia streams -- image module"))
 
 (library
  (name mm_video)
@@ -36,7 +36,7 @@
  (libraries mm.base mm.image)
  (modules video)
  (synopsis
-   "High-level APIs to create and manipulate multimedia streams -- video module"))
+  "High-level APIs to create and manipulate multimedia streams -- video module"))
 
 (library
  (name mm_midi)
@@ -44,7 +44,7 @@
  (libraries mm.base mm.audio)
  (modules mIDI synth)
  (synopsis
-   "High-level APIs to create and manipulate multimedia streams -- midi module"))
+  "High-level APIs to create and manipulate multimedia streams -- midi module"))
 
 (library
  (name mm)

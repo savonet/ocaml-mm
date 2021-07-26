@@ -8,8 +8,15 @@
 
 (executable
  (name setup)
- (modules setup setup_alsa setup_ao setup_mad setup_oss setup_pulseaudio
-   setup_sdl setup_theora)
+ (modules
+  setup
+  setup_alsa
+  setup_ao
+  setup_mad
+  setup_oss
+  setup_pulseaudio
+  setup_sdl
+  setup_theora)
  (foreign_stubs
   (language c)
   (names endianess_setup))
