@@ -386,38 +386,57 @@ module Generic : sig
     ?proportional:bool -> ?scale_kind:RGBA32.Scale.kind -> t -> t -> unit
 end
 
+(** Type of image module expected to build canvas. *)
 module type CanvasImage = sig
+  (** An image. *)
   type t
 
+  (** Width of the image. *)
   val width : t -> int
 
+  (** Height of the image. *)
   val height : t -> int
 
+  (** Size of the image in bytes. *)
   val size : t -> int
 
+  (** Create an image with given dimensions. *)
   val create : int -> int -> t
 
+  (** Create a copy of the image. *)
   val copy : t -> t
 
+  (** Fill the gimage with random data. *)
   val randomize : t -> unit
 end
 
+(** Canvas of images, i.e. formal sums of images of various dimensions with
+    various offsets. *)
 module Canvas (I : CanvasImage) : sig
+  (** A canvas. *)
   type t
 
+  (** Create an empty canvas with given dimensions. *)
   val create : int -> int -> t
 
-  val make : I.t -> t
+  (** Create a canvas containing a given image. *)
+  val make : ?width:int -> ?height:int -> ?x:int -> ?y:int -> I.t -> t
 
+  (** Size of a canvas in bytes. *)
   val size : t -> int
 
+  (** Add two canvas. *)
   val add : t -> t -> t
 
+  (** Blank out a canvas. *)
   val blank : t -> unit
 
+  (** Copy all elements from first to second canvas. *)
   val blit_all : t -> t -> unit
 
+  (** Create a copy of the canvas. *)  
   val copy : t -> t
 
+  (** Fill the canvas with random pixels. *)
   val randomize : t -> unit
 end

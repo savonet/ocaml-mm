@@ -105,7 +105,9 @@ end
 
 include Make(Image)
 
-module Canvas = Make(Mm_image.Image.Canvas(Image))
+module CanvasImage = Mm_image.Image.Canvas(Image)
+
+module Canvas = Make(CanvasImage)
 
 (*
 module RE = struct

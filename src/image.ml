@@ -974,7 +974,7 @@ module Canvas (I : CanvasImage) = struct
         image : I.t
       }
 
-    let make image = { offset = (0,0); image }
+    let make ?(x=0) ?(y=0) image = { offset = (x,y); image }
 
     let copy e = { e with image = I.copy e.image }
 
@@ -999,9 +999,11 @@ module Canvas (I : CanvasImage) = struct
   let size c =
     List.fold_left (fun n e -> n + E.size e) 0 c.elements
 
-  let make image =
-    let dim = I.width image, I.height image in
-    { dim; elements = [E.make image] }
+  let make ?width ?height ?x ?y image =
+    let width = Option.value ~default:(I.width image) width in
+    let height = Option.value ~default:(I.height image) height in
+    let dim = width, height in
+    { dim; elements = [E.make ?x ?y image] }
 
   let add c c' =
     assert (c.dim = c'.dim);
