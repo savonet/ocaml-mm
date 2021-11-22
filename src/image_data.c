@@ -4,9 +4,12 @@
 #include <caml/memory.h>
 #include <caml/misc.h>
 #include <caml/mlvalues.h>
+#include <caml/unixsupport.h>
 
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
+#include <stdalign.h>
 
 #include "image_data.h"
 
@@ -21,11 +24,20 @@ CAMLprim value caml_data_aligned(value _alignment, value _len) {
   int len = Int_val(_len);
   unsigned char *data;
 
-  data = memalign(alignment, len);
+  // This is until: https://github.com/ocaml/ocaml/pull/10788 is merged
+  ans = caml_ba_alloc_dims(CAML_BA_C_LAYOUT | CAML_BA_UINT8,
+                           1, NULL, len);
+
+  if (alignment < alignof(max_align_t)) {
+    CAMLreturn(ans);
+  }
+
+  data = aligned_alloc(alignment, len);
   if (data == NULL)
-    caml_raise_out_of_memory();
-  ans = caml_ba_alloc_dims(CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_UINT8,
-                           1, data, len);
+    uerror("aligned_alloc", Nothing);
+
+  free(Caml_ba_data_val(ans));
+  Caml_ba_array_val(ans)->data = data;
 
   CAMLreturn(ans);
 }
@@ -35,6 +47,8 @@ CAMLprim value caml_data_of_string(value s) {
   CAMLlocal1(ans);
   long len = caml_string_length(s);
   unsigned char *data = malloc(len);
+  if (data == NULL)
+    caml_raise_out_of_memory();
   memcpy(data, String_val(s), len);
   ans = caml_ba_alloc_dims(CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_UINT8,
                            1, data, len);
@@ -57,6 +71,8 @@ CAMLprim value caml_data_copy(value _src) {
   unsigned char *src = Caml_ba_data_val(_src);
   long len = Caml_ba_array_val(_src)->dim[0];
   unsigned char *dst = malloc(len);
+  if (dst == NULL)
+    caml_raise_out_of_memory();
   memcpy(dst, src, len);
   ans = caml_ba_alloc_dims(CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_UINT8,
                            1, dst, len);
