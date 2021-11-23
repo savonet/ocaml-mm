@@ -4,8 +4,11 @@ void *memalign(size_t align, size_t size);
 #else
 // Assume malloc alignment is sufficient (the 0*align is to avoid an unused
 // variable warning).
-#define memalign(align,size) malloc(size+0*align)
+#define memalign(align, size) malloc(size + 0 * align)
 #endif
 
 // Default alignment
 #define ALIGNMENT_BYTES 16
+
+CAMLextern value caml_mm_ba_alloc_dims(int flags, int num_dims, void *data,
+                                       ...);

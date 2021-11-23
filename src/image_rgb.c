@@ -68,7 +68,11 @@
 // For OCaml < 3.10
 #ifndef caml_ba_array
 #define caml_ba_array caml_bigarray
+
+#ifndef Caml_ba_array_val
 #define Caml_ba_array_val(v) ((struct caml_ba_array *)Data_custom_val(v))
+#endif
+
 #define Caml_ba_data_val(v) (Caml_ba_array_val(v)->data)
 #define caml_ba_alloc alloc_bigarray
 #define CAML_BA_C_LAYOUT BIGARRAY_C_LAYOUT
@@ -1328,7 +1332,7 @@ CAMLprim value caml_mm_Gray8_motion_multi_compute(value _bs, value _width,
     }
   caml_leave_blocking_section();
 
-  value ans = caml_ba_alloc_dims(
+  value ans = caml_mm_ba_alloc_dims(
       CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_NATIVE_INT, 1, v, vlen);
   CAMLreturn(ans);
 }
