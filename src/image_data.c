@@ -75,9 +75,6 @@ CAMLexport value caml_mm_ba_alloc_dims(int flags, int num_dims, void *data,
   res = caml_mm_ba_alloc(flags, num_dims, data, dim);
   return res;
 }
-#else
-#define caml_mm_ba_alloc caml_ba_alloc
-#define caml_mm_ba_alloc_dims caml_ba_alloc_dims
 #endif
 
 CAMLprim value caml_data_aligned(value _alignment, value _len) {
