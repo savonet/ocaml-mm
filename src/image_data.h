@@ -1,14 +1,39 @@
-#ifdef HAVE_MEMALIGN
-// Some systems have memalign() but no declaration for it.
-void *memalign(size_t align, size_t size);
+#include "config.h"
+
+#ifdef HAS_MAX_ALIGN_T
+#include <stdalign.h>
+#include <stddef.h>
+#define ALIGNMENT_BYTES alignof(max_align_t)
 #else
-// Assume malloc alignment is sufficient (the 0*align is to avoid an unused
-// variable warning).
-#define memalign(align, size) malloc(size + 0 * align)
+#define ALIGNMENT_BYTES 16
 #endif
 
-// Default alignment
-#define ALIGNMENT_BYTES 16
+#if defined(HAS_ALIGNED_ALLOC)
+#include <caml/unixsupport.h>
+#include <stdlib.h>
+#define ALIGNED_ALLOC(data, alignment, len)                                    \
+  {                                                                            \
+    data = aligned_alloc(alignment, len);                                      \
+    if (data == NULL)                                                          \
+      uerror("aligned_alloc", Nothing);                                        \
+  }
+#elif defined(HAS_MEMALIGN)
+#include <caml/unixsupport.h>
+#include <malloc.h>
+#define ALIGNED_ALLOC(data, alignment, len)                                    \
+  {                                                                            \
+    data = memalign(alignment, len);                                           \
+    if (data == NULL)                                                          \
+      uerror("memalign", Nothing);                                             \
+  }
+#else
+#define ALIGNED_ALLOC(data, alignment, len)                                    \
+  {                                                                            \
+    data = malloc(len + 0 * alignment);                                        \
+    if (data == NULL)                                                          \
+      caml_raise_out_of_memory();                                              \
+  }
+#endif
 
 CAMLextern value caml_mm_ba_alloc_dims(int flags, int num_dims, void *data,
                                        ...);

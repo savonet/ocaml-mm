@@ -7,7 +7,6 @@
 #include <caml/memory.h>
 #include <caml/misc.h>
 #include <caml/mlvalues.h>
-#include <caml/unixsupport.h>
 
 #include <stdalign.h>
 #include <stddef.h>
@@ -21,6 +20,7 @@
 #endif
 
 // See: https://github.com/ocaml/ocaml/pull/10788
+#ifdef HAS_CAML_INTERNALS
 CAMLexport value caml_mm_ba_alloc(int flags, int num_dims, void *data,
                                   intnat *dim) {
   uintnat num_elts, asize, size;
@@ -75,6 +75,10 @@ CAMLexport value caml_mm_ba_alloc_dims(int flags, int num_dims, void *data,
   res = caml_mm_ba_alloc(flags, num_dims, data, dim);
   return res;
 }
+#else
+#define caml_mm_ba_alloc caml_ba_alloc
+#define caml_mm_ba_alloc_dims caml_ba_alloc_dims
+#endif
 
 CAMLprim value caml_data_aligned(value _alignment, value _len) {
   CAMLparam2(_alignment, _len);
@@ -83,23 +87,11 @@ CAMLprim value caml_data_aligned(value _alignment, value _len) {
   int len = Int_val(_len);
   unsigned char *data;
 
-#ifdef HAS_MAX_ALIGN_T
-  int min_align = alignof(max_align_t);
-#else
-  int min_align = 16;
-#endif
-
-  if (alignment < min_align) {
-    alignment = min_align;
+  if (alignment < ALIGNMENT_BYTES) {
+    alignment = ALIGNMENT_BYTES;
   }
 
-#ifdef HAS_ALIGNED_ALLOC
-  data = aligned_alloc(alignment, len);
-#else
-  data = memalign(alignment, len);
-#endif
-  if (data == NULL)
-    uerror("aligned_alloc", Nothing);
+  ALIGNED_ALLOC(data, alignment, len);
 
   ans = caml_mm_ba_alloc_dims(
       CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_UINT8, 1, data, len);
