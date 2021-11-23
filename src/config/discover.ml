@@ -16,8 +16,19 @@ let () =
       |}
       in
 
+      let has_max_align_t =
+        C.c_test c
+          {|
+        int main() {
+          size_t x = sizeof(max_align_t);
+          return 0;
+        }
+      |}
+      in
+
       C.C_define.gen_header_file c ~fname:"config.h"
         [
           ("BIGENDIAN", Switch (is_big_endian ()));
           ("HAS_ALIGNED_ALLOC", Switch has_aligned_alloc);
+          ("HAS_MAX_ALIGN_T", Switch has_max_align_t);
         ])

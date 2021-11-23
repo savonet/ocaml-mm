@@ -83,8 +83,14 @@ CAMLprim value caml_data_aligned(value _alignment, value _len) {
   int len = Int_val(_len);
   unsigned char *data;
 
-  if (alignment < alignof(max_align_t)) {
-    alignment = alignof(max_align_t);
+#ifdef HAS_MAX_ALIGN_T
+  int min_align = alignof(max_align_t);
+#else
+  int min_align = 16;
+#endif
+
+  if (alignment < min_align) {
+    alignment = min_align;
   }
 
 #ifdef HAS_ALIGNED_ALLOC
