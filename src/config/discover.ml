@@ -43,7 +43,9 @@ let () =
           {|
         #define CAML_INTERNALS 1
         #include <caml/bigarray.h>
+        #include <caml/custom.h>
         int main() {
+          struct custom_operations *ops = &caml_ba_ops;
           int x = caml_ba_element_size[0];
           return 0;
         }
