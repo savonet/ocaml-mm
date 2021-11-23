@@ -93,7 +93,6 @@ class reader_of_file fname =
   let _ = assert (info.Theora.pixel_fmt = Theora.PF_420) in
   object (self)
     method width = info.Theora.frame_width
-
     method height = info.Theora.frame_height
 
     method frame_rate =
@@ -118,9 +117,9 @@ class reader_of_file fname =
             self#get_yuv
         | Theora.Duplicate_frame -> (
             (* Got a duplicate frame, sending previous one ! *)
-              match latest_yuv with
+            match latest_yuv with
               | Some x -> x
-              | None -> raise Video.IO.Invalid_file )
+              | None -> raise Video.IO.Invalid_file)
 
     method read buf ofs len =
       let n = ref 0 in

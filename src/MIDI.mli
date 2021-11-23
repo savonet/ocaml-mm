@@ -117,13 +117,9 @@ module IO : sig
     class type t =
       object
         method put : int -> event -> unit
-
         method note_off : int -> int -> float -> unit
-
         method note_on : int -> int -> float -> unit
-
         method advance : int -> unit
-
         method close : unit
       end
 

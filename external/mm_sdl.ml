@@ -196,7 +196,7 @@ class writer_to_screen w h =
           | 32 -> to_32 rgb surface
           | i -> failwith (Printf.sprintf "Unsupported format %dbpp" i)
         end;
-        Sdlvideo.flip surface )
+        Sdlvideo.flip surface)
 
     method close = Sdl.quit ()
   end
@@ -267,7 +267,6 @@ class midi_keyboard : MIDI.IO.Reader.t =
     ignore (Sdlvideo.set_video_mode ~w:640 ~h:480 ~bpp:16 [])
 
     val mutable velocity = 1.
-
     val channel = 0
 
     method read _ buf ofs len =
@@ -284,7 +283,7 @@ class midi_keyboard : MIDI.IO.Reader.t =
                 else (
                   let n = note_of_char c in
                   (* Printf.printf "Playing note %d.\n%!" n; *)
-                  MIDI.insert buf.(channel) (ofs, MIDI.Note_on (n, velocity)) )
+                  MIDI.insert buf.(channel) (ofs, MIDI.Note_on (n, velocity)))
             | Some (Sdlevent.KEYUP k) ->
                 let c = Sdlkey.char_of_key k.Sdlevent.keysym in
                 let n = note_of_char c in

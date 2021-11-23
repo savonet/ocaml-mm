@@ -75,7 +75,7 @@ module Note = struct
 
   let to_string n =
     let n, o = modulo n in
-    ( match n with
+    (match n with
       | 0 -> "A"
       | 1 -> "A#"
       | 2 -> "B"
@@ -88,7 +88,7 @@ module Note = struct
       | 9 -> "F#"
       | 10 -> "G"
       | 11 -> "G#"
-      | _ -> assert false )
+      | _ -> assert false)
     ^ " " ^ string_of_int o
 
   (* TODO: sharps and flats *)
@@ -207,7 +207,7 @@ module Mono = struct
     if ratio = 1. then (
       let outbuf = create len in
       Bigarray.Array1.blit inbuf outbuf;
-      outbuf )
+      outbuf)
     else if mode = `Nearest then (
       let outlen = int_of_float ((float len *. ratio) +. 0.5) in
       let outbuf = create outlen in
@@ -216,7 +216,7 @@ module Mono = struct
         Bigarray.Array1.unsafe_set outbuf i
           (Bigarray.Array1.unsafe_get inbuf pos)
       done;
-      outbuf )
+      outbuf)
     else (
       let outlen = int_of_float (float len *. ratio) in
       let outbuf = create outlen in
@@ -228,9 +228,9 @@ module Mono = struct
             (Bigarray.Array1.unsafe_get inbuf pos)
         else (
           let a = ir -. float pos in
-          outbuf.{i} <- (inbuf.{pos} *. (1. -. a)) +. (inbuf.{pos + 1} *. a) )
+          outbuf.{i} <- (inbuf.{pos} *. (1. -. a)) +. (inbuf.{pos + 1} *. a))
       done;
-      outbuf )
+      outbuf)
 
   module B = struct
     type t = buffer
@@ -253,7 +253,7 @@ module Mono = struct
         (* let oldbuf = buf.buffer in *)
         let newbuf = create len in
         buf.buffer <- newbuf;
-        newbuf )
+        newbuf)
 
     let create len = { buffer = create len }
     let length buf = length buf.buffer
@@ -321,7 +321,7 @@ module Mono = struct
               let wkt = f.circle.(i * a) *~ t.(s + h + i) in
               d.(s + i) <- t.(s + i) +~ wkt;
               d.(s + h + i) <- t.(s + i) -~ wkt
-            done )
+            done)
         in
         fft f.temp d 0 f.n
 
@@ -419,7 +419,7 @@ module Mono = struct
             let v = v -. ((v' -. v'') *. p /. 4.) in
             let v = v /. fdf in
             let p = p +. float k in
-            if v >= volume_min then ans := (p, v) :: !ans )
+            if v >= volume_min then ans := (p, v) :: !ans)
         done;
         let ans = List.map (fun (k, v) -> (Note.of_freq (k /. bdur), v)) !ans in
         (* TODO: improve this filtering... *)
@@ -491,13 +491,9 @@ module Mono = struct
       let samplerate = float samplerate in
       object (self)
         val mutable p0 = 0.
-
         val mutable p1 = 0.
-
         val mutable p2 = 0.
-
         val mutable q1 = 0.
-
         val mutable q2 = 0.
 
         method private init =
@@ -557,15 +553,10 @@ module Mono = struct
           q2 <- a2 /. a0
 
         initializer self#init
-
         val mutable x1 = 0.
-
         val mutable x2 = 0.
-
         val mutable y0 = 0.
-
         val mutable y1 = 0.
-
         val mutable y2 = 0.
 
         method process (buf : buffer) =
@@ -653,26 +644,18 @@ module Mono = struct
     class type t =
       object
         method set_volume : float -> unit
-
         method set_frequency : float -> unit
-
         method fill : buffer -> unit
-
         method fill_add : buffer -> unit
-
         method release : unit
-
         method dead : bool
       end
 
     class virtual base sample_rate ?(volume = 1.) freq =
       object (self)
         val mutable vol = volume
-
         val mutable freq : float = freq
-
         val mutable dead = false
-
         method dead = dead
 
         method release =
@@ -680,13 +663,9 @@ module Mono = struct
           dead <- true
 
         method private sample_rate : int = sample_rate
-
         method private volume : float = vol
-
         method set_volume v = vol <- v
-
         method set_frequency f = freq <- f
-
         method virtual fill : buffer -> unit
 
         (* TODO: might be optimized by various synths *)
@@ -710,7 +689,6 @@ module Mono = struct
     class sine sr ?volume ?(phase = 0.) freq =
       object (self)
         inherit base sr ?volume freq
-
         val mutable phase = phase
 
         method fill buf =
@@ -727,7 +705,6 @@ module Mono = struct
     class square sr ?volume ?(phase = 0.) freq =
       object (self)
         inherit base sr ?volume freq
-
         val mutable phase = phase
 
         method fill buf =
@@ -745,7 +722,6 @@ module Mono = struct
     class saw sr ?volume ?(phase = 0.) freq =
       object (self)
         inherit base sr ?volume freq
-
         val mutable phase = phase
 
         method fill buf =
@@ -763,7 +739,6 @@ module Mono = struct
     class triangle sr ?volume ?(phase = 0.) freq =
       object (self)
         inherit base sr ?volume freq
-
         val mutable phase = phase
 
         method fill buf =
@@ -774,8 +749,8 @@ module Mono = struct
           for i = 0 to len - 1 do
             let t = fracf ((float i *. omega) +. phase +. 0.25) in
             buf.{i} <-
-              ( volume
-              *. if t < 0.5 then (4. *. t) -. 1. else (4. *. (1. -. t)) -. 1. )
+              (volume
+              *. if t < 0.5 then (4. *. t) -. 1. else (4. *. (1. -. t)) -. 1.)
           done;
           phase <- mod_float (phase +. (float len *. omega)) 1.
       end
@@ -794,18 +769,14 @@ module Mono = struct
           add buf tmpbuf
 
         method set_volume = g#set_volume
-
         method set_frequency = g#set_frequency
-
         method release = g#release
-
         method dead = g#dead
       end
 
     class combine f (g1 : t) (g2 : t) : t =
       object
         val tmpbuf = Buffer_ext.create 0
-
         val tmpbuf2 = Buffer_ext.create 0
 
         method fill buf =
@@ -851,11 +822,8 @@ module Mono = struct
     class adsr (adsr : Effect.ADSR.t) (g : t) =
       object (self)
         val mutable adsr_st = Effect.ADSR.init ()
-
         val tmpbuf = Buffer_ext.create 0
-
         method set_volume = g#set_volume
-
         method set_frequency = g#set_frequency
 
         method fill buf =
@@ -960,7 +928,7 @@ let to_mono b =
       done;
       ans.{i} <- ans.{i} /. chans
     done;
-    ans )
+    ans)
 
 let of_mono b = [| b |]
 
@@ -1046,10 +1014,10 @@ let amplify k buf = if k <> 1. then iter (fun buf -> Mono.amplify k buf) buf
 let pan x buf =
   if x > 0. then (
     let x = 1. -. x in
-    Mono.amplify x buf.(0) )
+    Mono.amplify x buf.(0))
   else if x < 0. then (
     let x = 1. +. x in
-    Mono.amplify x buf.(1) )
+    Mono.amplify x buf.(1))
 
 (* TODO: we cannot share this with mono, right? *)
 module Buffer_ext = struct
@@ -1070,7 +1038,7 @@ module Buffer_ext = struct
             let oldbuf = buf.buffer in
             let newbuf = create (chans oldbuf) len in
             buf.buffer <- newbuf;
-            newbuf )
+            newbuf)
 
   let length buf = length buf.buffer
   let create chans len = { buffer = create chans len }
@@ -1121,7 +1089,7 @@ module Ringbuffer = struct
     let extra = len - pre in
     if extra > 0 then (
       blit (sub t.buffer t.rpos pre) (sub buf 0 pre);
-      blit (sub t.buffer 0 extra) (sub buf pre extra) )
+      blit (sub t.buffer 0 extra) (sub buf pre extra))
     else blit (sub t.buffer t.rpos len) buf
 
   let read t buf =
@@ -1135,7 +1103,7 @@ module Ringbuffer = struct
     let extra = len - pre in
     if extra > 0 then (
       blit (sub buf 0 pre) (sub t.buffer t.wpos pre);
-      blit (sub buf pre extra) (sub t.buffer 0 extra) )
+      blit (sub buf pre extra) (sub t.buffer 0 extra))
     else blit buf (sub t.buffer t.wpos len);
     write_advance t len
 
@@ -1148,7 +1116,7 @@ module Ringbuffer = struct
       let len = f (sub t.buffer t.rpos len0) in
       assert (len <= len0);
       read_advance t len;
-      len )
+      len)
 end
 
 module Ringbuffer_ext = struct
@@ -1169,7 +1137,7 @@ module Ringbuffer_ext = struct
                length buf))
       done;
       buf.ringbuffer <- rb;
-      rb )
+      rb)
 
   let channels rb = Ringbuffer.channels rb.ringbuffer
   let peek rb = Ringbuffer.peek rb.ringbuffer
@@ -1218,15 +1186,13 @@ module Effect = struct
     of_mono
       chans
       (fun () ->
-        ( new Mono.Effect.biquad_filter samplerate kind ?gain freq q
-          :> Mono.Effect.t ))
+        (new Mono.Effect.biquad_filter samplerate kind ?gain freq q
+          :> Mono.Effect.t))
 
   class type delay_t =
     object
       inherit t
-
       method set_delay : float -> unit
-
       method set_feedback : float -> unit
     end
 
@@ -1234,11 +1200,8 @@ module Effect = struct
     let delay = int_of_float (float sample_rate *. delay) in
     object
       val mutable delay = delay
-
       method set_delay d = delay <- int_of_float (float sample_rate *. d)
-
       val rb = Ringbuffer_ext.create chans 0
-
       initializer Ringbuffer_ext.write rb (create chans delay)
 
       method process buf =
@@ -1250,15 +1213,10 @@ module Effect = struct
     let delay = int_of_float (float sample_rate *. delay) in
     object
       val mutable delay = delay
-
       method set_delay d = delay <- int_of_float (float sample_rate *. d)
-
       val mutable feedback = feedback
-
       method set_feedback f = feedback <- f
-
       val rb = Ringbuffer_ext.create chans 0
-
       val tmpbuf = Buffer_ext.create chans 0
 
       method process buf =
@@ -1319,27 +1277,16 @@ module Effect = struct
     let samplerate = float samplerate in
     object
       val mutable attack = attack
-
       method set_attack a = attack <- a
-
       val mutable release = release
-
       method set_release r = release <- r
-
       val mutable threshold = threshold
-
       method set_threshold t = threshold <- t
-
       val mutable ratio = ratio
-
       method set_ratio r = ratio <- r
-
       val mutable knee = knee
-
       method set_knee k = knee <- k
-
       val mutable gain = gain
-
       method set_gain g = gain <- g
 
       (* [rmsn] last squares. *)
@@ -1408,7 +1355,7 @@ module Effect = struct
             else if env < knee_max then (
               (* Knee: compress smoothly. *)
               let x = (knee +. dB_of_lin env -. threshold) /. (2. *. knee) in
-              lin_of_dB (0. -. (knee *. ratio *. x *. x)) )
+              lin_of_dB (0. -. (knee *. ratio *. x *. x)))
             else
               (* Maximal (n:1) compression. *)
               lin_of_dB ((threshold -. dB_of_lin env) *. ratio)
@@ -1491,7 +1438,7 @@ module Effect = struct
                 if rms_cur < rmst then vol <- vol +. (kup *. (vol_opt -. vol))
                 else vol <- vol +. (kdown *. (vol_opt -. vol));
                 vol <- max vol_min vol;
-                vol <- min vol_max vol ) );
+                vol <- min vol_max vol));
             rms.(c) <- rms.(c) +. (bufci *. bufci);
             rms_collected <- rms_collected + 1;
             (* Affine transition between vol_old and vol. *)
@@ -1528,24 +1475,17 @@ module Generator = struct
   class type t =
     object
       method set_volume : float -> unit
-
       method set_frequency : float -> unit
-
       method release : unit
-
       method dead : bool
-
       method fill : buffer -> unit
-
       method fill_add : buffer -> unit
     end
 
   class of_mono (g : Mono.Generator.t) =
     object
       val tmpbuf = Mono.Buffer_ext.create 0
-
       method set_volume = g#set_volume
-
       method set_frequency = g#set_frequency
 
       method fill buf =
@@ -1563,7 +1503,6 @@ module Generator = struct
         done
 
       method release = g#release
-
       method dead = g#dead
     end
 
@@ -1583,11 +1522,8 @@ module Generator = struct
         add buf tmpbuf
 
       method set_volume = g#set_volume
-
       method set_frequency = g#set_frequency
-
       method release = g#release
-
       method dead = g#dead
     end
 end
@@ -1601,28 +1537,19 @@ module IO = struct
     class type t =
       object
         method channels : int
-
         method sample_rate : int
-
         method length : int
-
         method duration : float
-
         method seek : int -> unit
-
         method close : unit
-
         method read : buffer -> int
       end
 
     class virtual base =
       object (self)
         method virtual channels : int
-
         method virtual sample_rate : int
-
         method virtual length : int
-
         method duration = float self#length /. float self#sample_rate
         (*
     method virtual seek : int -> unit
@@ -1637,31 +1564,21 @@ module IO = struct
     class virtual wav =
       object (self)
         inherit IO.helper
-
         method virtual private stream_close : unit
-
         method virtual private stream_seek : int -> unit
-
         method virtual private stream_cur_pos : int
-
         val mutable sample_rate = 0
-
         val mutable channels = 0
 
         (* Size of a sample in bits. *)
         val mutable sample_size = 0
-
         val mutable bytes_per_sample = 0
 
         (* Length in samples. *)
         val mutable length = 0
-
         val mutable data_offset = 0
-
         method sample_rate = sample_rate
-
         method channels = channels
-
         method length = length
 
         initializer
@@ -1688,7 +1605,7 @@ module IO = struct
             (* failwith "Valid wav file but unread"; *)
             raise Invalid_file;
           (* failwith "Bad header : string \"data\" not found" *)
-          raise Invalid_file );
+          raise Invalid_file);
 
         let len_dat = self#input_int in
         data_offset <- self#stream_cur_pos;
@@ -1719,9 +1636,7 @@ module IO = struct
     class of_wav_file fname =
       object
         inherit IO.Unix.rw ~read:true fname
-
         inherit base
-
         inherit wav
       end
   end
@@ -1730,29 +1645,22 @@ module IO = struct
     class type t =
       object
         method write : buffer -> unit
-
         method close : unit
       end
 
     class virtual base chans sr =
       object
         method private channels : int = chans
-
         method private sample_rate : int = sr
       end
 
     class virtual wav =
       object (self)
         inherit IO.helper
-
         method virtual private stream_write : string -> int -> int -> int
-
         method virtual private stream_seek : int -> unit
-
         method virtual private stream_close : unit
-
         method virtual private channels : int
-
         method virtual private sample_rate : int
 
         initializer
@@ -1794,9 +1702,7 @@ module IO = struct
     class to_wav_file chans sr fname =
       object
         inherit base chans sr
-
         inherit IO.Unix.rw ~write:true fname
-
         inherit wav
       end
   end
@@ -1805,9 +1711,7 @@ module IO = struct
     class type t =
       object
         method read : buffer -> unit
-
         method write : buffer -> unit
-
         method close : unit
       end
 
@@ -1815,7 +1719,6 @@ module IO = struct
       ~drop_duration =
       object
         method virtual io_read : buffer -> unit
-
         method virtual io_write : buffer -> unit
 
         initializer
@@ -1829,7 +1732,7 @@ module IO = struct
           let rs = Ringbuffer.read_space rb in
           if rs < min_duration + len then (
             let ps = min_duration + len - rs in
-            Ringbuffer.write rb (create channels ps) );
+            Ringbuffer.write rb (create channels ps));
           Ringbuffer.read rb buf
 
         method write buf =

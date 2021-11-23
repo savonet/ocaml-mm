@@ -129,7 +129,6 @@ module IO : sig
     class type t =
       object
         method width : int
-
         method height : int
 
         (** Number of frames per second. *)
@@ -147,7 +146,6 @@ module IO : sig
     class type t =
       object
         method write : buffer -> int -> int -> unit
-
         method close : unit
       end
 

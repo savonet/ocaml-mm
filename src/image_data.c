@@ -87,7 +87,11 @@ CAMLprim value caml_data_aligned(value _alignment, value _len) {
     alignment = alignof(max_align_t);
   }
 
+#ifdef HAS_ALIGNED_ALLOC
   data = aligned_alloc(alignment, len);
+#else
+  data = memalign(alignment, len);
+#endif
   if (data == NULL)
     uerror("aligned_alloc", Nothing);
 

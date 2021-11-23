@@ -76,11 +76,8 @@ class reader ?(device = "/dev/dsp") channels sample_rate =
     assert (OSS.set_rate fd sample_rate = sample_rate)
 
     method channels = channels
-
     method sample_rate = sample_rate
-
     method length : int = assert false
-
     method duration : float = assert false
 
     method read buf =
@@ -93,6 +90,5 @@ class reader ?(device = "/dev/dsp") channels sample_rate =
       len
 
     method seek (_ : int) : unit = assert false
-
     method close = self#stream_close
   end

@@ -236,7 +236,6 @@ module Mono : sig
     class type t =
       object
         method set_volume : float -> unit
-
         method set_frequency : float -> unit
 
         (** Fill a buffer with generated sound. *)
@@ -436,9 +435,7 @@ module Effect : sig
   class type delay_t =
     object
       inherit t
-
       method set_delay : float -> unit
-
       method set_feedback : float -> unit
     end
 
@@ -466,19 +463,12 @@ module Effect : sig
     -> int
     -> object
          inherit t
-
          method set_attack : float -> unit
-
          method set_gain : float -> unit
-
          method set_knee : float -> unit
-
          method set_ratio : float -> unit
-
          method set_release : float -> unit
-
          method set_threshold : float -> unit
-
          method reset : unit
        end
 
@@ -521,15 +511,10 @@ module Generator : sig
   class type t =
     object
       method set_volume : float -> unit
-
       method set_frequency : float -> unit
-
       method fill : buffer -> unit
-
       method fill_add : buffer -> unit
-
       method release : unit
-
       method dead : bool
     end
 
@@ -583,7 +568,6 @@ module IO : sig
     class type t =
       object
         method write : buffer -> unit
-
         method close : unit
       end
 
@@ -596,9 +580,7 @@ module IO : sig
     class type t =
       object
         method read : buffer -> unit
-
         method write : buffer -> unit
-
         method close : unit
       end
 
@@ -610,11 +592,8 @@ module IO : sig
       -> drop_duration:int
       -> object
            method virtual io_read : buffer -> unit
-
            method virtual io_write : buffer -> unit
-
            method read : buffer -> unit
-
            method write : buffer -> unit
          end
   end

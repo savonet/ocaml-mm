@@ -97,9 +97,7 @@ class reader_of_file fname =
   let height = D.height ff in
   object (self)
     method frame_rate = D.frame_rate ff
-
     method width = width
-
     method height = height
 
     (*

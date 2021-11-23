@@ -40,18 +40,14 @@ let rw channels samplerate ?(device = "default") ?(playback = false)
 
     val dev =
       Alsa.Pcm.open_pcm device
-        ( (if playback then [Alsa.Pcm.Playback] else [])
-        @ if capture then [Alsa.Pcm.Capture] else [] )
+        ((if playback then [Alsa.Pcm.Playback] else [])
+        @ if capture then [Alsa.Pcm.Capture] else [])
         []
 
     method delay = Alsa.Pcm.get_delay dev
-
     method prepare = Alsa.Pcm.prepare dev
-
     method wait t = Alsa.Pcm.wait dev t
-
     method recover e = Alsa.Pcm.recover dev e
-
     val mutable buffer_size = buffer_size
 
     initializer
@@ -61,14 +57,12 @@ let rw channels samplerate ?(device = "default") ?(playback = false)
     Alsa.Pcm.set_channels dev params channels;
     Alsa.Pcm.set_periods dev params periods Alsa.Dir_eq;
     assert (
-      Alsa.Pcm.set_rate_near dev params samplerate Alsa.Dir_eq = samplerate );
+      Alsa.Pcm.set_rate_near dev params samplerate Alsa.Dir_eq = samplerate);
     buffer_size <- Alsa.Pcm.set_buffer_size_near dev params buffer_size;
     Alsa.Pcm.set_params dev params;
     Alsa.Pcm.set_nonblock dev (not blocking)
 
     method read buf = Alsa.Pcm.readn_float_ba dev buf
-
     method write buf = Alsa.Pcm.writen_float_ba dev buf
-
     method close = Alsa.Pcm.close dev
   end
