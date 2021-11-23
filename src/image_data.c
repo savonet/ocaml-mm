@@ -88,10 +88,19 @@ CAMLprim value caml_data_aligned(value _alignment, value _len) {
     alignment = ALIGNMENT_BYTES;
   }
 
+#ifdef HAS_CAML_INTERNALS
   ALIGNED_ALLOC(data, alignment, len);
 
   ans = caml_mm_ba_alloc_dims(
       CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_UINT8, 1, data, len);
+#else
+  ans = caml_mm_ba_alloc_dims(
+      CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_UINT8, 1, NULL, len);
+
+  ALIGNED_ALLOC(data, alignment, len);
+  free(Caml_ba_data_val(ans));
+  Caml_ba_array_val(ans)->data = data;
+#endif
 
   CAMLreturn(ans);
 }
