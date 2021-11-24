@@ -8,6 +8,11 @@ let () =
         C.c_test c
           {|
         #include <stdlib.h>
+
+        #ifdef __MINGW32__
+        #define aligned_alloc __mingw_aligned_malloc
+        #endif
+
         int main() {
           char *data = aligned_alloc(16, 4096);
           return 0;

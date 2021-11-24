@@ -8,10 +8,8 @@
 #define ALIGNMENT_BYTES 16
 #endif
 
-// Disable all aligned alloc for now
-#ifdef WIN32
-#undef HAS_ALIGNED_ALLOC
-#undef HAS_MEMALIGN
+#ifdef __MINGW32__
+#define aligned_alloc __mingw_aligned_malloc
 #endif
 
 #if defined(HAS_ALIGNED_ALLOC)
