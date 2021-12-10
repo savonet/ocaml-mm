@@ -1,3 +1,7 @@
+0.7.3 (10-12-2021)
+=====
+* Remove usage of __mingw_aligned_malloc as it needs a special free call.
+
 0.7.2 (22-11-2021)
 =====
 * Fix offsets in to_{s16, u8} functions.
