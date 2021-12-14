@@ -8,7 +8,7 @@
 #define ALIGNMENT_BYTES 16
 #endif
 
-#if defined(HAS_ALIGNED_ALLOC)
+#if !defined(WIN32) && defined(HAS_ALIGNED_ALLOC)
 #include <caml/unixsupport.h>
 #include <stdlib.h>
 #define ALIGNED_ALLOC(data, alignment, len)                                    \
