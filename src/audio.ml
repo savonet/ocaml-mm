@@ -192,7 +192,7 @@ module Mono = struct
 
   external clip : t -> unit = "caml_mm_audio_clip"
 
-  external squares : t -> float
+  external squares : t -> (float[@unboxed])
     = "caml_mm_audio_squares_bytes" "caml_mm_audio_squares"
 
   let noise buf =
