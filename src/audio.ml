@@ -162,7 +162,7 @@ module Mono = struct
     blit b2 (sub ans l1 l2);
     ans
 
-  external add : t -> t -> unit = "caml_float_pcm_add"
+  external add : t -> t -> unit = "caml_mm_audio_add"
 
   let add b1 b2 =
     let len = length b1 in
@@ -170,7 +170,7 @@ module Mono = struct
     add b1 b2
 
   external add_coef : t -> (float[@unboxed]) -> t -> unit
-    = "caml_float_pcm_add_coef_bytes" "caml_float_pcm_add_coef"
+    = "caml_mm_audio_add_coef_bytes" "caml_mm_audio_add_coef"
 
   let add_coeff b1 k b2 =
     let len = length b1 in
@@ -188,12 +188,12 @@ module Mono = struct
     done
 
   external amplify : (float[@unboxed]) -> t -> unit
-    = "caml_float_pcm_amplify_bytes" "caml_float_pcm_amplify"
+    = "caml_mm_audio_amplify_bytes" "caml_mm_audio_amplify"
 
-  external clip : t -> unit = "caml_float_pcm_clip"
+  external clip : t -> unit = "caml_mm_audio_clip"
 
   external squares : t -> float
-    = "caml_float_pcm_squares_bytes" "caml_float_pcm_squares"
+    = "caml_mm_audio_squares_bytes" "caml_mm_audio_squares"
 
   let noise buf =
     for i = 0 to length buf - 1 do
@@ -936,8 +936,8 @@ let resample ?mode ratio buf =
 module U8 = struct
   let size channels samples = channels * samples
 
-  external of_audio : buffer -> Bytes.t -> int -> unit = "caml_float_pcm_to_u8"
-  external to_audio : string -> int -> buffer -> unit = "caml_float_pcm_of_u8"
+  external of_audio : buffer -> Bytes.t -> int -> unit = "caml_mm_audio_to_u8"
+  external to_audio : string -> int -> buffer -> unit = "caml_mm_audio_of_u8"
 end
 
 module S16LE = struct
@@ -945,7 +945,7 @@ module S16LE = struct
   let length channels len = len / (2 * channels)
 
   external of_audio : bool -> buffer -> Bytes.t -> int -> unit
-    = "caml_float_pcm_to_s16"
+    = "caml_mm_audio_to_s16"
 
   let of_audio = of_audio true
 
@@ -957,7 +957,7 @@ module S16LE = struct
     Bytes.unsafe_to_string sbuf
 
   external to_audio : bool -> string -> int -> buffer -> unit
-    = "caml_float_pcm_convert_s16"
+    = "caml_mm_audio_convert_s16"
 
   let to_audio = to_audio true
 end
@@ -967,7 +967,7 @@ module S16BE = struct
   let length channels len = len / (2 * channels)
 
   external of_audio : bool -> buffer -> Bytes.t -> int -> unit
-    = "caml_float_pcm_to_s16"
+    = "caml_mm_audio_to_s16"
 
   let of_audio = of_audio false
 
@@ -979,7 +979,7 @@ module S16BE = struct
     Bytes.unsafe_to_string sbuf
 
   external to_audio : bool -> string -> int -> buffer -> unit
-    = "caml_float_pcm_convert_s16"
+    = "caml_mm_audio_convert_s16"
 
   let to_audio = to_audio false
 end
@@ -988,20 +988,20 @@ module S24LE = struct
   let size channels samples = channels * samples * 3
 
   external of_audio : buffer -> Bytes.t -> int -> unit
-    = "caml_float_pcm_to_s24le"
+    = "caml_mm_audio_to_s24le"
 
   external to_audio : string -> int -> buffer -> unit
-    = "caml_float_pcm_convert_s24le"
+    = "caml_mm_audio_convert_s24le"
 end
 
 module S32LE = struct
   let size channels samples = channels * samples * 4
 
   external of_audio : buffer -> Bytes.t -> int -> unit
-    = "caml_float_pcm_to_s32le"
+    = "caml_mm_audio_to_s32le"
 
   external to_audio : string -> int -> buffer -> unit
-    = "caml_float_pcm_convert_s32le"
+    = "caml_mm_audio_convert_s32le"
 end
 
 let add b1 b2 = iter2 Mono.add b1 b2
