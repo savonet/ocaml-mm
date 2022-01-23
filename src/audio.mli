@@ -103,6 +103,7 @@ module Mono : sig
   val resample : ?mode:[ `Nearest | `Linear ] -> float -> t -> t
   val clip : t -> unit
   val noise : t -> unit
+  val squares : t -> float
 
   (** Samplewise add two buffers of the same length. *)
   val add : t -> t -> unit

@@ -192,6 +192,9 @@ module Mono = struct
 
   external clip : t -> unit = "caml_float_pcm_clip"
 
+  external squares : t -> float
+    = "caml_float_pcm_squares_bytes" "caml_float_pcm_squares"
+
   let noise buf =
     for i = 0 to length buf - 1 do
       buf.{i} <- Random.float 2. -. 1.

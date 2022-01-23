@@ -477,3 +477,20 @@ CAMLprim value caml_float_pcm_clip(value _src) {
 
   CAMLreturn(Val_unit);
 }
+
+CAMLprim double caml_float_pcm_squares(value _src) {
+  CAMLparam1(_src);
+  float *src = Caml_ba_data_val(_src);
+  int len = Caml_ba_array_val(_src)->dim[0];
+  int i;
+  float square = 0;
+
+  for (i = 0; i < len; i++)
+    square += src[i] * src[i];
+
+  CAMLreturn(square);
+}
+
+CAMLprim value caml_float_pcm_squares_bytes(value _src) {
+  return caml_copy_double(caml_float_pcm_squares(_src));
+}
