@@ -356,6 +356,7 @@ val blit : t -> t -> unit
 val sub : t -> int -> int -> t
 val clip : t -> unit
 val noise : t -> unit
+val squares : t -> float
 
 (** Amplify a portion of the buffer by a given coefficient. *)
 val amplify : float -> t -> unit

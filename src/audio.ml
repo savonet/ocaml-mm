@@ -912,6 +912,9 @@ let copy b = Array.init (Array.length b) (fun i -> Mono.copy b.(i))
 let blit b1 b2 = iter2 (fun b1 b2 -> Mono.blit b1 b2) b1 b2
 let sub b ofs len = Array.map (fun buf -> Bigarray.Array1.sub buf ofs len) b
 
+let squares =
+  Array.fold_left (fun squares buf -> squares +. Mono.squares buf) 0.
+
 let to_mono b =
   let channels = channels b in
   if channels = 1 then b.(0)
