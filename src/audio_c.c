@@ -424,8 +424,10 @@ CAMLprim value caml_mm_audio_add(value _src, value _to_add) {
   int len = Caml_ba_array_val(_src)->dim[0];
   int i;
 
+  caml_release_runtime_system();
   for (i = 0; i < len; i++)
     src[i] = src[i] + to_add[i];
+  caml_acquire_runtime_system();
 
   CAMLreturn(Val_unit);
 }
@@ -437,8 +439,10 @@ CAMLprim value caml_mm_audio_add_coef(value _src, double coef, value _to_add) {
   int len = Caml_ba_array_val(_src)->dim[0];
   int i;
 
+  caml_release_runtime_system();
   for (i = 0; i < len; i++)
     src[i] = src[i] + coef * to_add[i];
+  caml_acquire_runtime_system();
 
   CAMLreturn(Val_unit);
 }
@@ -455,8 +459,10 @@ CAMLprim value caml_mm_audio_amplify(double coef, value _src) {
   int len = Caml_ba_array_val(_src)->dim[0];
   int i;
 
+  caml_release_runtime_system();
   for (i = 0; i < len; i++)
     src[i] = coef * src[i];
+  caml_acquire_runtime_system();
 
   CAMLreturn(Val_unit);
 }
@@ -472,8 +478,10 @@ CAMLprim value caml_mm_audio_clip(value _src) {
   int len = Caml_ba_array_val(_src)->dim[0];
   int i;
 
+  caml_release_runtime_system();
   for (i = 0; i < len; i++)
     src[i] = clip(src[i]);
+  caml_acquire_runtime_system();
 
   CAMLreturn(Val_unit);
 }
@@ -485,8 +493,10 @@ CAMLprim double caml_mm_audio_squares(value _src) {
   int i;
   float square = 0;
 
+  caml_release_runtime_system();
   for (i = 0; i < len; i++)
     square += src[i] * src[i];
+  caml_acquire_runtime_system();
 
   CAMLreturn(square);
 }
