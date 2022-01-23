@@ -1,5 +1,5 @@
 (lang dune 2.8)
-(version 0.7.3)
+(version 0.7.4)
 (name mm)
 (source (github savonet/ocaml-mm))
 (license GPL-2.0)

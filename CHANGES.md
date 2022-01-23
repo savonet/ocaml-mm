@@ -1,3 +1,8 @@
+0.7.4 (unreleased)
+=====
+* Implement low-level audio manipulation in C
+  to avoid needless allocations.
+
 0.7.3 (10-12-2021)
 =====
 * Remove usage of __mingw_aligned_malloc as it needs a special free call.

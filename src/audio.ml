@@ -162,20 +162,20 @@ module Mono = struct
     blit b2 (sub ans l1 l2);
     ans
 
-  (* TODO: implement the following functions on the C side *)
+  external add : t -> t -> unit = "caml_float_pcm_add"
+
   let add b1 b2 =
     let len = length b1 in
     assert (length b2 = len);
-    for i = 0 to len - 1 do
-      unsafe_set b1 i (unsafe_get b1 i +. unsafe_get b2 i)
-    done
+    add b1 b2
+
+  external add_coef : t -> (float[@unboxed]) -> t -> unit
+    = "caml_float_pcm_add_coef_bytes" "caml_float_pcm_add_coef"
 
   let add_coeff b1 k b2 =
     let len = length b1 in
     assert (length b2 = len);
-    for i = 0 to len - 1 do
-      b1.{i} <- b1.{i} +. (k *. b2.{i})
-    done
+    add_coef b1 k b2
 
   let add_coeff b1 k b2 =
     if k = 0. then () else if k = 1. then add b1 b2 else add_coeff b1 k b2
@@ -187,15 +187,10 @@ module Mono = struct
       b1.{i} <- b1.{i} *. b2.{i}
     done
 
-  let amplify k b =
-    for i = 0 to length b - 1 do
-      unsafe_set b i (k *. unsafe_get b i)
-    done
+  external amplify : (float[@unboxed]) -> t -> unit
+    = "caml_float_pcm_amplify_bytes" "caml_float_pcm_amplify"
 
-  let clip buf =
-    for i = 0 to length buf - 1 do
-      buf.{i} <- Sample.clip buf.{i}
-    done
+  external clip : t -> unit = "caml_float_pcm_clip"
 
   let noise buf =
     for i = 0 to length buf - 1 do
