@@ -1,3 +1,10 @@
+0.7.2 (22-11-2021)
+=====
+* Fix offsets in to_{s16, u8} functions.
+* Switch to `aligned_alloc` for allocate aligned
+  memory, fix minor heap stats when allocating
+  bigarrays with aligned memory. (ocaml/ocaml#10788)
+
 0.7.1 (10-01-2021)
 =====
 * Use only our own custom byte swap implementations.

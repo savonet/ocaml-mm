@@ -35,8 +35,8 @@
  (libraries mm.audio))
 
 (executable
- (name player)
- (modules player)
+ (name midiplayer)
+ (modules midiplayer)
  (optional)
  (libraries mm.audio mm.oss))
 

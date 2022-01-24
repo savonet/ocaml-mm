@@ -1,5 +1,5 @@
-(lang dune 2.0)
-(version 0.7.1)
+(lang dune 2.8)
+(version 0.7.2)
 (name mm)
 (source (github savonet/ocaml-mm))
 (license GPL-2.0)
@@ -12,7 +12,7 @@
  (name mm)
  (synopsis "The mm library contains high-level to create and manipulate multimedia streams (audio, video, MIDI)")
  (depends
-  (dune (>= 2.0))
+  dune
   dune-configurator)
  (depopts
   alsa
@@ -22,4 +22,5 @@
   ocamlsdl
   theora)
 (conflicts
-  (mad (< 0.5.0))))
+  (mad (< 0.5.0))
+  (alsa (< 0.3.0))))
