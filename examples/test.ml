@@ -36,6 +36,14 @@ let () =
       let a = Image.YUV420.create 10 10 in
       Image.YUV420.fill a (0,0,0)
     );
+  test "test various sizes" (fun () ->
+      for i = 0 to 7 do
+        for j = 0 to 7 do
+          let a = Image.YUV420.create (16+i) (16+j) in
+          Image.YUV420.fill a (0,0,0)
+        done
+      done
+    );
   test "adding images" (fun () ->
       let a = Image.YUV420.create 640 480 in
       Image.YUV420.blank a;
