@@ -60,7 +60,6 @@ let () =
         for j = 0 to 7 do
           let w = 16+i in
           let h = 16+j in
-          Printf.printf "testing %dx%d\n%!" w h;
           let a = Image.YUV420.create w h in
           Image.YUV420.set_pixel_rgba a (w-1) (h-1) (0,0,0,0);
           Image.YUV420.fill a (0,0,0)
