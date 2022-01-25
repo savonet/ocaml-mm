@@ -32,6 +32,11 @@ let () =
   Printf.printf "\n# Testing MM library\n\n%!"
 
 let () =
+  Printf.printf "## Architecture\n\n%!";
+  Printf.printf "- word size: %d\n%!" Sys.word_size;
+  Printf.printf "\n%!"
+
+let () =
   Printf.printf "## Testing audio\n\n%!";
   time ~skip:!skip_long "adding many buffers" (fun () ->
       let a = Audio.create 2 44100 in
@@ -53,7 +58,6 @@ let () =
     );
   test "fill buffer" (fun () ->
       let a = Image.YUV420.create 10 10 in
-      Printf.printf "Word size: %d\n%!" Sys.word_size;
       Image.YUV420.fill a (0,0,0)
     );
   test "various sizes" (fun () ->
