@@ -1,15 +1,24 @@
 open Mm_audio
 open Mm_image
 
+let skip_long = ref false
+
 let () =
-  Printexc.record_backtrace true
+  Printexc.record_backtrace true;
+  Arg.parse
+    [
+      "--skip-long", Arg.Set skip_long, "Skip long tests."
+    ]
+    (fun _ -> ())
+    "test [options]"
 
-let skip_long = false
-
-let test name f =
+let test ?(skip=false) name f =
   Printf.printf "- %s... %!" name;
-  f ();
-  Printf.printf "ok\n%!"
+  if skip then Printf.printf "skipped\n%!" else
+    (
+      f ();
+      Printf.printf "ok\n%!"
+    )
 
 let time ?(skip=false) name f =
   Printf.printf "- %s... %!" name;
@@ -24,7 +33,7 @@ let () =
 
 let () =
   Printf.printf "## Testing audio\n\n%!";
-  time ~skip:skip_long "adding many buffers" (fun () ->
+  time ~skip:!skip_long "adding many buffers" (fun () ->
       let a = Audio.create 2 44100 in
       for _ = 1 to 10000 do
         let b = Audio.create 2 44100 in
@@ -49,7 +58,11 @@ let () =
   test "various sizes" (fun () ->
       for i = 0 to 7 do
         for j = 0 to 7 do
-          let a = Image.YUV420.create (16+i) (16+j) in
+          let w = 16+i in
+          let h = 16+j in
+          Printf.printf "testing %dx%d\n%!" w h;
+          let a = Image.YUV420.create w h in
+          Image.YUV420.set_pixel_rgba a (w-1) (h-1) (0,0,0,0);
           Image.YUV420.fill a (0,0,0)
         done
       done
