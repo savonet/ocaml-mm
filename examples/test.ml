@@ -53,6 +53,7 @@ let () =
     );
   test "fill buffer" (fun () ->
       let a = Image.YUV420.create 10 10 in
+      Printf.printf "Word size: %d\n%!" Sys.word_size;
       Image.YUV420.fill a (0,0,0)
     );
   test "various sizes" (fun () ->
