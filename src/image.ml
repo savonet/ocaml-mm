@@ -47,6 +47,7 @@ module Data = struct
   (** [round n k] rounds [n] to the nearest upper multiple of [k]. *)
   let round k n = ((n + (k - 1)) / k) * k
 
+  (** [aligned k n] allocates [n] bytes at a multiple of [k]. *)
   external aligned : int -> int -> t = "caml_data_aligned"
 
   (* Creates an 16-bytes aligned plane. Returns (stride*plane). *)
