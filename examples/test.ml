@@ -38,6 +38,13 @@ let () =
 
 let () =
   Printf.printf "## Testing audio\n\n%!";
+  test "basic functions" (fun () ->
+      let a = Audio.create 2 44100 in
+      Audio.noise a;
+      Audio.pan 0.4 a;
+      ignore (Audio.squares a);
+      Audio.amplify 0.5 a
+    );
   time ~skip:!skip_long "adding many buffers" (fun () ->
       let a = Audio.create 2 44100 in
       for _ = 1 to 10000 do
@@ -67,7 +74,8 @@ let () =
           let h = 16+j in
           let a = Image.YUV420.create w h in
           Image.YUV420.set_pixel_rgba a (w-1) (h-1) (0,0,0,0);
-          Image.YUV420.fill a (0,0,0)
+          Image.YUV420.fill a (0,0,0);
+          Image.YUV420.randomize a
         done
       done
     );
@@ -81,6 +89,11 @@ let () =
       Image.YUV420.add b ~x:10 ~y:10 a;
       Image.YUV420.add b ~x:(-10) ~y:(-10) a;
       Image.YUV420.add b ~x:1000 ~y:1000 a;
+    );
+  test "converting" (fun () ->
+      let a = Image.YUV420.create 640 480 in
+      let b = Image.YUV420.of_RGBA32 (Image.YUV420.to_RGBA32 a) in
+      ignore b
     );
   Printf.printf "\n"
 
