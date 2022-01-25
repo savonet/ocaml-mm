@@ -35,11 +35,18 @@ let () =
 
 let () =
   Printf.printf "## Testing video\n\n%!";
+  test "rounding" (fun () ->
+      for k = 1 to 5 do
+        for n = 0 to 33 do
+          assert (Image.Data.round k n = Float.to_int (float k *. Float.ceil (float n /. float k)))
+        done
+      done
+    );
   test "fill buffer" (fun () ->
       let a = Image.YUV420.create 10 10 in
       Image.YUV420.fill a (0,0,0)
     );
-  test "test various sizes" (fun () ->
+  test "various sizes" (fun () ->
       for i = 0 to 7 do
         for j = 0 to 7 do
           let a = Image.YUV420.create (16+i) (16+j) in
