@@ -3,6 +3,7 @@
 * Implement low-level audio manipulation in C
   to avoid needless allocations.
 * Add Audio.Mono.squares
+* Cleanup aligned memory allocation.
 
 0.7.3 (10-12-2021)
 =====

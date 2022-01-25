@@ -13,16 +13,8 @@
 #include <stdlib.h>
 #define ALIGNED_ALLOC(data, alignment, len)                                    \
   {                                                                            \
-    posix_memalign((void **)&data, alignment, len);                            \
-    if (data == NULL)                                                          \
-      uerror("aligned_alloc", Nothing);                                        \
-  }
-#elif !defined(WIN32) && defined(HAS_ALIGNED_ALLOC)
-#include <caml/unixsupport.h>
-#include <stdlib.h>
-#define ALIGNED_ALLOC(data, alignment, len)                                    \
-  {                                                                            \
-    data = aligned_alloc(alignment, len);                                      \
+    if (posix_memalign((void **)&data, alignment, len))                        \
+      data = NULL;                                                             \
     if (data == NULL)                                                          \
       uerror("aligned_alloc", Nothing);                                        \
   }
