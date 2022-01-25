@@ -1,6 +1,9 @@
 open Mm_audio
 open Mm_image
 
+let () =
+  Printexc.record_backtrace true
+
 let skip_long = false
 
 let test name f =
