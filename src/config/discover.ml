@@ -4,6 +4,19 @@ external is_big_endian : unit -> bool = "ocaml_mm_is_big_endian"
 
 let () =
   C.main ~name:"mm" (fun c ->
+      let has_posix_memalign =
+        C.c_test c
+          {|
+        #include <stdlib.h>
+
+        int main() {
+          void *data;
+          posix_memalign(&data, 16, 4096);
+          return 0;
+        }
+      |}
+      in
+
       let has_aligned_alloc =
         C.c_test c
           {|
@@ -56,6 +69,7 @@ let () =
       C.C_define.gen_header_file c ~fname:"config.h"
         [
           ("BIGENDIAN", Switch (is_big_endian ()));
+          ("HAS_POSIX_MEMALIGN", Switch has_posix_memalign);
           ("HAS_ALIGNED_ALLOC", Switch has_aligned_alloc);
           ("HAS_MEMALIGN", Switch has_memalign);
           ("HAS_MAX_ALIGN_T", Switch has_max_align_t);
