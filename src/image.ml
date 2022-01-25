@@ -548,7 +548,7 @@ module YUV420 = struct
     let y_stride, uv_stride = default_stride width y_stride uv_stride in
     let y = Data.aligned align (height * y_stride) in
     let u, v =
-      let height = Data.round align (height / 2) in
+      let height = Data.round 2 (height / 2) in
       ( Data.aligned align (height * uv_stride),
         Data.aligned align (height * uv_stride) )
     in
