@@ -45,7 +45,7 @@ module Data = struct
     Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.C_layout n
 
   (** [round n k] rounds [n] to the nearest upper multiple of [k]. *)
-  let round k n = (n + (k - 1)) / k * k
+  let round k n = ((n + (k - 1)) / k) * k
 
   external aligned : int -> int -> t = "caml_data_aligned"
 
@@ -548,9 +548,9 @@ module YUV420 = struct
     let y_stride, uv_stride = default_stride width y_stride uv_stride in
     let y = Data.aligned align (height * y_stride) in
     let u, v =
-      let height = Data.round 2 height in
-      ( Data.aligned align (height / 2 * uv_stride),
-        Data.aligned align (height / 2 * uv_stride) )
+      let height = Data.round 2 (height / 2) in
+      ( Data.aligned align (height * uv_stride),
+        Data.aligned align (height * uv_stride) )
     in
     make width height y y_stride u v uv_stride
 
