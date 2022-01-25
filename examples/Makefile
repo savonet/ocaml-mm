@@ -26,3 +26,6 @@ midiplayer: build
 
 sine_wav: build
 	dune exec ./sine_wav.exe
+
+test:
+	@dune exec ./test.exe
