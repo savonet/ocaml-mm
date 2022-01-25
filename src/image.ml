@@ -536,8 +536,10 @@ module YUV420 = struct
     in
     make width height y y_stride u v uv_stride
 
+  (* Default alignment. *)
+  let align = Sys.word_size / 8
+
   let default_stride width y_stride uv_stride =
-    let align = 4 in
     let y_stride = option_value ~default:(Data.round align width) y_stride in
     let uv_stride =
       option_value ~default:(Data.round align ((width + 1) / 2)) uv_stride
@@ -545,7 +547,6 @@ module YUV420 = struct
     (y_stride, uv_stride)
 
   let create ?y_stride ?uv_stride width height =
-    let align = 4 in
     let y_stride, uv_stride = default_stride width y_stride uv_stride in
     let y = Data.aligned align (height * y_stride) in
     let u, v =
