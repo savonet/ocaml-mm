@@ -103,6 +103,7 @@ module Mono : sig
   val resample : ?mode:[ `Nearest | `Linear ] -> float -> t -> t
   val clip : t -> unit
   val noise : t -> unit
+  val squares : t -> float
 
   (** Samplewise add two buffers of the same length. *)
   val add : t -> t -> unit
@@ -236,7 +237,6 @@ module Mono : sig
     class type t =
       object
         method set_volume : float -> unit
-
         method set_frequency : float -> unit
 
         (** Fill a buffer with generated sound. *)
@@ -356,6 +356,7 @@ val blit : t -> t -> unit
 val sub : t -> int -> int -> t
 val clip : t -> unit
 val noise : t -> unit
+val squares : t -> float
 
 (** Amplify a portion of the buffer by a given coefficient. *)
 val amplify : float -> t -> unit
@@ -436,9 +437,7 @@ module Effect : sig
   class type delay_t =
     object
       inherit t
-
       method set_delay : float -> unit
-
       method set_feedback : float -> unit
     end
 
@@ -466,19 +465,12 @@ module Effect : sig
     -> int
     -> object
          inherit t
-
          method set_attack : float -> unit
-
          method set_gain : float -> unit
-
          method set_knee : float -> unit
-
          method set_ratio : float -> unit
-
          method set_release : float -> unit
-
          method set_threshold : float -> unit
-
          method reset : unit
        end
 
@@ -521,15 +513,10 @@ module Generator : sig
   class type t =
     object
       method set_volume : float -> unit
-
       method set_frequency : float -> unit
-
       method fill : buffer -> unit
-
       method fill_add : buffer -> unit
-
       method release : unit
-
       method dead : bool
     end
 
@@ -583,7 +570,6 @@ module IO : sig
     class type t =
       object
         method write : buffer -> unit
-
         method close : unit
       end
 
@@ -596,9 +582,7 @@ module IO : sig
     class type t =
       object
         method read : buffer -> unit
-
         method write : buffer -> unit
-
         method close : unit
       end
 
@@ -610,11 +594,8 @@ module IO : sig
       -> drop_duration:int
       -> object
            method virtual io_read : buffer -> unit
-
            method virtual io_write : buffer -> unit
-
            method read : buffer -> unit
-
            method write : buffer -> unit
          end
   end

@@ -96,7 +96,7 @@ module Make (B : Buffer) = struct
     let extra = len - pre in
     if extra > 0 then (
       B.blit t.buffer t.rpos buff off pre;
-      B.blit t.buffer 0 buff (off + pre) extra )
+      B.blit t.buffer 0 buff (off + pre) extra)
     else B.blit t.buffer t.rpos buff off len
 
   let read t buff off len =
@@ -109,7 +109,7 @@ module Make (B : Buffer) = struct
     let extra = len - pre in
     if extra > 0 then (
       B.blit buff off t.buffer t.wpos pre;
-      B.blit buff (off + pre) t.buffer 0 extra )
+      B.blit buff (off + pre) t.buffer 0 extra)
     else B.blit buff off t.buffer t.wpos len;
     write_advance t len
 
@@ -122,7 +122,7 @@ module Make (B : Buffer) = struct
       let len = f t.buffer t.rpos len0 in
       assert (len <= len0);
       read_advance t len;
-      len )
+      len)
 end
 
 module Make_ext (B : Buffer) = struct
@@ -142,7 +142,7 @@ module Make_ext (B : Buffer) = struct
                len))
       done;
       buf.ringbuffer <- rb;
-      rb )
+      rb)
 
   let peek rb = R.peek rb.ringbuffer
   let read rb = R.read rb.ringbuffer

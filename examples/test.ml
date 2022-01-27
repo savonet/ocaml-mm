@@ -1,52 +1,101 @@
-open Gstreamer
 open Mm_audio
-open Mm_video
+open Mm_image
 
-let width = 320
-let height = 240
-let fps = 24
-let audio_channels = 2
-let audio_rate = 44100
-let src = "filesrc location=../test.wmv"
-
-let pipeline =
-  Printf.sprintf
-    "%s ! decodebin name=decode decode. ! ffmpegcolorspace ! videoscale ! \
-     videorate ! appsink max-buffers=2 drop=true name=videosink \
-     caps=\"video/x-raw-rgb,width=%d,height=%d,pixel-aspect-ratio=1/1,bpp=(int)24,depth=(int)24,endianness=(int)4321,red_mask=(int)0xff0000,green_mask=(int)0x00ff00,blue_mask=(int)0x0000ff,framerate=(fraction)%d/1\" \
-     decode. ! audioconvert ! audioresample ! appsink max-buffers=2 drop=true \
-     name=audiosink \
-     caps=\"audio/x-raw-int,width=16,channels=%d,rate=%d,signed=true\""
-    src width height fps audio_channels audio_rate
+let skip_long = ref false
 
 let () =
-  Gstreamer.init ();
-  Printf.printf "%s\n%!" (version_string ());
-  Printf.printf "%s\n%!" pipeline;
-  let bin = Pipeline.parse_launch pipeline in
+  Printexc.record_backtrace true;
+  Arg.parse
+    [
+      "--skip-long", Arg.Set skip_long, "Skip long tests."
+    ]
+    (fun _ -> ())
+    "test [options]"
 
-  let _ = Bin.get_by_name (Bin.of_element bin) "videosink" in
-  let audiosink = Bin.get_by_name (Bin.of_element bin) "audiosink" in
+let test ?(skip=false) name f =
+  Printf.printf "- %s... %!" name;
+  if skip then Printf.printf "skipped\n%!" else
+    (
+      f ();
+      Printf.printf "ok\n%!"
+    )
 
-  let sdl = new Mm_sdl.writer_to_screen width height in
-  let oss = new Mm_oss.writer audio_channels audio_rate in
+let time ?(skip=false) name f =
+  Printf.printf "- %s... %!" name;
+  if skip then Printf.printf "skipped\n%!" else
+    let t0 = Sys.time () in
+    f ();
+    let t1 = Sys.time () in
+    Printf.printf "%.02f s\n%!" (t1 -. t0)
 
-  ignore (Element.set_state bin State_playing);
-  while true do
-    (* Video *)
-    (* let b = App_sink.pull_buffer (App_sink.of_element videosink) in *)
-    (* let img = Image.Generic.make Image.Generic.Pixel.YUVJ420 width height b in *)
-    (* let out = Video.Image.create width height in *)
-    let out = assert false in
-    (* Image.Generic.convert ~copy:true ~proportional:true img (Image.Generic.of_YUV420 out); *)
-    let vid = Video.single out in
-    sdl#write vid 0 1;
+let () =
+  Printf.printf "\n# Testing MM library\n\n%!"
 
-    (* Audio *)
-    let b = App_sink.pull_buffer_string (App_sink.of_element audiosink) in
-    let samples = Audio.S16LE.length audio_channels (String.length b) in
-    let buf = Audio.create audio_channels samples in
-    Audio.S16LE.to_audio b 0 buf;
-    oss#write buf
-  done;
-  ignore (Element.set_state bin State_null)
+let () =
+  Printf.printf "## Architecture\n\n%!";
+  Printf.printf "- word size: %d\n%!" Sys.word_size;
+  Printf.printf "\n%!"
+
+let () =
+  Printf.printf "## Testing audio\n\n%!";
+  test "basic functions" (fun () ->
+      let a = Audio.create 2 44100 in
+      Audio.noise a;
+      Audio.pan 0.4 a;
+      ignore (Audio.squares a);
+      Audio.amplify 0.5 a
+    );
+  time ~skip:!skip_long "adding many buffers" (fun () ->
+      let a = Audio.create 2 44100 in
+      for _ = 1 to 10000 do
+        let b = Audio.create 2 44100 in
+        Audio.add b a
+      done
+    );
+  Printf.printf "\n"
+
+let () =
+  Printf.printf "## Testing video\n\n%!";
+  test "rounding" (fun () ->
+      for k = 1 to 5 do
+        for n = 0 to 33 do
+          assert (Image.Data.round k n = Float.to_int (float k *. Float.ceil (float n /. float k)))
+        done
+      done
+    );
+  test "fill buffer" (fun () ->
+      let a = Image.YUV420.create 10 10 in
+      Image.YUV420.fill a (0,0,0)
+    );
+  test "various sizes" (fun () ->
+      for i = 0 to 7 do
+        for j = 0 to 7 do
+          let w = 16+i in
+          let h = 16+j in
+          let a = Image.YUV420.create w h in
+          Image.YUV420.set_pixel_rgba a (w-1) (h-1) (0,0,0,0);
+          Image.YUV420.fill a (0,0,0);
+          Image.YUV420.randomize a
+        done
+      done
+    );
+  test "adding images" (fun () ->
+      let a = Image.YUV420.create 640 480 in
+      Image.YUV420.blank a;
+      Image.YUV420.fill a (10, 10, 10);
+      let b = Image.YUV420.create 64 64 in
+      Image.YUV420.fill b (10, 10, 10);
+      Image.YUV420.add b a;
+      Image.YUV420.add b ~x:10 ~y:10 a;
+      Image.YUV420.add b ~x:(-10) ~y:(-10) a;
+      Image.YUV420.add b ~x:1000 ~y:1000 a;
+    );
+  test "converting" (fun () ->
+      let a = Image.YUV420.create 640 480 in
+      let b = Image.YUV420.of_RGBA32 (Image.YUV420.to_RGBA32 a) in
+      ignore b
+    );
+  Printf.printf "\n"
+
+let () =
+  Gc.full_major ()

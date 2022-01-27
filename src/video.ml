@@ -140,9 +140,7 @@ module IO = struct
     class type t =
       object
         method width : int
-
         method height : int
-
         method frame_rate : float
 
         (* method set_target_size : int -> int -> unit *)
@@ -167,11 +165,8 @@ module IO = struct
       let frame_size = w * h * 3 in
       object (self)
         inherit IO.helper
-
         method virtual private stream_write : string -> int -> int -> int
-
         method virtual private stream_seek : int -> unit
-
         method virtual private stream_close : unit
 
         initializer
@@ -300,7 +295,6 @@ module IO = struct
 
         (* TOFILL: size *)
         val mutable datalen = 0
-
         val mutable dataframes = 0
 
         method write (_ : buffer) ofs len =
@@ -330,7 +324,6 @@ module IO = struct
     class to_avi_file fname fr w h =
       object
         inherit avi fr w h
-
         inherit IO.Unix.rw ~write:true fname
       end
   end

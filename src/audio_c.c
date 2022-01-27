@@ -67,9 +67,10 @@ static inline int32_t int32_of_int24(int24_t x) {
   ((int16_t)((((int16_t)(x)&0xff00) >> 8) | (((int16_t)(x)&0x00ff) << 8)))
 
 #define bswap_32(x)                                                            \
-  ((int32_t)(                                                                  \
-      (((int32_t)(x)&0xff000000) >> 24) | (((int32_t)(x)&0x00ff0000) >> 8) |   \
-      (((int32_t)(x)&0x0000ff00) << 8) | (((int32_t)(x)&0x000000ff) << 24)))
+  ((int32_t)((((int32_t)(x)&0xff000000) >> 24) |                               \
+             (((int32_t)(x)&0x00ff0000) >> 8) |                                \
+             (((int32_t)(x)&0x0000ff00) << 8) |                                \
+             (((int32_t)(x)&0x000000ff) << 24)))
 
 #include <assert.h>
 #include <stdio.h>
@@ -77,7 +78,22 @@ static inline int32_t int32_of_int24(int24_t x) {
 
 #include "config.h"
 
-static inline int16_t clip(double s) {
+static inline double clip(double s) {
+  if (s < -1) {
+#ifdef DEBUG
+    printf("Wrong sample: %f\n", s);
+#endif
+    return -1;
+  } else if (s > 1) {
+#ifdef DEBUG
+    printf("Wrong sample: %f\n", s);
+#endif
+    return 1;
+  } else
+    return s;
+}
+
+static inline int16_t s16_clip(double s) {
   if (s < -1) {
 #ifdef DEBUG
     printf("Wrong sample: %f\n", s);
@@ -163,7 +179,7 @@ static inline uint8_t u8_clip(double s) {
   s32tof(((int32_t *)src)[offset / 4 + i * nc + c])
 #endif
 
-CAMLprim value caml_float_pcm_to_s32le(value a, value _dst, value _offs) {
+CAMLprim value caml_mm_audio_to_s32le(value a, value _dst, value _offs) {
   CAMLparam3(a, _dst, _offs);
   int c, i;
   int offs = Int_val(_offs);
@@ -192,7 +208,7 @@ CAMLprim value caml_float_pcm_to_s32le(value a, value _dst, value _offs) {
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_float_pcm_to_s24le(value a, value _dst, value _offs) {
+CAMLprim value caml_mm_audio_to_s24le(value a, value _dst, value _offs) {
   CAMLparam3(a, _dst, _offs);
   int c, i;
   int offs = Int_val(_offs);
@@ -217,7 +233,7 @@ CAMLprim value caml_float_pcm_to_s24le(value a, value _dst, value _offs) {
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_float_pcm_to_s16(value _le, value a, value _dst,
+CAMLprim value caml_mm_audio_to_s16(value _le, value a, value _dst,
                                      value _dst_offs) {
   CAMLparam4(_le, a, _dst, _dst_offs);
   int little_endian = Bool_val(_le);
@@ -239,7 +255,7 @@ CAMLprim value caml_float_pcm_to_s16(value _le, value a, value _dst,
     for (c = 0; c < nc; c++) {
       src = Caml_ba_data_val(Field(a, c));
       for (i = 0; i < len; i++) {
-        dst[i * nc + c] = clip(src[i]);
+        dst[i * nc + c] = s16_clip(src[i]);
 #ifdef BIGENDIAN
         dst[i * nc + c] = bswap_16(dst[i * nc + c]);
 #endif
@@ -249,7 +265,7 @@ CAMLprim value caml_float_pcm_to_s16(value _le, value a, value _dst,
     for (c = 0; c < nc; c++) {
       src = Caml_ba_data_val(Field(a, c));
       for (i = 0; i < len; i++) {
-        dst[i * nc + c] = clip(src[i]);
+        dst[i * nc + c] = s16_clip(src[i]);
 #ifndef BIGENDIAN
         dst[i * nc + c] = bswap_16(dst[i * nc + c]);
 #endif
@@ -259,7 +275,7 @@ CAMLprim value caml_float_pcm_to_s16(value _le, value a, value _dst,
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_float_pcm_convert_s16(value _le, value _src, value _offset,
+CAMLprim value caml_mm_audio_convert_s16(value _le, value _src, value _offset,
                                           value _dst) {
   CAMLparam4(_le, _src, _offset, _dst);
   int little_endian = Bool_val(_le);
@@ -295,7 +311,7 @@ CAMLprim value caml_float_pcm_convert_s16(value _le, value _src, value _offset,
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_float_pcm_to_u8(value a, value _dst, value _dst_offs) {
+CAMLprim value caml_mm_audio_to_u8(value a, value _dst, value _dst_offs) {
   CAMLparam3(a, _dst, _dst_offs);
   int c, i;
   int dst_offs = Int_val(_dst_offs);
@@ -323,7 +339,7 @@ CAMLprim value caml_float_pcm_to_u8(value a, value _dst, value _dst_offs) {
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_float_pcm_of_u8(value _src, value _offset, value _dst) {
+CAMLprim value caml_mm_audio_of_u8(value _src, value _offset, value _dst) {
   CAMLparam3(_src, _offset, _dst);
   const char *src = String_val(_src);
   int offset = Int_val(_offset);
@@ -349,7 +365,7 @@ CAMLprim value caml_float_pcm_of_u8(value _src, value _offset, value _dst) {
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_float_pcm_convert_s32le(value _src, value _offset,
+CAMLprim value caml_mm_audio_convert_s32le(value _src, value _offset,
                                             value _dst) {
   CAMLparam3(_src, _offset, _dst);
   const char *src = String_val(_src);
@@ -375,7 +391,7 @@ CAMLprim value caml_float_pcm_convert_s32le(value _src, value _offset,
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_float_pcm_convert_s24le(value _src, value _offset,
+CAMLprim value caml_mm_audio_convert_s24le(value _src, value _offset,
                                             value _dst) {
   CAMLparam3(_src, _offset, _dst);
   const char *src = String_val(_src);
@@ -399,4 +415,92 @@ CAMLprim value caml_float_pcm_convert_s24le(value _src, value _offset,
   }
 
   CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_mm_audio_add(value _src, value _to_add) {
+  CAMLparam2(_src, _to_add);
+  float *src = Caml_ba_data_val(_src);
+  float *to_add = Caml_ba_data_val(_to_add);
+  int len = Caml_ba_array_val(_src)->dim[0];
+  int i;
+
+  caml_release_runtime_system();
+  for (i = 0; i < len; i++)
+    src[i] = src[i] + to_add[i];
+  caml_acquire_runtime_system();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_mm_audio_add_coef(value _src, double coef, value _to_add) {
+  CAMLparam2(_src, _to_add);
+  float *src = Caml_ba_data_val(_src);
+  float *to_add = Caml_ba_data_val(_to_add);
+  int len = Caml_ba_array_val(_src)->dim[0];
+  int i;
+
+  caml_release_runtime_system();
+  for (i = 0; i < len; i++)
+    src[i] = src[i] + coef * to_add[i];
+  caml_acquire_runtime_system();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_mm_audio_add_coef_bytes(value _src, value _coef,
+                                             value _to_add) {
+  double coef = Double_val(_coef);
+  return caml_mm_audio_add_coef(_src, coef, _to_add);
+}
+
+CAMLprim value caml_mm_audio_amplify(double coef, value _src) {
+  CAMLparam1(_src);
+  float *src = Caml_ba_data_val(_src);
+  int len = Caml_ba_array_val(_src)->dim[0];
+  int i;
+
+  caml_release_runtime_system();
+  for (i = 0; i < len; i++)
+    src[i] = coef * src[i];
+  caml_acquire_runtime_system();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_mm_audio_amplify_bytes(value _coef, value _src) {
+  double coef = Double_val(_coef);
+  return caml_mm_audio_amplify(coef, _src);
+}
+
+CAMLprim value caml_mm_audio_clip(value _src) {
+  CAMLparam1(_src);
+  float *src = Caml_ba_data_val(_src);
+  int len = Caml_ba_array_val(_src)->dim[0];
+  int i;
+
+  caml_release_runtime_system();
+  for (i = 0; i < len; i++)
+    src[i] = clip(src[i]);
+  caml_acquire_runtime_system();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim double caml_mm_audio_squares(value _src) {
+  CAMLparam1(_src);
+  float *src = Caml_ba_data_val(_src);
+  int len = Caml_ba_array_val(_src)->dim[0];
+  int i;
+  float square = 0;
+
+  caml_release_runtime_system();
+  for (i = 0; i < len; i++)
+    square += src[i] * src[i];
+  caml_acquire_runtime_system();
+
+  CAMLreturn(square);
+}
+
+CAMLprim value caml_mm_audio_squares_bytes(value _src) {
+  return caml_copy_double(caml_mm_audio_squares(_src));
 }

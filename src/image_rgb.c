@@ -68,7 +68,11 @@
 // For OCaml < 3.10
 #ifndef caml_ba_array
 #define caml_ba_array caml_bigarray
+
+#ifndef Caml_ba_array_val
 #define Caml_ba_array_val(v) ((struct caml_ba_array *)Data_custom_val(v))
+#endif
+
 #define Caml_ba_data_val(v) (Caml_ba_array_val(v)->data)
 #define caml_ba_alloc alloc_bigarray
 #define CAML_BA_C_LAYOUT BIGARRAY_C_LAYOUT
@@ -118,9 +122,7 @@ static frame *rgb_copy(frame *src, frame *dst) {
   dst->width = src->width;
   dst->height = src->height;
   dst->stride = src->stride;
-  dst->data = memalign(ALIGNMENT_BYTES, Rgb_data_size(src));
-  if (dst->data == NULL)
-    caml_raise_out_of_memory();
+  ALIGNED_ALLOC(dst->data, ALIGNMENT_BYTES, Rgb_data_size(src));
   memcpy(dst->data, src->data, Rgb_data_size(src));
 
   return dst;
@@ -276,9 +278,8 @@ CAMLprim value caml_rgb_of_rgb8_string(value _rgb, value _data) {
   frame rgb;
   frame_of_value(_rgb, &rgb);
   int datalen = rgb.height * rgb.width * 3;
-  char *data = (char *)memalign(ALIGNMENT_BYTES, datalen);
-  if (data == NULL)
-    caml_raise_out_of_memory();
+  char *data;
+  ALIGNED_ALLOC(data, ALIGNMENT_BYTES, datalen);
   memcpy(data, String_val(_data), datalen);
 
   int i, j;
@@ -1328,7 +1329,7 @@ CAMLprim value caml_mm_Gray8_motion_multi_compute(value _bs, value _width,
     }
   caml_leave_blocking_section();
 
-  value ans = caml_ba_alloc_dims(
+  value ans = caml_mm_ba_alloc_dims(
       CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_NATIVE_INT, 1, v, vlen);
   CAMLreturn(ans);
 }

@@ -3,26 +3,32 @@ all: build
 build:
 	@dune build
 
-autotune: build
-	dune exec ./autotune.exe
+autotune:
+	@dune exec ./autotune.exe
 
-dictee: build
-	dune exec ./dictee.exe test.mp3
+dictee:
+	@dune exec ./dictee.exe test.mp3
 
-display: build
-	dune exec ./display.exe test.ppm
+display:
+	@dune exec ./display.exe test.ppm
 
-drums: build
-	dune exec ./drums.exe
+drums:
+	@dune exec ./drums.exe
 
-fft: build
-	dune exec ./fft.exe test.wav
+fft:
+	@dune exec ./fft.exe test.wav
 
-id: build
-	dune exec ./id.exe test.wav
+id:
+	@dune exec ./id.exe test.wav
 
-midiplayer: build
-	dune exec ./midiplayer.exe test.mid
+midiplayer:
+	@dune exec ./midiplayer.exe test.mid
 
-sine_wav: build
-	dune exec ./sine_wav.exe
+sine_wav:
+	@dune exec ./sine_wav.exe
+
+test:
+	@dune exec ./test.exe
+
+valgrind: build
+	valgrind ../_build/default/examples/test.exe --skip-long

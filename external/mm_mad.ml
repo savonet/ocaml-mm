@@ -38,24 +38,16 @@ open Mm_audio
 class virtual reader =
   object (self)
     inherit IO.helper
-
     method virtual private stream_close : unit
-
     val mutable channels = 0
-
     method channels = channels
 
     (* TODO *)
     method length : int = failwith "TODO"
-
     method duration : float = failwith "TODO"
-
     method sample_rate = 44100
-
     val mutable rb = Audio.Ringbuffer_ext.create 0 0
-
     val mutable mf = None
-
     method private mf = match mf with Some mf -> mf | _ -> assert false
 
     initializer
@@ -69,7 +61,6 @@ class virtual reader =
     rb <- Audio.Ringbuffer_ext.create channels 0
 
     method private decode = Mad.decode_frame_float_ba self#mf
-
     method close = self#stream_close
 
     method read buf =
@@ -95,6 +86,5 @@ class virtual reader =
 class reader_of_file fname =
   object
     inherit IO.Unix.rw ~read:true fname
-
     inherit reader
   end

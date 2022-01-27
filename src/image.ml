@@ -45,8 +45,9 @@ module Data = struct
     Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.C_layout n
 
   (** [round n k] rounds [n] to the nearest upper multiple of [k]. *)
-  let round k n = (n + (k - 1)) / k * k
+  let round k n = ((n + (k - 1)) / k) * k
 
+  (** [aligned k n] allocates [n] bytes at a multiple of [k]. *)
   external aligned : int -> int -> t = "caml_data_aligned"
 
   (* Creates an 16-bytes aligned plane. Returns (stride*plane). *)
@@ -103,7 +104,7 @@ module Draw = struct
       error := !error - deltay;
       if !error < 0 then (
         j := !j + ystep;
-        error := !error + deltax )
+        error := !error + deltax)
     done
 end
 
@@ -236,7 +237,7 @@ module RGBA32 = struct
   let blit_all src dst =
     assert (
       src.width = dst.width && src.height = dst.height
-      && src.stride = dst.stride );
+      && src.stride = dst.stride);
     blit src dst
 
   let blit ?(blank = true) ?(x = 0) ?(y = 0) ?w ?h src dst =
@@ -322,14 +323,14 @@ module RGBA32 = struct
         scale_coef_kind kind src dst (dw, sw) (dh, sh)
       else (
         let n, d = if dh * sw < sh * dw then (dh, sh) else (dw, sw) in
-        scale_coef_kind kind src dst (n, d) (n, d) )
+        scale_coef_kind kind src dst (n, d) (n, d))
 
     let create ?kind ?(copy = true) ?proportional src w h =
       if (not copy) && width src = w && height src = h then src
       else (
         let dst = create w h in
         onto ?kind ?proportional src dst;
-        dst )
+        dst)
   end
 
   let scale ?proportional src dst = Scale.onto ?proportional src dst
@@ -363,7 +364,7 @@ module RGBA32 = struct
           while data.[!n] <> '\n' do
             incr n
           done;
-          incr n );
+          incr n);
         let w = read_int () in
         let h = read_int () in
         let d = read_int () in
@@ -535,8 +536,10 @@ module YUV420 = struct
     in
     make width height y y_stride u v uv_stride
 
+  (* Default alignment. *)
+  let align = Sys.word_size / 8
+
   let default_stride width y_stride uv_stride =
-    let align = 4 in
     let y_stride = option_value ~default:(Data.round align width) y_stride in
     let uv_stride =
       option_value ~default:(Data.round align ((width + 1) / 2)) uv_stride
@@ -544,13 +547,12 @@ module YUV420 = struct
     (y_stride, uv_stride)
 
   let create ?y_stride ?uv_stride width height =
-    let align = 4 in
     let y_stride, uv_stride = default_stride width y_stride uv_stride in
     let y = Data.aligned align (height * y_stride) in
     let u, v =
-      let height = Data.round 2 height in
-      ( Data.aligned align (height / 2 * uv_stride),
-        Data.aligned align (height / 2 * uv_stride) )
+      let height = Data.round 2 ((height + 1) / 2) in
+      ( Data.aligned align (height * uv_stride),
+        Data.aligned align (height * uv_stride) )
     in
     make width height y y_stride u v uv_stride
 
@@ -558,7 +560,7 @@ module YUV420 = struct
     if img.alpha = None then (
       let a = Data.alloc (img.height * img.y_stride) in
       Data.fill a 0xff;
-      img.alpha <- Some a )
+      img.alpha <- Some a)
 
   let has_alpha img = img.alpha <> None
   let remove_alpha img = img.alpha <- None
@@ -622,7 +624,7 @@ module YUV420 = struct
     if a = 0xff then img.alpha <- None
     else (
       ensure_alpha img;
-      Bigarray.Array1.fill (option_get img.alpha) a )
+      Bigarray.Array1.fill (option_get img.alpha) a)
 
   let blank img = fill img (Pixel.yuv_of_rgb (0, 0, 0))
   let blank_all = blank
@@ -639,7 +641,7 @@ module YUV420 = struct
         | Some alpha -> (
             match dst.alpha with
               | None -> dst.alpha <- Some (Data.copy alpha)
-              | Some alpha' -> Bigarray.Array1.blit alpha alpha' ) )
+              | Some alpha' -> Bigarray.Array1.blit alpha alpha'))
     else (
       dst.y <- Data.copy src.y;
       dst.u <- Data.copy src.u;
@@ -648,7 +650,7 @@ module YUV420 = struct
       dst.uv_stride <- src.uv_stride;
       match src.alpha with
         | None -> dst.alpha <- None
-        | Some alpha -> dst.alpha <- Some (Data.copy alpha) )
+        | Some alpha -> dst.alpha <- Some (Data.copy alpha))
 
   let blit src dst = blit_all src dst
 
@@ -706,7 +708,7 @@ module YUV420 = struct
     if dw = sw && dh = sh then blit_all src dst
     else (
       let n, d = if dh * sw < sh * dw then (dh, sh) else (dw, sw) in
-      scale_coef src dst (n, d) (n, d) )
+      scale_coef src dst (n, d) (n, d))
 
   let scale ?(proportional = false) src dst =
     if proportional then scale_proportional src dst else scale_full src dst
@@ -716,7 +718,7 @@ module YUV420 = struct
   let scale_alpha img a =
     if a <> 1. then (
       ensure_alpha img;
-      scale_alpha img a )
+      scale_alpha img a)
 
   external disk_alpha : t -> int -> int -> int -> unit = "caml_yuv_disk_alpha"
 
@@ -776,7 +778,7 @@ module Generic = struct
 
     let size = function
       | RGB x -> (
-          match x with RGB24 | BGR24 -> 3 | RGB32 | BGR32 | RGBA32 -> 4 )
+          match x with RGB24 | BGR24 -> 3 | RGB32 | BGR32 | RGBA32 -> 4)
       | YUV _ -> raise Not_implemented
 
     let string_of_format = function
@@ -786,7 +788,7 @@ module Generic = struct
             | BGR24 -> "BGR24"
             | RGB32 -> "RGB32"
             | BGR32 -> "BGR32"
-            | RGBA32 -> "RGBA32" )
+            | RGBA32 -> "RGBA32")
       | YUV x -> (
           match x with
             | YUV422 -> "YUV422"
@@ -795,7 +797,7 @@ module Generic = struct
             | YUV410 -> "YUV410"
             | YUVJ420 -> "YUVJ420"
             | YUVJ422 -> "YUVJ422"
-            | YUVJ444 -> "YUVJ444" )
+            | YUVJ444 -> "YUVJ444")
   end
 
   type data =
@@ -903,11 +905,11 @@ module Generic = struct
       | RGB rgb -> (
           match rgb.rgb_pixel with
             | Pixel.RGBA32 -> RGBA32.blank (to_RGBA32 img)
-            | _ -> failwith "Not implemented" )
+            | _ -> failwith "Not implemented")
       | YUV yuv -> (
           match yuv.yuv_pixel with
             | Pixel.YUVJ420 -> YUV420.blank (to_YUV420 img)
-            | _ -> failwith "Not implemented" )
+            | _ -> failwith "Not implemented")
 
   let convert ?(proportional = true) ?scale_kind src dst =
     match (src.data, dst.data) with

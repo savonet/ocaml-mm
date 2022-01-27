@@ -99,7 +99,7 @@ let encode_event chan e =
   let s = Bytes.create 3 in
   let coi = char_of_int in
   let bof = byte_of_float in
-  ( match e with
+  (match e with
     | Note_off (n, v) ->
         Bytes.set s 0 (coi ((0x8 lsl 4) + chan));
         Bytes.set s 1 (coi n);
@@ -110,7 +110,7 @@ let encode_event chan e =
         Bytes.set s 2 (bof v)
     | _ ->
         (* TODO *)
-        assert false );
+        assert false);
   Bytes.to_string s
 
 type buffer = {
@@ -159,7 +159,7 @@ let blit b1 o1 b2 o2 len =
     clear b2 o2 len;
     extract b1 o1 len;
     translate b1 (o2 - o1);
-    merge b2 b1 )
+    merge b2 b1)
 
 let insert b te =
   assert (fst te < duration b);
@@ -189,22 +189,16 @@ module IO = struct
     class type t =
       object
         method read : int -> Multitrack.buffer -> int -> int -> int
-
         method close : unit
       end
 
     class virtual base =
       object (self)
         inherit IO.helper
-
         val mutable tracks = 0
-
         val mutable division = Ticks_per_quarter 0
-
         method private input_id = self#really_input 4
-
         method! private input_int = self#input_int_be
-
         method! private input_short = self#input_short_be
 
         (** Read midi header. *)
@@ -222,7 +216,7 @@ module IO = struct
             else (
               let frames = (div lsr 8) land 0x7f in
               let ticks = div land 0xff in
-              SMPTE (frames, ticks) )
+              SMPTE (frames, ticks))
           in
           if id <> "MThd" || len <> 6 || (fmt <> 0 && fmt <> 1 && fmt <> 2) then
             raise Invalid_header;
@@ -271,10 +265,10 @@ module IO = struct
             let command =
               if command land 0x80 <> 0 then (
                 status := command;
-                command )
+                command)
               else (
                 decr pos;
-                !status )
+                !status)
             in
             let cmd = (command lsr 4) land 0xf in
             let chan = command land 0xf in
@@ -360,20 +354,20 @@ module IO = struct
                               let m = get_byte () in
                               (* minor? *)
                               (None, Key_signature (sf, m <> 0))
-                          | 0x54 (* SMPTE Offset *) | 0x7f
-                          (* Sequencer-specific data *) ->
+                          | 0x54 (* SMPTE Offset *)
+                          | 0x7f (* Sequencer-specific data *) ->
                               advance len;
                               raise Not_found
                           | _ ->
                               advance len;
                               Printf.printf "MIDI: unknown meta-event %x.\n%!"
                                 cmd;
-                              raise Not_found )
+                              raise Not_found)
                     | _ ->
                         advance 1;
                         Printf.printf "MIDI: unknown command %x (pos: %d)\n%!"
                           command !pos;
-                        raise Not_found )
+                        raise Not_found)
           in
           let ans = ref [] in
           while !pos < len do
@@ -396,13 +390,9 @@ module IO = struct
     class of_file fname =
       object (self)
         inherit IO.Unix.rw ~read:true fname
-
         inherit IO.helper
-
         inherit! base
-
         val mutable track = []
-
         val mutable tempo = 500000
 
         initializer
@@ -420,7 +410,7 @@ module IO = struct
                 | (d, _) :: _ -> (
                     match !ans with
                       | None -> ans := Some (d, c)
-                      | Some (d', _) -> if d < d' then ans := Some (d, c) )
+                      | Some (d', _) -> if d < d' then ans := Some (d, c))
             done;
             match !ans with Some (d, c) -> (d, c) | None -> raise Not_found
           in
@@ -434,7 +424,7 @@ module IO = struct
                 (fun n t ->
                   if n <> c && t <> [] then (
                     let d', e = List.hd t in
-                    tracks.(n) <- (d' - d, e) :: List.tl t ))
+                    tracks.(n) <- (d' - d, e) :: List.tl t))
                 tracks
             done;
             assert false
@@ -445,7 +435,6 @@ module IO = struct
         (* We store here the track with delta-times in samples. TODO: this way of
            doing things is messy but simpler to implement *)
         val mutable track_samples = []
-
         val mutable track_samples_computed = false
 
         method private read_add sr buf ofs len =
@@ -460,7 +449,7 @@ module IO = struct
                   (d, (c, e)))
                 track;
             tempo <- t;
-            track_samples_computed <- true );
+            track_samples_computed <- true);
           let offset_in_buf = ref 0 in
           while track_samples <> [] && !offset_in_buf < len do
             let d, (c, e) = List.hd track_samples in
@@ -471,13 +460,13 @@ module IO = struct
               match c with
                 | Some c -> (
                     (* Filter out relevant events. *)
-                      match e with
+                    match e with
                       | Note_on _ | Note_off _ | Control_change _ ->
                           if c < Array.length buf then
                             insert buf.(c) (!offset_in_buf + ofs, e)
-                      | _ -> () (* TODO *) )
+                      | _ -> () (* TODO *))
                 | None -> ()
-              (* TODO *) )
+              (* TODO *))
             else
               track_samples <-
                 (!offset_in_buf - len, (c, e)) :: List.tl track_samples
@@ -496,13 +485,9 @@ module IO = struct
     class type t =
       object
         method put : int -> event -> unit
-
         method note_off : int -> int -> float -> unit
-
         method note_on : int -> int -> float -> unit
-
         method advance : int -> unit
-
         method close : unit
       end
 
@@ -523,15 +508,10 @@ module IO = struct
       let delta d = delta (d * fps * tpf / samplerate) in
       object (self)
         inherit IO.Unix.rw ~write:true fname
-
         inherit IO.helper
-
         val mutable curdelta = 0
-
         val mutable datalen = 0
-
         method! private output_int = self#output_int_be
-
         method! private output_short = self#output_short_be
 
         initializer
@@ -562,9 +542,7 @@ module IO = struct
           curdelta <- 0
 
         method note_off chan n v = self#put chan (Note_off (n, v))
-
         method note_on chan n v = self#put chan (Note_on (n, v))
-
         method advance n = curdelta <- curdelta + n
 
         method close =

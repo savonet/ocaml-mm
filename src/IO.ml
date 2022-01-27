@@ -55,9 +55,7 @@ module Unix = struct
         Unix.write fd (Bytes.of_string buf) ofs len
 
       method private stream_close = Unix.close fd
-
       method private stream_seek n = ignore (Unix.lseek fd n Unix.SEEK_SET)
-
       method private stream_cur_pos = Unix.lseek fd 0 Unix.SEEK_CUR
     end
 end
@@ -97,7 +95,6 @@ class virtual helper =
       aux n
 
     method private input_int = self#input_int_num_bytes 4
-
     method private input_short = self#input_int_num_bytes 2
 
     method private input_int_num_bytes_be n =
@@ -109,9 +106,7 @@ class virtual helper =
       !ans
 
     method private input_int_be = self#input_int_num_bytes_be 4
-
     method private input_short_be = self#input_int_num_bytes_be 2
-
     method virtual private stream_write : string -> int -> int -> int
 
     method private output s =
@@ -126,9 +121,7 @@ class virtual helper =
       self#output (Bytes.to_string s)
 
     method private output_byte n = self#output_num 1 n
-
     method private output_short n = self#output_num 2 n
-
     method private output_int n = self#output_num 4 n
 
     method private output_num_be b n =
@@ -139,6 +132,5 @@ class virtual helper =
       self#output (Bytes.to_string s)
 
     method private output_short_be n = self#output_num_be 2 n
-
     method private output_int_be n = self#output_num_be 4 n
   end

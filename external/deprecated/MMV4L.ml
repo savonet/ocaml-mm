@@ -63,9 +63,7 @@ class reader device width height =
       G.make_rgb G.Pixel.RGB24 width height data
 
     method frame_rate = 12.
-
     method width = width
-
     method height = height
 
     method read buf ofs len =

@@ -36,17 +36,11 @@ open Mm_audio
 class type t =
   object
     method set_volume : float -> unit
-
     method note_on : int -> float -> unit
-
     method note_off : int -> float -> unit
-
     method fill_add : Audio.buffer -> unit
-
     method play_add : MIDI.buffer -> int -> Audio.buffer -> unit
-
     method play : MIDI.buffer -> int -> Audio.buffer -> unit
-
     method reset : unit
   end
 
@@ -56,11 +50,8 @@ type note = { note : int; volume : float; generator : Audio.Generator.t }
 class virtual base =
   object (self)
     method virtual private generator : float -> float -> Audio.Generator.t
-
     val mutable vol : float = 1.
-
     method set_volume v = vol <- v
-
     val mutable notes : note list = []
 
     method note_on n v =
@@ -120,7 +111,6 @@ class virtual base =
 class create g =
   object
     inherit base
-
     method private generator f v = g f v
   end
 
@@ -170,7 +160,6 @@ module Multitrack = struct
   class type t =
     object
       method play_add : MIDI.Multitrack.buffer -> int -> Audio.buffer -> unit
-
       method play : MIDI.Multitrack.buffer -> int -> Audio.buffer -> unit
     end
 

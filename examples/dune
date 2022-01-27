@@ -47,7 +47,19 @@
  (libraries mm.audio mm.ao))
 
 (executable
+ (name gstreamer_test)
+ (modules gstreamer_test)
+ (optional)
+ (libraries gstreamer mm.audio mm.video mm.sdl mm.oss))
+
+(executable
  (name test)
  (modules test)
  (optional)
- (libraries gstreamer mm.audio mm.video mm.sdl mm.oss))
+ (libraries mm.audio mm.image))
+
+(rule
+ (alias runtest)
+ (action
+  (run ./test.exe)))
+
