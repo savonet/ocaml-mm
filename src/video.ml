@@ -117,6 +117,8 @@ module Canvas = struct
   let make len (width, height) : t =
     Array.init len (fun _ -> Image.create width height)
 
+  let single img = [|img|]
+
   let length (v:t) =
     Array.length v
 

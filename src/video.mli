@@ -125,6 +125,8 @@ module Canvas : sig
 
   val copy : t -> t
 
+  val single : Image.t -> t
+
   val length : t -> int
 
   val size : t -> int
