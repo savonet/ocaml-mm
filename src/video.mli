@@ -40,7 +40,7 @@ module Image : sig
   type t = Image.YUV420.t
 
   val create : int -> int -> t
-  (* val of_RGB24_string : string -> int -> t *)
+  val of_RGB24_string : string -> int -> t
 
   (** Convert to format useable by [Graphics.make_image]. *)
   val to_int_image : t -> int array array
