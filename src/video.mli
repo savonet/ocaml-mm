@@ -115,11 +115,13 @@ val randomize : t -> int -> int -> unit
 module Canvas : sig
   type t
 
+  val make : int -> int * int -> t
+
+  val copy : t -> t
+
   val length : t -> int
 
   val size : t -> int
-
-  val make : int -> int * int -> t
 
   val blit : t -> int -> t -> int -> int -> unit
 end

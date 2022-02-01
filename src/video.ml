@@ -123,12 +123,17 @@ module Canvas = struct
   let length (v:t) =
     Array.length v.images
 
+  let copy (v:t) =
+    { width = v.width; height = v.height; images = Array.init (length v) (fun i -> v.images.(i)) }
+
   let size (v:t) =
     let n = ref 0 in
     for i = 0 to Array.length v.images - 1 do
       n := !n + I.size v.images.(i)
     done;
     !n
+
+  let images v = v.images
 
   let blit sbuf sofs dbuf dofs len =
     for i = 0 to len - 1 do
