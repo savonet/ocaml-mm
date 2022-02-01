@@ -108,14 +108,14 @@ include Make(Image)
 (* Canvas are not in place so that we have to make a slightly different
    implementation. *)
 module Canvas = struct
-  module I = Mm_image.Image.Canvas(Image)
+  module Image = Mm_image.Image.Canvas(Image)
 
-  type image = I.t
+  type image = Image.t
 
-  type t = I.t array
+  type t = Image.t array
 
   let make len (width, height) : t =
-    Array.init len (fun _ -> I.create width height)
+    Array.init len (fun _ -> Image.create width height)
 
   let length (v:t) =
     Array.length v
@@ -126,7 +126,7 @@ module Canvas = struct
   let size (v:t) =
     let n = ref 0 in
     for i = 0 to Array.length v - 1 do
-      n := !n + I.size v.(i)
+      n := !n + Image.size v.(i)
     done;
     !n
 

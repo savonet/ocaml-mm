@@ -113,7 +113,9 @@ val blank : t -> int -> int -> unit
 val randomize : t -> int -> int -> unit
 
 module Canvas : sig
-  type image = Mm_image.Image.Canvas(Image).t
+  module Image : module type of Mm_image.Image.Canvas(Image)
+
+  type image = Image.t
 
   type t = image array
 
