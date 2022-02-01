@@ -989,6 +989,10 @@ module Canvas (I : CanvasImage) = struct
   let create width height =
     { width; height; elements = [] }
 
+  let width c = c.width
+
+  let height c = c.height
+
   let size c =
     List.fold_left (fun n e -> n + E.size e) 0 c.elements
 
