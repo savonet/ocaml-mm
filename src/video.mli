@@ -130,6 +130,8 @@ module Canvas : sig
   val size : t -> int
 
   val blit : t -> int -> t -> int -> int -> unit
+
+  val map : (image -> image) -> t -> int -> int -> unit
 end
 
 (* module Ringbuffer_ext : Ringbuffer.R with type elt = frame *)

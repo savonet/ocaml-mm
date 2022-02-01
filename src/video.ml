@@ -134,6 +134,11 @@ module Canvas = struct
     for i = 0 to len - 1 do
       dbuf.(dofs + i) <- sbuf.(sofs + i)
     done
+
+  let map f buf ofs len =
+    for i = ofs to ofs + len - 1 do
+      buf.(i) <- f buf.(i)
+    done
 end
 
 (*
