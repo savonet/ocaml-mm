@@ -55,7 +55,7 @@ let () =
   Printf.printf "\n"
 
 let () =
-  Printf.printf "## Testing video\n\n%!";
+  Printf.printf "## Testing images\n\n%!";
   test "rounding" (fun () ->
       for k = 1 to 5 do
         for n = 0 to 33 do
@@ -94,8 +94,7 @@ let () =
       let a = Image.YUV420.create 640 480 in
       let b = Image.YUV420.of_RGBA32 (Image.YUV420.to_RGBA32 a) in
       ignore b
-    );
-  Printf.printf "\n"
+    )
 
 let () =
   Gc.full_major ()

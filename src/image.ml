@@ -980,6 +980,8 @@ module type CanvasImage = sig
 
   val add : t -> ?x:int -> ?y:int -> t -> unit
 
+  val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
+
   val randomize : t -> unit
 end
 
@@ -1021,7 +1023,7 @@ module Canvas (I : CanvasImage) = struct
     { width; height; elements = [E.Image((x,y),image)]}
 
   let add c c' =
-    assert (c.width = c'.width && c.height = c'.height);
+    assert ((c.width <0 || c.width = c'.width) && (c.height < 0 || c.height = c'.height));
     { width = c.width; height = c.height; elements = c.elements@c'.elements }
 
   let render ?(fresh=false) c =
@@ -1050,4 +1052,20 @@ module Canvas (I : CanvasImage) = struct
 
   let translate dx dy c =
     { c with elements = List.map (E.translate dx dy) c.elements }
+
+  module Draw = struct
+    let line (x1,y1) (x2,y2) c =
+      let dx = min x1 x2 in
+      let dy = min y1 y2 in
+      let w = abs (x2 - x1) in
+      let h = abs (y2 - y1) in
+      let buf = I.create w h in
+      I.blank buf;
+      Draw.line
+        (fun i j ->
+           if 0 <= i && i < w && 0 <= j && j <= h then
+             I.set_pixel_rgba buf i j c
+        ) (x1-dx,y1-dy) (x2-dx,y2-dy);
+      make ~x:dx ~y:dy ~width:(-1) ~height:(-1) buf
+  end
 end

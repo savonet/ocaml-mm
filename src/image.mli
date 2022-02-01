@@ -412,6 +412,8 @@ module type CanvasImage = sig
   (** Add source image at given offset to the target image. *)
   val add : t -> ?x:int -> ?y:int -> t -> unit
 
+  val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
+
   (** Fill the gimage with random data. *)
   val randomize : t -> unit
 end
@@ -456,4 +458,8 @@ module Canvas (I : CanvasImage) : sig
 
   (** Translate the image. *)
   val translate : int -> int -> t -> t
+
+  module Draw : sig
+    val line : int * int -> int * int -> Pixel.rgba -> t
+  end
 end
