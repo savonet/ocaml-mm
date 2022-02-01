@@ -129,6 +129,8 @@ module Canvas : sig
 
   val size : t -> int
 
+  val blank : t -> int -> int -> unit
+
   val blit : t -> int -> t -> int -> int -> unit
 
   val map : (image -> image) -> t -> int -> int -> unit
