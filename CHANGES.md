@@ -3,7 +3,7 @@
 
 - Add support for image and video canvas.
 
-0.7.4 (unreleased)
+0.7.4 (28-01-2022)
 =====
 * Implement low-level audio manipulation in C
   to avoid needless allocations.
