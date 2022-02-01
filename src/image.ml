@@ -1017,9 +1017,9 @@ module Canvas (I : CanvasImage) = struct
     assert (c.width = c'.width && c.height = c'.height);
     { width = c.width; height = c.height; elements = c.elements@c'.elements }
 
-  let render c =
+  let render ?(fresh=false) c =
     match c.elements with
-    | [Image ((0,0),img)] when (I.width img = width c && I.height img = height c) -> img
+    | [Image ((0,0),img)] when not fresh && (I.width img = width c && I.height img = height c) -> img
     | elements ->
       let r = I.create (width c) (height c) in
       let add = function
@@ -1033,4 +1033,9 @@ module Canvas (I : CanvasImage) = struct
 
   let map f c =
     make (f (render c))
+
+  let iter f c =
+    let img = render ~fresh:true c in
+    f img;
+    make img
 end

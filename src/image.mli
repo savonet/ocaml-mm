@@ -436,8 +436,9 @@ module Canvas (I : CanvasImage) : sig
   (** Add two canvas. *)
   val add : t -> t -> t
 
-  (** Render the canvas as an image. *)
-  val render : t -> I.t
+  (** Render the canvas as an image. If [fresh] is set to true, the resulting
+      can be modified in place. *)
+  val render : ?fresh:bool -> t -> I.t
 
   (** Rendered canvas. *)
   val rendered : t -> t
@@ -445,4 +446,6 @@ module Canvas (I : CanvasImage) : sig
   (** Map a function on the underlying image. This of course triggers a render
       of the canvas. *)
   val map : (I.t -> I.t) -> t -> t
+
+  val iter : (I.t -> unit) -> t -> t
 end
