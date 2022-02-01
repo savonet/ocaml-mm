@@ -979,14 +979,25 @@ module Canvas (I : CanvasImage) = struct
   end
   module E = Element
 
-  type t = E.t list
+  type t =
+    {
+      width : int;
+      height : int;
+      elements : E.t list
+    }
 
-  let empty = []
+  let create width height =
+    { width; height; elements = [] }
 
   let size c =
-    List.fold_left (fun n e -> n + E.size e) 0 c
+    List.fold_left (fun n e -> n + E.size e) 0 c.elements
 
-  let make ?(x=0) ?(y=0) image = [E.Image((x,y),image)]
+  let make ?width ?height ?(x=0) ?(y=0) image =
+    let width = Option.value ~default:(I.width image) width in
+    let height = Option.value ~default:(I.height image) height in
+    { width; height; elements = [E.Image((x,y),image)]}
 
-  let add c c' = c@c'
+  let add c c' =
+    assert (c.width = c'.width && c.height = c'.height);
+    { width = c.width; height = c.height; elements = c.elements@c'.elements }
 end

@@ -115,24 +115,13 @@ val randomize : t -> int -> int -> unit
 module Canvas : sig
   type image = Mm_image.Image.Canvas(Image).t
 
-  type t =
-    {
-      width : int;
-      height : int;
-      images : image array
-    }
+  type t = image array
 
   val make : int -> int * int -> t
 
   val copy : t -> t
 
-  val width : t -> int
-
-  val height : t -> int
-
   val length : t -> int
-
-  val images : t -> image array
 
   val size : t -> int
 

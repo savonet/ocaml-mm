@@ -416,11 +416,11 @@ module Canvas (I : CanvasImage) : sig
   (** A canvas. *)
   type t
 
-  (** Empty canvas. *)
-  val empty : t
+  (** Create an empty canvas. *)
+  val create : int -> int -> t
 
   (** Create a canvas containing a given image. *)
-  val make : ?x:int -> ?y:int -> I.t -> t
+  val make : ?width:int -> ?height:int -> ?x:int -> ?y:int -> I.t -> t
 
   (** Size of a canvas in bytes. *)
   val size : t -> int

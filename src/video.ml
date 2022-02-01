@@ -112,38 +112,27 @@ module Canvas = struct
 
   type image = I.t
 
-  type t =
-    {
-      width : int;
-      height : int;
-      images : I.t array
-    }
+  type t = I.t array
 
   let make len (width, height) : t =
-    { width; height; images = Array.init len (fun _ -> I.empty) }
-
-  let width v = v.width
-
-  let height v = v.height
+    Array.init len (fun _ -> I.create width height)
 
   let length (v:t) =
-    Array.length v.images
+    Array.length v
 
   let copy (v:t) =
-    { width = v.width; height = v.height; images = Array.init (length v) (fun i -> v.images.(i)) }
+    Array.init (length v) (fun i -> v.(i))
 
   let size (v:t) =
     let n = ref 0 in
-    for i = 0 to Array.length v.images - 1 do
-      n := !n + I.size v.images.(i)
+    for i = 0 to Array.length v - 1 do
+      n := !n + I.size v.(i)
     done;
     !n
 
-  let images v = v.images
-
   let blit sbuf sofs dbuf dofs len =
     for i = 0 to len - 1 do
-      dbuf.images.(dofs + i) <- sbuf.images.(sofs + i)
+      dbuf.(dofs + i) <- sbuf.(sofs + i)
     done
 end
 
