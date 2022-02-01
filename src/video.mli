@@ -125,6 +125,8 @@ module Canvas : sig
 
   val length : t -> int
 
+  val images : t -> Mm_image.Image.Canvas(Image).t array
+
   val size : t -> int
 
   val blit : t -> int -> t -> int -> int -> unit
