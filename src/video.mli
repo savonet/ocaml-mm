@@ -119,6 +119,10 @@ module Canvas : sig
 
   val copy : t -> t
 
+  val width : t -> int
+
+  val height : t -> int
+
   val length : t -> int
 
   val size : t -> int

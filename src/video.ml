@@ -120,6 +120,10 @@ module Canvas = struct
   let make len (width, height) : t =
     { width; height; images = Array.init len (fun _ -> I.empty) }
 
+  let width v = v.width
+
+  let height v = v.height
+
   let length (v:t) =
     Array.length v.images
 
