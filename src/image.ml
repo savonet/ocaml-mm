@@ -967,61 +967,26 @@ module type CanvasImage = sig
   val randomize : t -> unit
 end
 
+(** A canvas of images. The structure is immutable but its elements might be
+    returned and therefore should not be used in place. *)
 module Canvas (I : CanvasImage) = struct
-  (** Elements. *)
-  module E = struct
+  module Element = struct
     type t =
-      {
-        offset : int * int;
-        image : I.t
-      }
+      | Image of (int * int) * I.t (** An image at given offset. *)
 
-    let make ?(x=0) ?(y=0) image = { offset = (x,y); image }
-
-    let copy e = { e with image = I.copy e.image }
-
-    let size e = I.size e.image
+    let size = function
+      | Image (_, img) -> I.size img
   end
+  module E = Element
 
-  type t =
-    {
-      dim : int * int;
-      mutable elements : E.t list; (** List of images. The first one is bottommost. *)
-    }
+  type t = E.t list
 
-  let create w h =
-    { dim = w, h; elements = [] }
-
-  let dim c = c.dim
-
-  let width c = fst (dim c)
-
-  let height c = snd (dim c)
+  let empty = []
 
   let size c =
-    List.fold_left (fun n e -> n + E.size e) 0 c.elements
+    List.fold_left (fun n e -> n + E.size e) 0 c
 
-  let make ?width ?height ?x ?y image =
-    let width = Option.value ~default:(I.width image) width in
-    let height = Option.value ~default:(I.height image) height in
-    let dim = width, height in
-    { dim; elements = [E.make ?x ?y image] }
+  let make ?(x=0) ?(y=0) image = [E.Image((x,y),image)]
 
-  let add c c' =
-    assert (c.dim = c'.dim);
-    { dim = c.dim; elements = c.elements@c'.elements }
-
-  let blank c =
-    c.elements <- []
-
-  let copy c =
-    { dim = dim c; elements = List.map E.copy c.elements }
-
-  let blit_all src dst =
-    dst.elements <- List.map E.copy src.elements
-
-  let randomize c =
-    let img = I.create (width c) (height c) in
-    I.randomize img;
-    c.elements <- [E.make img]
+  let add c c' = c@c'
 end

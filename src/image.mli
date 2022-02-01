@@ -416,27 +416,15 @@ module Canvas (I : CanvasImage) : sig
   (** A canvas. *)
   type t
 
-  (** Create an empty canvas with given dimensions. *)
-  val create : int -> int -> t
+  (** Empty canvas. *)
+  val empty : t
 
   (** Create a canvas containing a given image. *)
-  val make : ?width:int -> ?height:int -> ?x:int -> ?y:int -> I.t -> t
+  val make : ?x:int -> ?y:int -> I.t -> t
 
   (** Size of a canvas in bytes. *)
   val size : t -> int
 
   (** Add two canvas. *)
   val add : t -> t -> t
-
-  (** Blank out a canvas. *)
-  val blank : t -> unit
-
-  (** Copy all elements from first to second canvas. *)
-  val blit_all : t -> t -> unit
-
-  (** Create a copy of the canvas. *)  
-  val copy : t -> t
-
-  (** Fill the canvas with random pixels. *)
-  val randomize : t -> unit
 end

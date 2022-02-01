@@ -117,11 +117,7 @@ module Canvas : sig
 
   val size : t -> int
 
-  val make : int -> int -> int -> t
-
-  val copy : t -> t
-
-  val blit : t -> int -> t -> int -> int -> unit
+  val make : int -> t
 end
 
 (* module Ringbuffer_ext : Ringbuffer.R with type elt = frame *)

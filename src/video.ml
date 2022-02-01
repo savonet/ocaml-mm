@@ -105,9 +105,23 @@ end
 
 include Make(Image)
 
-module CanvasImage = Mm_image.Image.Canvas(Image)
+(* Canvas are not in place so that we have to make a slightly different
+   implementation. *)
+module Canvas = struct
+  module I = Mm_image.Image.Canvas(Image)
 
-module Canvas = Make(CanvasImage)
+  type t = I.t array
+
+  let make len =
+    Array.init len (fun _ -> I.empty)
+
+  let size vid =
+    let n = ref 0 in
+    for i = 0 to Array.length vid - 1 do
+      n := !n + I.size vid.(i)
+    done;
+    !n
+end
 
 (*
 module RE = struct
