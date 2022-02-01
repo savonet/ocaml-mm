@@ -1063,7 +1063,7 @@ module Canvas (I : CanvasImage) = struct
       I.blank buf;
       Draw.line
         (fun i j ->
-           if 0 <= i && i < w && 0 <= j && j <= h then
+           if 0 <= i && i < w && 0 <= j && j < h then
              I.set_pixel_rgba buf i j c
         ) (x1-dx,y1-dy) (x2-dx,y2-dy);
       make ~x:dx ~y:dy ~width:(-1) ~height:(-1) buf
