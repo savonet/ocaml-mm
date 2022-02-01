@@ -48,7 +48,7 @@ module Image : sig
   val copy : t -> t
   val width : t -> int
   val height : t -> int
-  (* val dimensions : t -> int * int *)
+  val dimensions : t -> int * int
 
   (** Size in bytes. *)
   val size : t -> int
