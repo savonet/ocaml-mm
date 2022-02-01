@@ -113,7 +113,14 @@ val blank : t -> int -> int -> unit
 val randomize : t -> int -> int -> unit
 
 module Canvas : sig
-  type t
+  type image = Mm_image.Image.Canvas(Image).t
+
+  type t =
+    {
+      width : int;
+      height : int;
+      images : image array
+    }
 
   val make : int -> int * int -> t
 
@@ -125,7 +132,7 @@ module Canvas : sig
 
   val length : t -> int
 
-  val images : t -> Mm_image.Image.Canvas(Image).t array
+  val images : t -> image array
 
   val size : t -> int
 

@@ -110,6 +110,8 @@ include Make(Image)
 module Canvas = struct
   module I = Mm_image.Image.Canvas(Image)
 
+  type image = I.t
+
   type t =
     {
       width : int;
