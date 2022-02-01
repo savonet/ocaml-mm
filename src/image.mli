@@ -436,7 +436,13 @@ module Canvas (I : CanvasImage) : sig
   (** Add two canvas. *)
   val add : t -> t -> t
 
+  (** Render the canvas as an image. *)
   val render : t -> I.t
 
+  (** Rendered canvas. *)
   val rendered : t -> t
+
+  (** Map a function on the underlying image. This of course triggers a render
+      of the canvas. *)
+  val map : (I.t -> I.t) -> t -> t
 end

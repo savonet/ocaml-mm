@@ -1030,4 +1030,7 @@ module Canvas (I : CanvasImage) = struct
 
   let rendered c =
     make (render c)
+
+  let map f c =
+    make (f (render c))
 end
