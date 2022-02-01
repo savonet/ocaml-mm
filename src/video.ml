@@ -115,6 +115,9 @@ module Canvas = struct
   let make len =
     Array.init len (fun _ -> I.empty)
 
+  let length vid =
+    Array.length vid
+
   let size vid =
     let n = ref 0 in
     for i = 0 to Array.length vid - 1 do
