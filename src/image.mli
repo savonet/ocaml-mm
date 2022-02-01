@@ -403,6 +403,9 @@ module type CanvasImage = sig
   (** Create an image with given dimensions. *)
   val create : int -> int -> t
 
+  (** Clear the image. *)
+  val blank : t -> unit
+
   (** Create a copy of the image. *)
   val copy : t -> t
 

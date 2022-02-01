@@ -972,6 +972,8 @@ module type CanvasImage = sig
 
   val create : int -> int -> t
 
+  val blank : t -> unit
+
   val copy : t -> t
 
   val add : t -> ?x:int -> ?y:int -> t -> unit
@@ -1025,6 +1027,8 @@ module Canvas (I : CanvasImage) = struct
     | [Image ((0,0),img)] when not fresh && (I.width img = width c && I.height img = height c) -> img
     | elements ->
       let r = I.create (width c) (height c) in
+      (* TODO: we could blank only if the background is not covered by other images *)
+      I.blank r;
       let add = function
         | E.Image ((x,y),img) -> I.add img ~x ~y r
       in
