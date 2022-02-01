@@ -110,24 +110,29 @@ include Make(Image)
 module Canvas = struct
   module I = Mm_image.Image.Canvas(Image)
 
-  type t = I.t array
+  type t =
+    {
+      width : int;
+      height : int;
+      images : I.t array
+    }
 
-  let make len =
-    Array.init len (fun _ -> I.empty)
+  let make len (width, height) : t =
+    { width; height; images = Array.init len (fun _ -> I.empty) }
 
-  let length vid =
-    Array.length vid
+  let length (v:t) =
+    Array.length v.images
 
-  let size vid =
+  let size (v:t) =
     let n = ref 0 in
-    for i = 0 to Array.length vid - 1 do
-      n := !n + I.size vid.(i)
+    for i = 0 to Array.length v.images - 1 do
+      n := !n + I.size v.images.(i)
     done;
     !n
 
   let blit sbuf sofs dbuf dofs len =
     for i = 0 to len - 1 do
-      dbuf.(dofs + i) <- sbuf.(sofs + i)
+      dbuf.images.(dofs + i) <- sbuf.images.(sofs + i)
     done
 end
 
