@@ -406,6 +406,8 @@ module type CanvasImage = sig
   (** Create a copy of the image. *)
   val copy : t -> t
 
+  val add : t -> ?x:int -> ?y:int -> t -> unit
+
   (** Fill the gimage with random data. *)
   val randomize : t -> unit
 end
@@ -433,4 +435,8 @@ module Canvas (I : CanvasImage) : sig
 
   (** Add two canvas. *)
   val add : t -> t -> t
+
+  val render : t -> I.t
+
+  val rendered : t -> t
 end

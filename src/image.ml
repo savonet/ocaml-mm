@@ -31,6 +31,16 @@
  *
  *)
 
+module List = struct
+  include List
+
+  let rec iter_right f = function
+    | x::l ->
+      iter_right f l;
+      f x
+    | [] -> ()
+end
+
 let option_value o ~default = match o with Some v -> v | None -> default
 let option_get = function Some v -> v | None -> invalid_arg "option is None"
 
@@ -964,6 +974,8 @@ module type CanvasImage = sig
 
   val copy : t -> t
 
+  val add : t -> ?x:int -> ?y:int -> t -> unit
+
   val randomize : t -> unit
 end
 
@@ -1004,4 +1016,18 @@ module Canvas (I : CanvasImage) = struct
   let add c c' =
     assert (c.width = c'.width && c.height = c'.height);
     { width = c.width; height = c.height; elements = c.elements@c'.elements }
+
+  let render c =
+    match c.elements with
+    | [Image ((0,0),img)] when (I.width img = width c && I.height img = height c) -> img
+    | elements ->
+      let r = I.create (width c) (height c) in
+      let add = function
+        | E.Image ((x,y),img) -> I.add img ~x ~y r
+      in
+      List.iter_right add elements;
+      r
+
+  let rendered c =
+    make (render c)
 end
