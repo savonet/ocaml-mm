@@ -131,6 +131,10 @@ module Canvas : sig
 
   val size : t -> int
 
+  val get : t -> int -> Image.t
+
+  val render : t -> int -> Mm_image.Image.YUV420.t
+
   val blank : t -> int -> int -> unit
 
   val blit : t -> int -> t -> int -> int -> unit

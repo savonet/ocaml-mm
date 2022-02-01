@@ -132,6 +132,10 @@ module Canvas = struct
     done;
     !n
 
+  let get v i = v.(i)
+
+  let render v i = Image.render v.(i)
+
   let blit sbuf sofs dbuf dofs len =
     for i = 0 to len - 1 do
       dbuf.(dofs + i) <- sbuf.(sofs + i)
