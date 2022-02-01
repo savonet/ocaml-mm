@@ -134,6 +134,10 @@ module Canvas = struct
 
   let get v i = v.(i)
 
+  let set v i img = v.(i) <- img
+
+  let map_image f v i = v.(i) <- f v.(i)
+
   let render v i = Image.render v.(i)
 
   let blit sbuf sofs dbuf dofs len =
