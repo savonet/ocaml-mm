@@ -733,6 +733,12 @@ module YUV420 = struct
     ensure_alpha img;
     box_alpha img x y r
 
+  external alpha_of_color : t -> int -> int -> int -> int -> unit = "caml_yuv_alpha_of_color"
+
+  let alpha_of_color img (y,u,v) d =
+    ensure_alpha img;
+    alpha_of_color img y u v d
+
   module Effect = struct
     external greyscale : t -> unit = "caml_yuv_greyscale"
 
