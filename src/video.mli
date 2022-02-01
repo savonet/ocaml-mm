@@ -140,6 +140,8 @@ module Canvas : sig
   val blit : t -> int -> t -> int -> int -> unit
 
   val map : (image -> image) -> t -> int -> int -> unit
+
+  val iter : (Mm_image.Image.YUV420.t -> unit) -> t -> int -> int -> unit
 end
 
 (* module Ringbuffer_ext : Ringbuffer.R with type elt = frame *)

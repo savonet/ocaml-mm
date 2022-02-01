@@ -148,6 +148,11 @@ module Canvas = struct
 
   let blank buf ofs len =
     map (fun img -> Image.create (Image.width img) (Image.height img)) buf ofs len
+
+  let iter f buf ofs len =
+    for i = ofs to ofs + len - 1 do
+      buf.(i) <- Image.iter f buf.(i)
+    done
 end
 
 (*
