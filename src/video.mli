@@ -139,6 +139,8 @@ module Canvas : sig
 
   val render : t -> int -> Mm_image.Image.YUV420.t
 
+  val put : t -> int -> Mm_image.Image.YUV420.t -> unit
+
   val blank : t -> int -> int -> unit
 
   val blit : t -> int -> t -> int -> int -> unit

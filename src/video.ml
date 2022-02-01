@@ -140,6 +140,8 @@ module Canvas = struct
 
   let render v i = Image.render v.(i)
 
+  let put v i img = v.(i) <- Image.make img
+
   let blit sbuf sofs dbuf dofs len =
     for i = 0 to len - 1 do
       dbuf.(dofs + i) <- sbuf.(sofs + i)
