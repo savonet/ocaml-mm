@@ -58,9 +58,6 @@ module Image : sig
   (* val scale : ?proportional:bool -> t -> t -> unit *)
   val randomize : t -> unit
 
-  val add : t -> ?x:int -> ?y:int -> t -> unit
-
-  (*
   (** [blit_all src dst] blits an entire image. *)
   val blit : t -> t -> unit
 
@@ -81,7 +78,6 @@ module Image : sig
       val disk : t -> int -> int -> int -> unit
     end
   end
-  *)
 end
 
 (** A video buffer. *)
