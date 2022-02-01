@@ -1,6 +1,5 @@
-0.7.5
+0.7.5 (unreleased)
 =====
-
 - Add support for image and video canvas.
 
 0.7.4 (28-01-2022)
