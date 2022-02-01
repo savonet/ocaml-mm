@@ -121,6 +121,11 @@ module Canvas = struct
       n := !n + I.size vid.(i)
     done;
     !n
+
+  let blit sbuf sofs dbuf dofs len =
+    for i = 0 to len - 1 do
+      dbuf.(dofs + i) <- sbuf.(sofs + i)
+    done
 end
 
 (*
