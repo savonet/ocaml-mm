@@ -1,3 +1,8 @@
+0.7.5
+=====
+
+- Add support for image and video canvas.
+
 0.7.4 (unreleased)
 =====
 * Implement low-level audio manipulation in C
