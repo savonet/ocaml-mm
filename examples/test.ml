@@ -94,6 +94,13 @@ let () =
       let a = Image.YUV420.create 640 480 in
       let b = Image.YUV420.of_RGBA32 (Image.YUV420.to_RGBA32 a) in
       ignore b
+    );
+  let module C = Image.Canvas(struct include Image.YUV420 let create w h = create w h end) in
+  test "canvas line" (fun () ->
+      for _ = 1 to 100 do
+        let l = C.Draw.line (15,24) (59,78) (0xff,0xff,0xff,0xff) in
+        ignore l
+      done
     )
 
 let () =

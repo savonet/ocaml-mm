@@ -1024,7 +1024,7 @@ module Canvas (I : CanvasImage) = struct
 
   let add c c' =
     assert ((c.width <0 || c.width = c'.width) && (c.height < 0 || c.height = c'.height));
-    { width = c.width; height = c.height; elements = c.elements@c'.elements }
+    { width = c'.width; height = c'.height; elements = c.elements@c'.elements }
 
   let render ?(fresh=false) c =
     match c.elements with
