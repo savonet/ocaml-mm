@@ -127,6 +127,8 @@ module Canvas : sig
 
   val single : Image.t -> t
 
+  val single_image : Mm_image.Image.YUV420.t -> t
+
   val length : t -> int
 
   val size : t -> int

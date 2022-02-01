@@ -119,6 +119,8 @@ module Canvas = struct
 
   let single img = [|img|]
 
+  let single_image img = single (Image.make img)
+
   let length (v:t) =
     Array.length v
 
