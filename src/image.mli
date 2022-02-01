@@ -409,6 +409,7 @@ module type CanvasImage = sig
   (** Create a copy of the image. *)
   val copy : t -> t
 
+  (** Add source image at given offset to the target image. *)
   val add : t -> ?x:int -> ?y:int -> t -> unit
 
   (** Fill the gimage with random data. *)
@@ -450,7 +451,9 @@ module Canvas (I : CanvasImage) : sig
       of the canvas. *)
   val map : (I.t -> I.t) -> t -> t
 
+  (** Execute a function on the rendering of the canvas. *)
   val iter : (I.t -> unit) -> t -> t
 
+  (** Translate the image. *)
   val translate : int -> int -> t -> t
 end
