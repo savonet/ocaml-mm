@@ -980,6 +980,8 @@ module type CanvasImage = sig
 
   val add : t -> ?x:int -> ?y:int -> t -> unit
 
+  val fill_alpha : t -> int -> unit
+
   val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
 
   val randomize : t -> unit
@@ -1061,6 +1063,7 @@ module Canvas (I : CanvasImage) = struct
       let h = abs (y2 - y1) in
       let buf = I.create w h in
       I.blank buf;
+      I.fill_alpha buf 0;
       Draw.line
         (fun i j ->
            if 0 <= i && i < w && 0 <= j && j < h then

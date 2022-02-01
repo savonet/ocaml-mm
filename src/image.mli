@@ -412,6 +412,8 @@ module type CanvasImage = sig
   (** Add source image at given offset to the target image. *)
   val add : t -> ?x:int -> ?y:int -> t -> unit
 
+  val fill_alpha : t -> int -> unit
+
   val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
 
   (** Fill the gimage with random data. *)
