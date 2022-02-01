@@ -448,4 +448,6 @@ module Canvas (I : CanvasImage) : sig
   val map : (I.t -> I.t) -> t -> t
 
   val iter : (I.t -> unit) -> t -> t
+
+  val translate : int -> int -> t -> t
 end

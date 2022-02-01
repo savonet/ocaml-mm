@@ -988,6 +988,9 @@ module Canvas (I : CanvasImage) = struct
 
     let size = function
       | Image (_, img) -> I.size img
+
+    let translate dx dy = function
+      | Image ((x,y),img) -> Image ((x+dx,y+dy),img)
   end
   module E = Element
 
@@ -1038,4 +1041,7 @@ module Canvas (I : CanvasImage) = struct
     let img = render ~fresh:true c in
     f img;
     make img
+
+  let translate dx dy c =
+    { c with elements = List.map (E.translate dx dy) c.elements }
 end
