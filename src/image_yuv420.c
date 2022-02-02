@@ -401,3 +401,28 @@ CAMLprim value caml_yuv_box_alpha_bytecode(value *argv, int argn) {
   return caml_yuv_box_alpha_native(argv[0], argv[1], argv[2], argv[3], argv[4],
                                    argv[5]);
 }
+
+CAMLprim value caml_yuv_alpha_of_color(value img, value _y, value _u, value _v, value _d)
+{
+  CAMLparam5(img, _y, _u, _v, _d);
+  yuv420 yuv;
+  yuv420_of_value(&yuv, img);
+  int y = Int_val(_y);
+  int u = Int_val(_u);
+  int v = Int_val(_v);
+  int d = Int_val(_d);
+  int i, j;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < yuv.height; j++)
+    for (i = 0; i < yuv.width; i++)
+      {
+        if (abs(Y(yuv, i, j) - y) <= d &&
+            abs(U(yuv, i, j) - u) <= d &&
+            abs(V(yuv, i, j) - v) <= d)
+          A(yuv, i, j) = 0;
+      }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}

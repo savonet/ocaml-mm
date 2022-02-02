@@ -2,6 +2,10 @@
 =====
 - Add support for image and video canvas.
 
+0.7.5 (unreleased)
+=====
+* Add `alpha_of_color` in YUV.
+
 0.7.4 (28-01-2022)
 =====
 * Implement low-level audio manipulation in C

@@ -270,6 +270,7 @@ module YUV420 : sig
   val fill : t -> Pixel.yuv -> unit
   val fill_alpha : t -> int -> unit
   val disk_alpha : t -> int -> int -> int -> unit
+  val alpha_of_color : t -> Pixel.yuv -> int -> unit
 
   (* [box_alpha img x y width height alpha] Set alpha value
      on a given image box. *)
