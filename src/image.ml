@@ -698,6 +698,8 @@ module YUV420 = struct
     if has_alpha src then ensure_alpha dst;
     scale_full src dst
 
+  (** [scale_coef src dst (xn,xd) (yn,yd)] scales [src] into [dst] multiplying x
+      dimension by xn/xd and y dimension by yn/yd. *)
   external scale_coef : t -> t -> int * int -> int * int -> unit
     = "caml_yuv420_scale_coef"
 
