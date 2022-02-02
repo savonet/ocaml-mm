@@ -1034,7 +1034,7 @@ module Canvas (I : CanvasImage) = struct
     assert ((c.width < 0 || c.width = c'.width) && (c.height < 0 || c.height = c'.height));
     { width = c'.width; height = c'.height; elements = c.elements@c'.elements }
 
-  let render ?(fresh=false) c =
+  let render ?(fresh=false) ?(transparent=false) c =
     assert (width c >= 0 && height c >= 0);
     match c.elements with
     | [Image ((0,0),img)] when not fresh && (I.width img = width c && I.height img = height c) -> img
@@ -1042,6 +1042,7 @@ module Canvas (I : CanvasImage) = struct
       let r = I.create (width c) (height c) in
       (* TODO: we could blank only if the background is not covered by other images *)
       I.blank r;
+      if transparent then I.fill_alpha r 0;
       let add = function
         | E.Image ((x,y),img) -> I.add img ~x ~y r
       in

@@ -413,8 +413,10 @@ module type CanvasImage = sig
   (** Add source image at given offset to the target image. *)
   val add : t -> ?x:int -> ?y:int -> t -> unit
 
+  (** Fill the alpha channel of the image. *)
   val fill_alpha : t -> int -> unit
 
+  (** Set the RGBA value of a pixel. *)
   val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
 
   (** Fill the gimage with random data. *)
@@ -447,8 +449,9 @@ module Canvas (I : CanvasImage) : sig
   val add : t -> t -> t
 
   (** Render the canvas as an image. If [fresh] is set to true, the resulting
-      can be modified in place. *)
-  val render : ?fresh:bool -> t -> I.t
+      can be modified in place. If [transparent] is set to true, the non-covered
+      portions are made transparent. *)
+  val render : ?fresh:bool -> ?transparent:bool -> t -> I.t
 
   (** Rendered canvas. *)
   val rendered : t -> t
