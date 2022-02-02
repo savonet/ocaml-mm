@@ -430,7 +430,8 @@ module Canvas (I : CanvasImage) : sig
   (** Create an empty canvas. *)
   val create : int -> int -> t
 
-  (** Create a canvas containing a given image. *)
+  (** Create a canvas containing a given image. Negative dimensions are
+      ignored, default ones are those of the image. *)
   val make : ?width:int -> ?height:int -> ?x:int -> ?y:int -> I.t -> t
 
   (** Width of the image. *)
@@ -463,6 +464,7 @@ module Canvas (I : CanvasImage) : sig
   val translate : int -> int -> t -> t
 
   module Draw : sig
+    (** Draw a line (the result is typically added to another image). *)
     val line : int * int -> int * int -> Pixel.rgba -> t
   end
 end
