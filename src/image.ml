@@ -1031,10 +1031,11 @@ module Canvas (I : CanvasImage) = struct
     { width; height; elements = [E.Image((x,y),image)]}
 
   let add c c' =
-    assert ((c.width <0 || c.width = c'.width) && (c.height < 0 || c.height = c'.height));
+    assert ((c.width < 0 || c.width = c'.width) && (c.height < 0 || c.height = c'.height));
     { width = c'.width; height = c'.height; elements = c.elements@c'.elements }
 
   let render ?(fresh=false) c =
+    assert (width c >= 0 && height c >= 0);
     match c.elements with
     | [Image ((0,0),img)] when not fresh && (I.width img = width c && I.height img = height c) -> img
     | elements ->
