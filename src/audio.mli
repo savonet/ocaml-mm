@@ -105,9 +105,12 @@ module Mono : sig
   val noise : t -> unit
   val squares : t -> float
 
-  (** Samplewise add two buffers of the same length. *)
+  (** Samplewise add two buffers of the same length, storing the result in the
+      first one. *)
   val add : t -> t -> unit
 
+  (** Samplewise multiply two buffers of the same length, storing the result in the
+      first one. *)
   val mult : t -> t -> unit
 
   module Ringbuffer_ext : Ringbuffer.R with type buffer = t
@@ -365,7 +368,10 @@ val amplify : float -> t -> unit
     channels!). The coefficient should be between [-1.] and [1.]. *)
 val pan : float -> t -> unit
 
+(** Add two buffers of the same length, storing the result in the first one. *)
 val add : t -> t -> unit
+
+(** Add to the first buffer, the second buffer multiplied by a coefficient. *)
 val add_coeff : t -> float -> t -> unit
 
 (** Buffers of variable size. These are particularly useful for temporary
