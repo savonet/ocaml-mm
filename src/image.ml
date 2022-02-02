@@ -1049,8 +1049,8 @@ module Canvas (I : CanvasImage) = struct
       List.iter_right add elements;
       r
 
-  let rendered c =
-    make (render c)
+  let rendered ?transparent c =
+    make (render ?transparent c)
 
   let map f c =
     make (f (render c))

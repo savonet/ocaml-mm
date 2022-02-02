@@ -454,7 +454,7 @@ module Canvas (I : CanvasImage) : sig
   val render : ?fresh:bool -> ?transparent:bool -> t -> I.t
 
   (** Rendered canvas. *)
-  val rendered : t -> t
+  val rendered : ?transparent:bool -> t -> t
 
   (** Map a function on the underlying image. This of course triggers a render
       of the canvas. *)
