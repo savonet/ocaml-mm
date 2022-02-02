@@ -1031,7 +1031,7 @@ module Canvas (I : CanvasImage) = struct
     { width; height; elements = [E.Image((x,y),image)]}
 
   let add c c' =
-    assert ((c.width < 0 || c.width = c'.width) && (c.height < 0 || c.height = c'.height));
+    (* assert ((c.width < 0 || c.width = c'.width) && (c.height < 0 || c.height = c'.height)); *)
     { width = c'.width; height = c'.height; elements = c.elements@c'.elements }
 
   let render ?(fresh=false) ?(transparent=false) c =
