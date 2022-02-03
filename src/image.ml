@@ -1032,8 +1032,6 @@ module Canvas (I : CanvasImage) = struct
 
   let height c = c.height
 
-  let viewport c width height = { c with width; height }
-
   let size c =
     List.fold_left (fun n e -> n + E.size e) 0 c.elements
 
@@ -1073,7 +1071,11 @@ module Canvas (I : CanvasImage) = struct
     make img
 
   let translate dx dy c =
-    { c with elements = List.map (E.translate dx dy) c.elements }
+    if dx = 0 && dy = 0 then c
+    else { c with elements = List.map (E.translate dx dy) c.elements }
+
+  let viewport c ?(x=0) ?(y=0) width height =
+    translate (-x) (-y) { c with width; height }
 
   let bounding_box c =
     let p = width c, height c in
