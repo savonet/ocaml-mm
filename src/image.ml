@@ -1074,7 +1074,7 @@ module Canvas (I : CanvasImage) = struct
     if dx = 0 && dy = 0 then c
     else { c with elements = List.map (E.translate dx dy) c.elements }
 
-  let viewport c ?(x=0) ?(y=0) width height =
+  let viewport ?(x=0) ?(y=0) width height c =
     translate (-x) (-y) { c with width; height }
 
   let bounding_box c =

@@ -450,7 +450,7 @@ module Canvas (I : CanvasImage) : sig
   val height : t -> int
 
   (** Change the width and height of the viewport of the canvas. *)
-  val viewport : t -> ?x:int -> ?y:int -> int -> int -> t
+  val viewport : ?x:int -> ?y:int -> int -> int -> t -> t
 
   (** Size of a canvas in bytes. *)
   val size : t -> int
