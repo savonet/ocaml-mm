@@ -110,6 +110,65 @@ val iter : (Image.t -> unit) -> t -> int -> int -> unit
 val blank : t -> int -> int -> unit
 val randomize : t -> int -> int -> unit
 
+(** Videos with canvas images. *)
+module Canvas : sig
+  module Image : module type of Mm_image.Image.Canvas(Image)
+
+  (** An image. *)
+  type image = Image.t
+
+  (** A video. *)
+  type t = image array
+
+  (** Create a video with given length and dimensions. *)
+  val make : int -> int * int -> t
+
+  (** Make a copy of the video (images themselves are not copied since they are
+      supposed to be immutable). *)
+  val copy : t -> t
+
+  (** Create a video with one canvas image. *)
+  val single : Image.t -> t
+
+  (** Create a video with one image. *)
+  val single_image : Mm_image.Image.YUV420.t -> t
+
+  (** Length of the video (in images). *)
+  val length : t -> int
+
+  (** Estimated size of the video (in bytes). *)
+  val size : t -> int
+
+  (** Get the nth image of the video. *)
+  val get : t -> int -> image
+
+  (** Set the nth image of the video. *)
+  val set : t -> int -> image -> unit
+
+  (** Apply a function on the nth image of the video. *)
+  val map_image : (image -> image) -> t -> int -> unit
+
+  (** Render the nth image of the video. *)
+  val render : t -> int -> Mm_image.Image.YUV420.t
+
+  (** Change the contents of the nth image of the video (like [set] but takes an
+      image instead of a canvas as argument). *)
+  val put : t -> int -> Mm_image.Image.YUV420.t -> unit
+
+  (** Blank the video starting at offset with given length. *)
+  val blank : t -> int -> int -> unit
+
+  (** Copy the images of one video to the other. *)
+  val blit : t -> int -> t -> int -> int -> unit
+
+  (** Map a function to the images of a video (starting at given offset, for
+      given length). *)
+  val map : (image -> image) -> t -> int -> int -> unit
+
+  (** Iterate a function on the rendering of the images of the video. *)
+  val iter : (Mm_image.Image.YUV420.t -> unit) -> t -> int -> int -> unit
+end
+
 (* module Ringbuffer_ext : Ringbuffer.R with type elt = frame *)
 
 (* module Ringbuffer : Ringbuffer.R with type elt = frame *)

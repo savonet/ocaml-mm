@@ -217,7 +217,7 @@ module YUV420 : sig
 
   val make : int -> int -> Data.t -> int -> Data.t -> Data.t -> int -> t
   val make_data : int -> int -> Data.t -> int -> int -> t
-  val create : ?y_stride:int -> ?uv_stride:int -> int -> int -> t
+  val create : ?blank:bool -> ?y_stride:int -> ?uv_stride:int -> int -> int -> t
 
   (** Ensure that the image has an alpha channel. *)
   val ensure_alpha : t -> unit
@@ -385,4 +385,89 @@ module Generic : sig
   (** Convert a generic image from a format to another. *)
   val convert :
     ?proportional:bool -> ?scale_kind:RGBA32.Scale.kind -> t -> t -> unit
+end
+
+(** Type of image module expected to build canvas. *)
+module type CanvasImage = sig
+  (** An image. *)
+  type t
+
+  (** Width of the image. *)
+  val width : t -> int
+
+  (** Height of the image. *)
+  val height : t -> int
+
+  (** Size of the image in bytes. *)
+  val size : t -> int
+
+  (** Create an image with given dimensions. *)
+  val create : int -> int -> t
+
+  (** Clear the image. *)
+  val blank : t -> unit
+
+  (** Create a copy of the image. *)
+  val copy : t -> t
+
+  (** Add source image at given offset to the target image. *)
+  val add : t -> ?x:int -> ?y:int -> t -> unit
+
+  (** Fill the alpha channel of the image. *)
+  val fill_alpha : t -> int -> unit
+
+  (** Set the RGBA value of a pixel. *)
+  val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
+
+  (** Fill the gimage with random data. *)
+  val randomize : t -> unit
+end
+
+(** Canvas of images, i.e. formal sums of images of various dimensions with
+    various offsets. *)
+module Canvas (I : CanvasImage) : sig
+  (** A canvas. *)
+  type t
+
+  (** Create an empty canvas. *)
+  val create : int -> int -> t
+
+  (** Create a canvas containing a given image. Negative dimensions are
+      ignored, default ones are those of the image. *)
+  val make : ?width:int -> ?height:int -> ?x:int -> ?y:int -> I.t -> t
+
+  (** Width of the image. *)
+  val width : t -> int
+
+  (** Height of the image. *)
+  val height : t -> int
+
+  (** Size of a canvas in bytes. *)
+  val size : t -> int
+
+  (** Add two canvas. *)
+  val add : t -> t -> t
+
+  (** Render the canvas as an image. If [fresh] is set to true, the resulting
+      can be modified in place. If [transparent] is set to true, the non-covered
+      portions are made transparent. *)
+  val render : ?fresh:bool -> ?transparent:bool -> t -> I.t
+
+  (** Rendered canvas. *)
+  val rendered : ?transparent:bool -> t -> t
+
+  (** Map a function on the underlying image. This of course triggers a render
+      of the canvas. *)
+  val map : (I.t -> I.t) -> t -> t
+
+  (** Execute a function on the rendering of the canvas. *)
+  val iter : (I.t -> unit) -> t -> t
+
+  (** Translate the image. *)
+  val translate : int -> int -> t -> t
+
+  module Draw : sig
+    (** Draw a line (the result is typically added to another image). *)
+    val line : int * int -> int * int -> Pixel.rgba -> t
+  end
 end

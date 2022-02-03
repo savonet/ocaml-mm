@@ -31,6 +31,16 @@
  *
  *)
 
+module List = struct
+  include List
+
+  let rec iter_right f = function
+    | x::l ->
+      iter_right f l;
+      f x
+    | [] -> ()
+end
+
 let option_value o ~default = match o with Some v -> v | None -> default
 let option_get = function Some v -> v | None -> invalid_arg "option is None"
 
@@ -522,6 +532,23 @@ module YUV420 = struct
   let set_alpha img alpha = img.alpha <- alpha
   let size img = Data.size img.y + Data.size img.u + Data.size img.v
 
+  let ensure_alpha img =
+    if img.alpha = None then (
+      let a = Data.alloc (img.height * img.y_stride) in
+      Data.fill a 0xff;
+      img.alpha <- Some a)
+
+  external fill : t -> Pixel.yuv -> unit = "caml_yuv420_fill"
+
+  let fill_alpha img a =
+    if a = 0xff then img.alpha <- None
+    else (
+      ensure_alpha img;
+      Bigarray.Array1.fill (option_get img.alpha) a)
+
+  let blank img = fill img (Pixel.yuv_of_rgb (0, 0, 0))
+  let blank_all = blank
+
   let make width height y y_stride u v uv_stride =
     { y; y_stride; u; v; uv_stride; width; height; alpha = None }
 
@@ -546,7 +573,7 @@ module YUV420 = struct
     in
     (y_stride, uv_stride)
 
-  let create ?y_stride ?uv_stride width height =
+  let create ?(blank=false) ?y_stride ?uv_stride width height =
     let y_stride, uv_stride = default_stride width y_stride uv_stride in
     let y = Data.aligned align (height * y_stride) in
     let u, v =
@@ -554,13 +581,9 @@ module YUV420 = struct
       ( Data.aligned align (height * uv_stride),
         Data.aligned align (height * uv_stride) )
     in
-    make width height y y_stride u v uv_stride
-
-  let ensure_alpha img =
-    if img.alpha = None then (
-      let a = Data.alloc (img.height * img.y_stride) in
-      Data.fill a 0xff;
-      img.alpha <- Some a)
+    let img = make width height y y_stride u v uv_stride in
+    if blank then blank_all img;
+    img
 
   let has_alpha img = img.alpha <> None
   let remove_alpha img = img.alpha <- None
@@ -617,17 +640,6 @@ module YUV420 = struct
     in
     dst.alpha <- alpha;
     dst
-
-  external fill : t -> Pixel.yuv -> unit = "caml_yuv420_fill"
-
-  let fill_alpha img a =
-    if a = 0xff then img.alpha <- None
-    else (
-      ensure_alpha img;
-      Bigarray.Array1.fill (option_get img.alpha) a)
-
-  let blank img = fill img (Pixel.yuv_of_rgb (0, 0, 0))
-  let blank_all = blank
 
   let blit_all src dst =
     assert (src.width = dst.width);
@@ -957,4 +969,116 @@ module Generic = struct
               (src.width, src.height)
           else raise Not_implemented
       | _ -> raise Not_implemented
+end
+
+module type CanvasImage = sig
+  type t
+
+  val width : t -> int
+
+  val height : t -> int
+
+  val size : t -> int
+
+  val create : int -> int -> t
+
+  val blank : t -> unit
+
+  val copy : t -> t
+
+  val add : t -> ?x:int -> ?y:int -> t -> unit
+
+  val fill_alpha : t -> int -> unit
+
+  val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
+
+  val randomize : t -> unit
+end
+
+(** A canvas of images. The structure is immutable but its elements might be
+    returned and therefore should not be used in place. *)
+module Canvas (I : CanvasImage) = struct
+  module Element = struct
+    type t =
+      | Image of (int * int) * I.t (** An image at given offset. *)
+
+    let size = function
+      | Image (_, img) -> I.size img
+
+    let translate dx dy = function
+      | Image ((x,y),img) -> Image ((x+dx,y+dy),img)
+  end
+  module E = Element
+
+  type t =
+    {
+      width : int;
+      height : int;
+      elements : E.t list
+    }
+
+  let create width height =
+    { width; height; elements = [] }
+
+  let width c = c.width
+
+  let height c = c.height
+
+  let size c =
+    List.fold_left (fun n e -> n + E.size e) 0 c.elements
+
+  let make ?width ?height ?(x=0) ?(y=0) image =
+    let width = Option.value ~default:(I.width image) width in
+    let height = Option.value ~default:(I.height image) height in
+    { width; height; elements = [E.Image((x,y),image)]}
+
+  let add c c' =
+    (* assert ((c.width < 0 || c.width = c'.width) && (c.height < 0 || c.height = c'.height)); *)
+    { width = c'.width; height = c'.height; elements = c.elements@c'.elements }
+
+  let render ?(fresh=false) ?(transparent=false) c =
+    assert (width c >= 0 && height c >= 0);
+    match c.elements with
+    | [Image ((0,0),img)] when not fresh && (I.width img = width c && I.height img = height c) -> img
+    | elements ->
+      let r = I.create (width c) (height c) in
+      (* TODO: we could blank only if the background is not covered by other images *)
+      I.blank r;
+      if transparent then I.fill_alpha r 0;
+      let add = function
+        | E.Image ((x,y),img) -> I.add img ~x ~y r
+      in
+      List.iter_right add elements;
+      r
+
+  let rendered ?transparent c =
+    make (render ?transparent c)
+
+  let map f c =
+    make (f (render c))
+
+  let iter f c =
+    let img = render ~fresh:true c in
+    f img;
+    make img
+
+  let translate dx dy c =
+    { c with elements = List.map (E.translate dx dy) c.elements }
+
+  module Draw = struct
+    let line (x1,y1) (x2,y2) c =
+      let dx = min x1 x2 in
+      let dy = min y1 y2 in
+      let w = abs (x2 - x1) in
+      let h = abs (y2 - y1) in
+      let buf = I.create w h in
+      I.blank buf;
+      I.fill_alpha buf 0;
+      Draw.line
+        (fun i j ->
+           if 0 <= i && i < w && 0 <= j && j < h then
+             I.set_pixel_rgba buf i j c
+        ) (x1-dx,y1-dy) (x2-dx,y2-dy);
+      make ~x:dx ~y:dy ~width:(-1) ~height:(-1) buf
+  end
 end

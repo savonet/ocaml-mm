@@ -55,7 +55,7 @@ let () =
   Printf.printf "\n"
 
 let () =
-  Printf.printf "## Testing video\n\n%!";
+  Printf.printf "## Testing images\n\n%!";
   test "rounding" (fun () ->
       for k = 1 to 5 do
         for n = 0 to 33 do
@@ -95,7 +95,13 @@ let () =
       let b = Image.YUV420.of_RGBA32 (Image.YUV420.to_RGBA32 a) in
       ignore b
     );
-  Printf.printf "\n"
+  let module C = Image.Canvas(struct include Image.YUV420 let create w h = create w h end) in
+  test "canvas line" (fun () ->
+      for _ = 1 to 100 do
+        let l = C.Draw.line (15,24) (59,78) (0xff,0xff,0xff,0xff) in
+        ignore l
+      done
+    )
 
 let () =
   Gc.full_major ()

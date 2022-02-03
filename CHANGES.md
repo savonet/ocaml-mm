@@ -1,3 +1,6 @@
+0.8.0 (unreleased)
+=====
+- Add support for image and video canvas.
 0.7.5 (03-02-2022)
 =====
 * Add `alpha_of_color` in YUV.

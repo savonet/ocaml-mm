@@ -32,45 +32,136 @@
  *)
 
 open Mm_base
-open Mm_image
+(* open Mm_image *)
+
+(** Images from which are made videos. *)
+module type Image = sig
+  type t
+
+  val create : int -> int -> t
+
+  val size : t -> int
+
+  val blit_all : t -> t -> unit
+
+  val copy : t -> t
+
+  val blank : t -> unit
+
+  val randomize : t -> unit
+end
 
 module Image = struct
-  include Image.YUV420
+  include Mm_image.Image.YUV420
 
   let create w h = create w h
 end
 
-type t = Image.t array
-type buffer = t
+module Make(Image : Image) = struct
+  module I = Image
 
-let make len width height = Array.init len (fun _ -> Image.create width height)
-let single img = [| img |]
+  type t = Image.t array
 
-let blit sbuf sofs dbuf dofs len =
-  for i = 0 to len - 1 do
-    Image.blit_all sbuf.(sofs + i) dbuf.(dofs + i)
-  done
+  type buffer = t
 
-let copy vid = Array.map Image.copy vid
-let length vid = Array.length vid
+  let make len width height =
+    Array.init len (fun _ -> Image.create width height)
 
-let size vid =
-  let n = ref 0 in
-  for i = 0 to Array.length vid - 1 do
-    n := !n + Image.size vid.(i)
-  done;
-  !n
+  let single img = [|img|]
 
-let get vid i = vid.(i)
-let set vid i img = vid.(i) <- img
+  let blit sbuf sofs dbuf dofs len =
+    for i = 0 to len - 1 do
+      Image.blit_all sbuf.(sofs + i) dbuf.(dofs + i)
+    done
 
-let iter f vid off len =
-  for i = off to off + len - 1 do
-    f vid.(i)
-  done
+  let copy vid =
+    Array.map Image.copy vid
 
-let blank vid off len = iter Image.blank vid off len
-let randomize vid off len = iter Image.randomize vid off len
+  let length vid =
+    Array.length vid
+
+  let size vid =
+    let n = ref 0 in
+    for i = 0 to Array.length vid - 1 do
+      n := !n + Image.size vid.(i)
+    done;
+    !n
+
+  let get vid i = vid.(i)
+
+  let set vid i img = vid.(i) <- img
+
+  let iter f vid off len =
+    for i = off to off + len - 1 do
+      f vid.(i)
+    done
+
+  let blank vid off len =
+    iter Image.blank vid off len
+
+  let randomize vid off len =
+    iter Image.randomize vid off len
+end
+
+include Make(Image)
+
+(* Canvas are not in place so that we have to make a slightly different
+   implementation. *)
+module Canvas = struct
+  module Image = Mm_image.Image.Canvas(Image)
+
+  type image = Image.t
+
+  type t = Image.t array
+
+  let make len (width, height) : t =
+    Array.init len (fun _ -> Image.create width height)
+
+  let single img = [|img|]
+
+  let single_image img = single (Image.make img)
+
+  let length (v:t) =
+    Array.length v
+
+  let copy (v:t) =
+    Array.init (length v) (fun i -> v.(i))
+
+  let size (v:t) =
+    let n = ref 0 in
+    for i = 0 to Array.length v - 1 do
+      n := !n + Image.size v.(i)
+    done;
+    !n
+
+  let get v i = v.(i)
+
+  let set v i img = v.(i) <- img
+
+  let map_image f v i = v.(i) <- f v.(i)
+
+  let render v i = Image.render v.(i)
+
+  let put v i img = v.(i) <- Image.make img
+
+  let blit sbuf sofs dbuf dofs len =
+    for i = 0 to len - 1 do
+      dbuf.(dofs + i) <- sbuf.(sofs + i)
+    done
+
+  let map f buf ofs len =
+    for i = ofs to ofs + len - 1 do
+      buf.(i) <- f buf.(i)
+    done
+
+  let blank buf ofs len =
+    map (fun img -> Image.create (Image.width img) (Image.height img)) buf ofs len
+
+  let iter f buf ofs len =
+    for i = ofs to ofs + len - 1 do
+      buf.(i) <- Image.iter f buf.(i)
+    done
+end
 
 (*
 module RE = struct
