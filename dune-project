@@ -3,7 +3,7 @@
 (name mm)
 (source (github savonet/ocaml-mm))
 (license GPL-2.0)
-(authors "Romain Beauxis <toots@rastageeks.org>")
+(authors "Samuel Mimram <smimram@gmail.com>")
 (maintainers "The Savonet Team <savonet-users@lists.sourceforge.net>")
 
 (generate_opam_files true)

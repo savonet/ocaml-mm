@@ -263,7 +263,7 @@ module YUV420 : sig
   val scale : ?proportional:bool -> t -> t -> unit
   val blank_all : t -> unit
 
-  (** Add the fist image to the second. *)
+  (** Add the fist image to the second at given offset. *)
   val add : t -> ?x:int -> ?y:int -> t -> unit
 
   val blank : t -> unit
