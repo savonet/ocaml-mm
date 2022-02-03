@@ -60,6 +60,13 @@ module Pixel : sig
   val rgb_of_yuv : yuv -> rgb
 end
 
+module Point : sig
+  type t = int * int
+
+  val min : t -> t -> t
+  val max : t -> t -> t
+end
+
 module Draw : sig
   val line : (int -> int -> unit) -> int * int -> int * int -> unit
 end
@@ -442,6 +449,9 @@ module Canvas (I : CanvasImage) : sig
   (** Height of the image. *)
   val height : t -> int
 
+  (** Change the width and height of the viewport of the canvas. *)
+  val viewport : t -> int -> int -> t
+
   (** Size of a canvas in bytes. *)
   val size : t -> int
 
@@ -465,6 +475,10 @@ module Canvas (I : CanvasImage) : sig
 
   (** Translate the image. *)
   val translate : int -> int -> t -> t
+
+  (** Bouding box (smallest box enclosing all images contained in the canavs):
+      returns the lower-left corner and the dimensions. *)
+  val bounding_box : t -> (int * int) * (int * int)
 
   module Draw : sig
     (** Draw a line (the result is typically added to another image). *)

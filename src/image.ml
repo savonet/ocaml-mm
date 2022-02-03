@@ -96,6 +96,14 @@ module Pixel = struct
   external rgb_of_yuv : yuv -> rgb = "caml_rgb_of_yuv"
 end
 
+module Point = struct
+  type t = int * int
+
+  let min (x,y) (x',y') = (min x x', min y y')
+
+  let max (x,y) (x',y') = (max x x', max y y')
+end
+
 module Draw = struct
   (* Besenham algorithm. *)
   let line p (sx, sy) (dx, dy) =
@@ -1024,6 +1032,8 @@ module Canvas (I : CanvasImage) = struct
 
   let height c = c.height
 
+  let viewport c width height = { c with width; height }
+
   let size c =
     List.fold_left (fun n e -> n + E.size e) 0 c.elements
 
@@ -1064,6 +1074,14 @@ module Canvas (I : CanvasImage) = struct
 
   let translate dx dy c =
     { c with elements = List.map (E.translate dx dy) c.elements }
+
+  let bounding_box c =
+    let p = width c, height c in
+    let d = 0, 0 in
+    List.fold_left
+      (fun (p,d) -> function
+         | E.Image ((x,y),img) -> Point.min p (x,y), Point.max d (I.width img, I.height img)
+      ) (p,d) c.elements
 
   module Draw = struct
     let line (x1,y1) (x2,y2) c =
