@@ -42,7 +42,7 @@
  (name mm_midi)
  (public_name mm.midi)
  (libraries mm.base mm.audio)
- (modules mIDI synth)
+ (modules MIDI synth)
  (synopsis
   "High-level APIs to create and manipulate multimedia streams -- midi module"))
 
