@@ -67,6 +67,7 @@ module Point : sig
   val max : t -> t -> t
   val lt : t -> t -> bool
   val le : t -> t -> bool
+  val neg : t -> t
 end
 
 module Draw : sig

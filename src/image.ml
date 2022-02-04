@@ -103,6 +103,8 @@ module Point = struct
   let lt (x,y) (x',y') = x < x' && y < y'
 
   let le (x,y) (x',y') = x <= x' && y <= y'
+
+  let neg (x,y) = (-x,-y)
 end
 
 module Draw = struct
