@@ -31,14 +31,18 @@
  *
  *)
 
-include ImageBase
+open ImageBase
 
-module BGRA = ImageBGRA
+type data = Data.t
+type t = { data : data; width : int; height : int; stride : int }
 
-module RGBA32 = ImageRGBA32
+let make ?stride width height data =
+  let stride = match stride with Some v -> v | None -> 4 * width in
+  { data; width; height; stride }
 
-module YUV420 = ImageYUV420
+let create ?stride width height =
+  let stride = match stride with Some v -> v | None -> 4 * width in
+  let stride, data = Data.rounded_plane stride height in
+  make ~stride width height data
 
-module Generic = ImageGeneric
-
-include ImageCanvas
+let data img = img.data
