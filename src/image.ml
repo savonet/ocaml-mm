@@ -1045,10 +1045,12 @@ module Canvas (I : CanvasImage) = struct
     (* assert ((c.width < 0 || c.width = c'.width) && (c.height < 0 || c.height = c'.height)); *)
     { width = c'.width; height = c'.height; elements = c.elements@c'.elements }
 
+  (* TODO: improve precision... *)
   let covering c =
-    match c.elements with
-    | [E.Image((x,y),img)] -> Point.le (x,y) (0,0) && Point.le (width c, height c) (I.width img, I.height img)
-    | _ -> false
+    let covering_element = function
+      | E.Image((x,y),img) -> Point.le (x,y) (0,0) && Point.le (width c, height c) (I.width img, I.height img)
+    in
+    List.exists covering_element c.elements
 
   let render ?(fresh=false) ?(transparent=true) c =
     assert (width c >= 0 && height c >= 0);
