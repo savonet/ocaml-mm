@@ -56,7 +56,7 @@
  (name test)
  (modules test)
  (optional)
- (libraries mm.audio mm.image))
+ (libraries mm))
 
 (rule
  (alias runtest)

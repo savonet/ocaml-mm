@@ -1,5 +1,4 @@
-open Mm_audio
-open Mm_image
+open Mm
 
 let skip_long = ref false
 
@@ -11,6 +10,12 @@ let () =
     ]
     (fun _ -> ())
     "test [options]"
+
+let write fname s =
+  if not (Sys.file_exists "out") then Sys.mkdir "out" 0o755;
+  let oc = open_out ("out/"^fname) in
+  output_string oc s;
+  close_out oc
 
 let test ?(skip=false) name f =
   Printf.printf "- %s... %!" name;
@@ -94,6 +99,20 @@ let () =
       let a = Image.YUV420.create 640 480 in
       let b = Image.YUV420.of_RGBA32 (Image.YUV420.to_RGBA32 a) in
       ignore b
+    );
+  test "blank" (fun () ->
+      let img = Image.YUV420.create 640 480 in
+      Image.YUV420.blank img;
+      write "blank.bmp" (Image.YUV420.to_BMP img)
+    );
+  test "add" (fun () ->
+      let img = Image.YUV420.create 640 480 in
+      Image.YUV420.blank img;
+      Image.YUV420.fill_alpha img 0;
+      let r = Image.YUV420.create 200 100 in
+      Image.YUV420.fill r (Image.Pixel.yuv_of_rgb (0xff,0,0));
+      Image.YUV420.add r ~x:10 ~y:70 img;
+      write "add.bmp" (Image.YUV420.to_BMP img)
     );
   let module C = Image.Canvas(struct include Image.YUV420 let create w h = create w h end) in
   test "canvas line" (fun () ->
