@@ -154,6 +154,9 @@ let of_PPM s =
   remove_alpha img;
   img
 
+let to_BMP img =
+  to_RGBA32 img |> RGBA32.to_BMP
+
 let copy img =
   let dst =
     create ~y_stride:img.y_stride ~uv_stride:img.uv_stride img.width
