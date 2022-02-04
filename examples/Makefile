@@ -27,6 +27,9 @@ midiplayer:
 sine_wav:
 	@dune exec ./sine_wav.exe
 
+graphics:
+	@dune exec ./graphics_test.exe
+
 test:
 	@dune exec ./test.exe
 

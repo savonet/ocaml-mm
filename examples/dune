@@ -53,6 +53,12 @@
  (libraries gstreamer mm.audio mm.video mm.sdl mm.oss))
 
 (executable
+ (name graphics_test)
+ (modules graphics_test)
+ (optional)
+ (libraries graphics mm))
+
+(executable
  (name test)
  (modules test)
  (optional)
