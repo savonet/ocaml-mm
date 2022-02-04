@@ -65,6 +65,8 @@ module Point : sig
 
   val min : t -> t -> t
   val max : t -> t -> t
+  val lt : t -> t -> bool
+  val le : t -> t -> bool
 end
 
 module Draw : sig
@@ -457,6 +459,10 @@ module Canvas (I : CanvasImage) : sig
 
   (** Add two canvas. *)
   val add : t -> t -> t
+
+  (** Whether the canvas covers the whole area with images (this function is
+      imprecise: it might have false negatives). *)
+  val covering : t -> bool
 
   (** Render the canvas as an image. If [fresh] is set to true, the resulting
       can be modified in place. If [transparent] is set to true, the non-covered

@@ -41,9 +41,6 @@ module List = struct
     | [] -> ()
 end
 
-let option_value o ~default = match o with Some v -> v | None -> default
-let option_get = function Some v -> v | None -> invalid_arg "option is None"
-
 module Data = struct
   type t =
     (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
@@ -102,6 +99,10 @@ module Point = struct
   let min (x,y) (x',y') = (min x x', min y y')
 
   let max (x,y) (x',y') = (max x x', max y y')
+
+  let lt (x,y) (x',y') = x < x' && y < y'
+
+  let le (x,y) (x',y') = x <= x' && y <= y'
 end
 
 module Draw = struct
@@ -552,7 +553,7 @@ module YUV420 = struct
     if a = 0xff then img.alpha <- None
     else (
       ensure_alpha img;
-      Bigarray.Array1.fill (option_get img.alpha) a)
+      Bigarray.Array1.fill (Option.get img.alpha) a)
 
   let blank img = fill img (Pixel.yuv_of_rgb (0, 0, 0))
   let blank_all = blank
@@ -575,9 +576,9 @@ module YUV420 = struct
   let align = Sys.word_size / 8
 
   let default_stride width y_stride uv_stride =
-    let y_stride = option_value ~default:(Data.round align width) y_stride in
+    let y_stride = Option.value ~default:(Data.round align width) y_stride in
     let uv_stride =
-      option_value ~default:(Data.round align ((width + 1) / 2)) uv_stride
+      Option.value ~default:(Data.round align ((width + 1) / 2)) uv_stride
     in
     (y_stride, uv_stride)
 
@@ -598,8 +599,8 @@ module YUV420 = struct
 
   let of_YUV420_string ?y_stride ?uv_stride s width height =
     (* let y_stride, uv_stride = default_stride width y_stride uv_stride in *)
-    let y_stride = option_value ~default:width y_stride in
-    let uv_stride = option_value ~default:(width / 2) uv_stride in
+    let y_stride = Option.value ~default:width y_stride in
+    let uv_stride = Option.value ~default:(width / 2) uv_stride in
     let data = Data.of_string s in
     make_data width height data y_stride uv_stride
 
@@ -696,7 +697,7 @@ module YUV420 = struct
     if img.alpha <> None || a <> 0xff then
       (
         ensure_alpha img;
-        Bigarray.Array1.set (option_get img.alpha) (j * width + i) a
+        Bigarray.Array1.set (Option.get img.alpha) (j * width + i) a
       );
     let y,u,v = Pixel.yuv_of_rgb (r,g,b) in
     Bigarray.Array1.set data (j * width + i) y;
@@ -1044,15 +1045,22 @@ module Canvas (I : CanvasImage) = struct
     (* assert ((c.width < 0 || c.width = c'.width) && (c.height < 0 || c.height = c'.height)); *)
     { width = c'.width; height = c'.height; elements = c.elements@c'.elements }
 
-  let render ?(fresh=false) ?(transparent=false) c =
+  let covering c =
+    match c.elements with
+    | [E.Image((x,y),img)] -> Point.le (x,y) (0,0) && Point.le (width c, height c) (I.width img, I.height img)
+    | _ -> false
+
+  let render ?(fresh=false) ?(transparent=true) c =
     assert (width c >= 0 && height c >= 0);
     match c.elements with
     | [Image ((0,0),img)] when not fresh && (I.width img = width c && I.height img = height c) -> img
     | elements ->
       let r = I.create (width c) (height c) in
-      (* TODO: we could blank only if the background is not covered by other images *)
-      I.blank r;
-      if transparent then I.fill_alpha r 0;
+      if covering c then
+        (
+          I.blank r;
+          if transparent then I.fill_alpha r 0
+        );
       let add = function
         | E.Image ((x,y),img) -> I.add img ~x ~y r
       in
