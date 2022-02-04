@@ -112,7 +112,7 @@ module Canvas (I : CanvasImage) = struct
     | [Image ((0,0),img)] when not fresh && (I.width img = width c && I.height img = height c) -> img
     | elements ->
       let r = I.create (width c) (height c) in
-      if covering c then
+      if not (covering c) then
         (
           I.blank r;
           if transparent then I.fill_alpha r 0
