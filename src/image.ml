@@ -1045,7 +1045,8 @@ module Canvas (I : CanvasImage) = struct
     (* assert ((c.width < 0 || c.width = c'.width) && (c.height < 0 || c.height = c'.height)); *)
     { width = c'.width; height = c'.height; elements = c.elements@c'.elements }
 
-  (* TODO: improve precision... *)
+  (* TODO: improve precision with something like this:
+     https://stackoverflow.com/questions/2628118/rectangles-covering *)
   let covering c =
     let covering_element = function
       | E.Image((x,y),img) -> Point.le (x,y) (0,0) && Point.le (width c, height c) (I.width img, I.height img)
