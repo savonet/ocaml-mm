@@ -118,7 +118,7 @@ let () =
   let module C = Image.Canvas(struct include Image.YUV420 let create w h = create w h let scale = scale ~proportional:false end) in
   test "canvas line" (fun () ->
       for _ = 1 to 100 do
-        let l = C.Draw.line (15,24) (59,78) (0xff,0xff,0xff,0xff) in
+        let l = C.Draw.line (0xff,0xff,0xff,0xff) (15,24) (59,78) in
         ignore l
       done
     )
