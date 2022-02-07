@@ -113,6 +113,7 @@ let () =
       let r = Image.YUV420.create 200 100 in
       Image.YUV420.fill r (Image.Pixel.yuv_of_rgb (0xff,0,0));
       Image.YUV420.add r ~x:10 ~y:70 img;
+      Image.YUV420.rotate (Image.YUV420.copy img) 200 200 0.7 img;
       write "add.bmp" (Image.YUV420.to_BMP img)
     );
   let module C = Image.Canvas(struct include Image.YUV420 let create w h = create w h let scale = scale ~proportional:false end) in
