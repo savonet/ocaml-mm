@@ -107,6 +107,13 @@ module Point = struct
   let neg (x,y) = (-x,-y)
 end
 
+module Fraction = struct
+  type t = int * int
+
+  let min (a,b) (a',b') =
+    if a * b' < a' * b then (a,b) else (a',b')
+end
+
 module Draw = struct
   (* Besenham algorithm. *)
   let line p (sx, sy) (dx, dy) =

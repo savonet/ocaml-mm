@@ -70,6 +70,12 @@ module Point : sig
   val neg : t -> t
 end
 
+module Fraction : sig
+  type t = int * int
+
+  val min : t -> t -> t
+end
+
 module Draw : sig
   val line : (int -> int -> unit) -> int * int -> int * int -> unit
 end
@@ -495,7 +501,7 @@ module Canvas (I : CanvasImage) : sig
       numerator and denominator in the x and y directions. The viewport is left
       untouched. The [scaler] parameter can be specified in order to use a
       particular function to scale individual images. *)
-  val scale : ?scaler:(I.t -> I.t -> unit) -> (int * int) -> (int * int) -> t -> t
+  val scale : ?scaler:(I.t -> I.t -> unit) -> Fraction.t -> Fraction.t -> t -> t
 
   module Draw : sig
     (** Draw a line (the result is typically added to another image). *)
