@@ -55,6 +55,8 @@ module Image = struct
   include Mm_image.Image.YUV420
 
   let create w h = create w h
+
+  let scale = scale ~proportional:false
 end
 
 module Make(Image : Image) = struct

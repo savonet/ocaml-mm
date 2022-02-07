@@ -430,8 +430,11 @@ module type CanvasImage = sig
   (** Set the RGBA value of a pixel. *)
   val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
 
-  (** Fill the gimage with random data. *)
+  (** Fill the image with random data. *)
   val randomize : t -> unit
+
+  (** Scale the source image to the destination image. *)
+  val scale : t -> t -> unit
 end
 
 (** Canvas of images, i.e. formal sums of images of various dimensions with
@@ -487,6 +490,10 @@ module Canvas (I : CanvasImage) : sig
   (** Bouding box (smallest box enclosing all images contained in the canavs):
       returns the lower-left corner and the dimensions. *)
   val bounding_box : t -> (int * int) * (int * int)
+
+  (** Scale the image proportionally by fractional coefficient with given
+      numerator and denominator. *)
+  val scale : int -> int -> t -> t
 
   module Draw : sig
     (** Draw a line (the result is typically added to another image). *)

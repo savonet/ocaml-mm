@@ -55,6 +55,8 @@ module type CanvasImage = sig
   val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
 
   val randomize : t -> unit
+
+  val scale : t -> t -> unit
 end
 
 (** A canvas of images. The structure is immutable but its elements might be
@@ -148,6 +150,18 @@ module Canvas (I : CanvasImage) = struct
       (fun (p,d) -> function
          | E.Image ((x,y),img) -> Point.min p (x,y), Point.max d (I.width img, I.height img)
       ) (p,d) c.elements
+
+  let scale n d c =
+    let s x = x*n/d in
+    let elements =
+      List.map
+        (function E.Image ((x,y),img) ->
+           let scl = I.create (s (I.width img)) (s (I.height img)) in
+           I.scale img scl;
+           E.Image ((s x, s y),scl)
+        ) c.elements
+    in
+    { width = c.width; height = c.height; elements }
 
   module Draw = struct
     let line (x1,y1) (x2,y2) c =

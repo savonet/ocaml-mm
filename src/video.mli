@@ -55,7 +55,7 @@ module Image : sig
 
   val blank : t -> unit
   val fill_alpha : t -> int -> unit
-  val scale : ?proportional:bool -> t -> t -> unit
+  val scale : t -> t -> unit
   val randomize : t -> unit
 
   (** [blit_all src dst] blits an entire image. *)
