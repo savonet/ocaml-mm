@@ -151,13 +151,13 @@ module Canvas (I : CanvasImage) = struct
          | E.Image ((x,y),img) -> Point.min p (x,y), Point.max d (I.width img, I.height img)
       ) (p,d) c.elements
 
-  let scale n d c =
+  let scale ?(scaler=I.scale) n d c =
     let s x = x*n/d in
     let elements =
       List.map
         (function E.Image ((x,y),img) ->
            let scl = I.create (s (I.width img)) (s (I.height img)) in
-           I.scale img scl;
+           scaler img scl;
            E.Image ((s x, s y),scl)
         ) c.elements
     in
