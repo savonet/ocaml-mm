@@ -491,10 +491,11 @@ module Canvas (I : CanvasImage) : sig
       returns the lower-left corner and the dimensions. *)
   val bounding_box : t -> (int * int) * (int * int)
 
-  (** Scale the image proportionally by fractional coefficient with given
-      numerator and denominator. The [scaler] parameter can be specified in order
-      to use a particular function to scale individual images. *)
-  val scale : ?scaler:(I.t -> I.t -> unit) -> int -> int -> t -> t
+  (** Scale the image proportionally by fractional coefficients with given
+      numerator and denominator in the x and y directions. The viewport is left
+      untouched. The [scaler] parameter can be specified in order to use a
+      particular function to scale individual images. *)
+  val scale : ?scaler:(I.t -> I.t -> unit) -> (int * int) -> (int * int) -> t -> t
 
   module Draw : sig
     (** Draw a line (the result is typically added to another image). *)
