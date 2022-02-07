@@ -505,6 +505,6 @@ module Canvas (I : CanvasImage) : sig
 
   module Draw : sig
     (** Draw a line (the result is typically added to another image). *)
-    val line : int * int -> int * int -> Pixel.rgba -> t
+    val line : Pixel.rgba -> int * int -> int * int -> t
   end
 end

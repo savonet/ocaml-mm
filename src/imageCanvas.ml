@@ -165,7 +165,7 @@ module Canvas (I : CanvasImage) = struct
       { width = c.width; height = c.height; elements }
 
   module Draw = struct
-    let line (x1,y1) (x2,y2) c =
+    let line color (x1,y1) (x2,y2) =
       let dx = min x1 x2 in
       let dy = min y1 y2 in
       let w = abs (x2 - x1) in
@@ -176,7 +176,7 @@ module Canvas (I : CanvasImage) = struct
       Draw.line
         (fun i j ->
            if 0 <= i && i < w && 0 <= j && j < h then
-             I.set_pixel_rgba buf i j c
+             I.set_pixel_rgba buf i j color
         ) (x1-dx,y1-dy) (x2-dx,y2-dy);
       make ~x:dx ~y:dy ~width:(-1) ~height:(-1) buf
   end
