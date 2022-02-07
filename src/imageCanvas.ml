@@ -152,16 +152,18 @@ module Canvas (I : CanvasImage) = struct
       ) (p,d) c.elements
 
   let scale ?(scaler=I.scale) n d c =
-    let s x = x*n/d in
-    let elements =
-      List.map
-        (function E.Image ((x,y),img) ->
-           let scl = I.create (s (I.width img)) (s (I.height img)) in
-           scaler img scl;
-           E.Image ((s x, s y),scl)
-        ) c.elements
-    in
-    { width = c.width; height = c.height; elements }
+    if n = d then c
+    else
+      let s x = x*n/d in
+      let elements =
+        List.map
+          (function E.Image ((x,y),img) ->
+             let scl = I.create (s (I.width img)) (s (I.height img)) in
+             scaler img scl;
+             E.Image ((s x, s y),scl)
+          ) c.elements
+      in
+      { width = c.width; height = c.height; elements }
 
   module Draw = struct
     let line (x1,y1) (x2,y2) c =
