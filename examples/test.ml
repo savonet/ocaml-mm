@@ -13,7 +13,8 @@ let () =
 
 let write fname s =
   if not (Sys.file_exists "out") then Sys.mkdir "out" 0o755;
-  let oc = open_out ("out/"^fname) in
+  let fname = "out/"^fname in
+  let oc = open_out fname in
   output_string oc s;
   close_out oc
 
@@ -114,7 +115,7 @@ let () =
       Image.YUV420.add r ~x:10 ~y:70 img;
       write "add.bmp" (Image.YUV420.to_BMP img)
     );
-  let module C = Image.Canvas(struct include Image.YUV420 let create w h = create w h end) in
+  let module C = Image.Canvas(struct include Image.YUV420 let create w h = create w h let scale = scale ~proportional:false end) in
   test "canvas line" (fun () ->
       for _ = 1 to 100 do
         let l = C.Draw.line (15,24) (59,78) (0xff,0xff,0xff,0xff) in
