@@ -293,6 +293,8 @@ module YUV420 : sig
      on a given image box. *)
   val box_alpha : t -> int -> int -> int -> int -> float -> unit
   val randomize : t -> unit
+  val rotate : t -> int -> int -> float -> t -> unit
+
   val get_pixel_y : t -> int -> int -> int
   val get_pixel_u : t -> int -> int -> int
   val get_pixel_v : t -> int -> int -> int

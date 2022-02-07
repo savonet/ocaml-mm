@@ -257,6 +257,12 @@ let scale_proportional src dst =
 let scale ?(proportional = false) src dst =
   if proportional then scale_proportional src dst else scale_full src dst
 
+external rotate : t -> int -> int -> float -> t -> unit = "caml_yuv_rotate"
+
+let rotate src x y a dst =
+  ensure_alpha dst;
+  rotate src x y a dst
+
 external scale_alpha : t -> float -> unit = "caml_yuv_scale_alpha"
 
 let scale_alpha img a =

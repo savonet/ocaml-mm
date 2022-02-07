@@ -9,6 +9,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include "image_pixel.h"
 #include "image_rgb.h"
@@ -426,3 +427,37 @@ CAMLprim value caml_yuv_alpha_of_color(value img, value _y, value _u, value _v, 
 
   CAMLreturn(Val_unit);
 }
+
+CAMLprim value caml_yuv_rotate(value _src, value _ox, value _oy, value _angle, value _dst)
+{
+  CAMLparam5(_src, _ox, _oy, _angle, _dst);
+  yuv420 src, dst;
+  yuv420_of_value(&src, _src);
+  yuv420_of_value(&dst, _dst);
+  int ox = Int_val(_ox);
+  int oy = Int_val(_oy);
+  double a = Double_val(_angle);
+  double sina = sin(a);
+  double cosa = cos(a);
+  int i, j, i2, j2;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < dst.height; j++)
+    for (i = 0; i < dst.width; i++) {
+      i2 = (i - ox) * cosa + (j - oy) * sina + ox;
+      j2 = -(i - ox) * sina + (j - oy) * cosa + oy;
+      if (0 <= i2 && i2 < src.width && 0 <= j2 && j2 < src.height)
+        {
+          Y(dst, i, j) = Y(src, i2, j2);
+          U(dst, i, j) = U(src, i2, j2);
+          V(dst, i, j) = V(dst, i2, j2);
+          A(dst, i, j) = src.alpha ? A(src, i2, j2) : 0xff;
+        }
+      else
+        A(dst, i, j) = 0;
+    }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
