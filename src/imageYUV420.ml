@@ -294,8 +294,9 @@ external gradient_uv : t -> int * int -> int * int -> int * int -> unit = "caml_
 module Effect = struct
   external greyscale : t -> unit = "caml_yuv_greyscale"
 
+  external invert : t -> unit = "caml_yuv_invert"
+
   let sepia _ = failwith "Not implemented: sepia"
-  let invert _ = failwith "Not implemented: invert"
   let lomo _ = failwith "Not implemented: lomo"
 
   module Alpha = struct
