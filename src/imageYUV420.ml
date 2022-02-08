@@ -296,7 +296,8 @@ module Effect = struct
 
   external invert : t -> unit = "caml_yuv_invert"
 
-  let sepia _ = failwith "Not implemented: sepia"
+  external sepia : t -> unit = "caml_yuv_sepia"
+
   let lomo _ = failwith "Not implemented: lomo"
 
   module Alpha = struct

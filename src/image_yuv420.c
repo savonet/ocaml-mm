@@ -489,7 +489,6 @@ CAMLprim value caml_yuv_gradient_uv(value _img, value uv, value duvx, value duvy
   CAMLreturn(Val_unit);
 }
 
-
 CAMLprim value caml_yuv_invert(value _img)
 {
   CAMLparam1(_img);
@@ -504,6 +503,40 @@ CAMLprim value caml_yuv_invert(value _img)
       Y(img, i, j) = 0xff - Y(img, i, j);
       U(img, i, j) = 0xff - U(img, i, j);
       V(img, i, j) = 0xff - V(img, i, j);
+    }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_yuv_sepia(value _img)
+{
+  CAMLparam1(_img);
+  yuv420 img;
+  yuv420_of_value(&img, _img);
+
+  int i, j;
+  int y, u, v;
+  int r, g, b;
+  int c;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < img.height; j++)
+    for (i = 0; i < img.width; i++) {
+      // TODO: avoid converting back and forth
+      y = Y(img, i, j);
+      u = U(img, i, j);
+      v = V(img, i, j);
+      r = RofYUV(y, u, v);
+      g = GofYUV(y, u, v);
+      b = BofYUV(y, u, v);
+      c = (r + g + b) / 3;
+      r = c;
+      g = c * 201 / 0xff;
+      b = c * 201 / 0xff;
+      Y(img, i, j) = YofRGB(r, g, b);
+      U(img, i, j) = UofRGB(r, g, b);
+      V(img, i, j) = VofRGB(r, g, b);
     }
   caml_leave_blocking_section();
 
