@@ -289,6 +289,8 @@ let alpha_of_color img (y,u,v) d =
   ensure_alpha img;
   alpha_of_color img y u v d
 
+external gradient_uv : t -> int * int -> int * int -> int * int -> unit = "caml_yuv_gradient_uv"
+
 module Effect = struct
   external greyscale : t -> unit = "caml_yuv_greyscale"
 

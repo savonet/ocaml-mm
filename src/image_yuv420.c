@@ -461,3 +461,29 @@ CAMLprim value caml_yuv_rotate(value _src, value _ox, value _oy, value _angle, v
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value caml_yuv_gradient_uv(value _img, value uv, value duvx, value duvy)
+{
+  CAMLparam4(_img, uv, duvx, duvy);
+  yuv420 img;
+  yuv420_of_value(&img, _img);
+  int u = Int_val(Field(uv, 0));
+  int v = Int_val(Field(uv, 1));
+  int ux = Int_val(Field(duvx, 0));
+  int vx = Int_val(Field(duvx, 1));
+  int uy = Int_val(Field(duvy, 0));
+  int vy = Int_val(Field(duvy, 1));
+
+  int i, j;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < img.height; j++)
+    for (i = 0; i < img.width; i++) {
+      Y(img, i, j) = 0xff;
+      U(img, i, j) = u + ux * i / img.width + uy * j / img.height;
+      U(img, i, j) = v + vx * i / img.width + vy * j / img.height;
+      A(img, i, j) = 0xff;
+    }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}

@@ -294,6 +294,7 @@ module YUV420 : sig
   val box_alpha : t -> int -> int -> int -> int -> float -> unit
   val randomize : t -> unit
   val rotate : t -> int -> int -> float -> t -> unit
+  val gradient_uv : t -> int * int -> int * int -> int * int -> unit
 
   val get_pixel_y : t -> int -> int -> int
   val get_pixel_u : t -> int -> int -> int
