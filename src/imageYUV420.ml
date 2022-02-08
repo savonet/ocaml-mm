@@ -298,7 +298,7 @@ module Effect = struct
 
   external sepia : t -> unit = "caml_yuv_sepia"
 
-  let lomo _ = failwith "Not implemented: lomo"
+  external lomo : t -> unit = "caml_yuv_lomo"
 
   module Alpha = struct
     let scale = scale_alpha
