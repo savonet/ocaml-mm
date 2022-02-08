@@ -480,7 +480,7 @@ CAMLprim value caml_yuv_gradient_uv(value _img, value uv, value duvx, value duvy
     for (i = 0; i < img.width; i++) {
       Y(img, i, j) = 0xff;
       U(img, i, j) = u + ux * i / img.width + uy * j / img.height;
-      U(img, i, j) = v + vx * i / img.width + vy * j / img.height;
+      V(img, i, j) = v + vx * i / img.width + vy * j / img.height;
       if (img.alpha)
         A(img, i, j) = 0xff;
     }
