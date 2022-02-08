@@ -122,6 +122,11 @@ let () =
         let l = C.Draw.line (0xff,0xff,0xff,0xff) (15,24) (59,78) in
         ignore l
       done
+    );
+  test "gradient" (fun () ->
+      let img = Image.YUV420.create 640 480 in
+      Image.YUV420.gradient_uv img (0,0) (100,200) (200,150);
+      write "gradient.bmp" (Image.YUV420.to_BMP img)
     )
 
 let () =
