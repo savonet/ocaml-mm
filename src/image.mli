@@ -503,8 +503,12 @@ module Canvas (I : CanvasImage) : sig
   (** Scale the image proportionally by fractional coefficients with given
       numerator and denominator in the x and y directions. The viewport is left
       untouched. The [scaler] parameter can be specified in order to use a
-      particular function to scale individual images. *)
+      particular function to scale individual images. The viewport is left
+      unchanged. *)
   val scale : ?scaler:(I.t -> I.t -> unit) -> Fraction.t -> Fraction.t -> t -> t
+
+  (** Resize the image, scaling and changing the viewport. *)
+  val resize : ?proportional:bool -> ?scaler:(I.t -> I.t -> unit) -> int -> int -> t -> t
 
   module Draw : sig
     (** Draw a line (the result is typically added to another image). *)

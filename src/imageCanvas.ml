@@ -164,6 +164,19 @@ module Canvas (I : CanvasImage) = struct
       in
       { width = c.width; height = c.height; elements }
 
+  let resize ?(proportional=true) ?scaler w' h' img =
+    let w = width img in
+    let h = height img in
+    let (nx,dx),(ny,dy) =
+      if proportional then
+        let f = Fraction.min (w',w) (h',h) in
+        f, f
+      else
+        (w',w),(h',h)
+    in
+    let x, y = if proportional then 0, 0 else (w'-w*nx/dx)/2, (h'-h*ny/dy)/2 in
+    scale ?scaler (nx,dx) (ny,dy) img |> translate x y |> viewport w' h'
+
   module Draw = struct
     let line color (x1,y1) (x2,y2) =
       let dx = min x1 x2 in
