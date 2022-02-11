@@ -173,7 +173,14 @@ let () =
       done;
       let img = I.CanvasYUV420.render !img in
       write "adds.bmp" (I.YUV420.to_BMP img)
-    )
+    );
+  time "scale" (fun () ->
+      let img = I.YUV420.create 1000 1000 in
+      I.YUV420.gradient_uv img (0,0) (0xff,0) (0,0xff);
+      let img2 = I.YUV420.create 10000 10000 in
+      I.YUV420.scale img img2;
+      write "scale.bmp" (I.YUV420.to_BMP img2)
+  )
 
 let () =
   Gc.full_major ()

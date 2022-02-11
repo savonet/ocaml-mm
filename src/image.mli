@@ -280,7 +280,11 @@ module YUV420 : sig
   val copy : t -> t
   val blit_all : t -> t -> unit
   val blit : t -> t -> unit
+
+  (** Scale one image in order to fill the other. By default, proportions are
+      not preserved. *)
   val scale : ?proportional:bool -> t -> t -> unit
+
   val blank_all : t -> unit
 
   (** Add the fist image to the second at given offset. *)
