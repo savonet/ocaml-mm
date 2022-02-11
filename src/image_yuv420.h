@@ -31,6 +31,8 @@ static void yuv420_of_value(yuv420 *yuv, value v) {
 }
 
 #define Y(yuv, i, j) yuv.y[j * yuv.y_stride + i]
-#define U(yuv, i, j) yuv.u[(j / 2) * yuv.uv_stride + (i / 2)]
-#define V(yuv, i, j) yuv.v[(j / 2) * yuv.uv_stride + (i / 2)]
+#define U2(yuv, i, j) yuv.u[j * yuv.uv_stride + i]
+#define V2(yuv, i, j) yuv.v[j * yuv.uv_stride + i]
+#define U(yuv, i, j) U2(yuv, i / 2, j / 2) 
+#define V(yuv, i, j) V2(yuv, i / 2, j / 2) 
 #define A(yuv, i, j) yuv.alpha[j * yuv.y_stride + i]

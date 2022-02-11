@@ -149,12 +149,18 @@ CAMLprim value caml_yuv420_scale(value _src, value _dst) {
       is = i * src.width / dst.width;
       js = j * src.height / dst.height;
       Y(dst, i, j) = Y(src, is, js);
-      // TODO: don't do u/v twice
-      U(dst, i, j) = U(src, is, js);
-      V(dst, i, j) = V(src, is, js);
-      if (src.alpha)
-        A(dst, i, j) = A(src, is, js);
     }
+  for (j = 0; j < dst.height / 2; j++)
+    for (i = 0; i < dst.width / 2; i++) {
+      is = i * src.width / dst.width;
+      js = j * src.height / dst.height;
+      U2(dst, i, j) = U2(src, is, js);
+      V2(dst, i, j) = V2(src, is, js);
+    }
+  if (src.alpha)
+    for (j = 0; j < dst.height; j++)
+      for (i = 0; i < dst.width; i++)
+        A(dst, i, j) = A(src, is, js);
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);
