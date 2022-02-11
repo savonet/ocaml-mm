@@ -42,121 +42,125 @@ let () =
   Printf.printf "- word size: %d\n%!" Sys.word_size;
   Printf.printf "\n%!"
 
+module A = Audio
+
 let () =
   Printf.printf "## Testing audio\n\n%!";
   test "basic functions" (fun () ->
-      let a = Audio.create 2 44100 in
-      Audio.noise a;
-      Audio.pan 0.4 a;
-      ignore (Audio.squares a);
-      Audio.amplify 0.5 a
+      let a = A.create 2 44100 in
+      A.noise a;
+      A.pan 0.4 a;
+      ignore (A.squares a);
+      A.amplify 0.5 a
     );
   time ~skip:!skip_long "adding many buffers" (fun () ->
-      let a = Audio.create 2 44100 in
+      let a = A.create 2 44100 in
       for _ = 1 to 10000 do
-        let b = Audio.create 2 44100 in
-        Audio.add b a
+        let b = A.create 2 44100 in
+        A.add b a
       done
     );
   Printf.printf "\n"
+
+module I = Image
 
 let () =
   Printf.printf "## Testing images\n\n%!";
   test "rounding" (fun () ->
       for k = 1 to 5 do
         for n = 0 to 33 do
-          assert (Image.Data.round k n = Float.to_int (float k *. Float.ceil (float n /. float k)))
+          assert (I.Data.round k n = Float.to_int (float k *. Float.ceil (float n /. float k)))
         done
       done
     );
   test "fill buffer" (fun () ->
-      let a = Image.YUV420.create 10 10 in
-      Image.YUV420.fill a (0,0,0)
+      let a = I.YUV420.create 10 10 in
+      I.YUV420.fill a (0,0,0)
     );
   test "various sizes" (fun () ->
       for i = 0 to 7 do
         for j = 0 to 7 do
           let w = 16+i in
           let h = 16+j in
-          let a = Image.YUV420.create w h in
-          Image.YUV420.set_pixel_rgba a (w-1) (h-1) (0,0,0,0);
-          Image.YUV420.fill a (0,0,0);
-          Image.YUV420.randomize a
+          let a = I.YUV420.create w h in
+          I.YUV420.set_pixel_rgba a (w-1) (h-1) (0,0,0,0);
+          I.YUV420.fill a (0,0,0);
+          I.YUV420.randomize a
         done
       done
     );
   test "adding images" (fun () ->
-      let a = Image.YUV420.create 640 480 in
-      Image.YUV420.blank a;
-      Image.YUV420.fill a (10, 10, 10);
-      let b = Image.YUV420.create 64 64 in
-      Image.YUV420.fill b (10, 10, 10);
-      Image.YUV420.add b a;
-      Image.YUV420.add b ~x:10 ~y:10 a;
-      Image.YUV420.add b ~x:(-10) ~y:(-10) a;
-      Image.YUV420.add b ~x:1000 ~y:1000 a;
+      let a = I.YUV420.create 640 480 in
+      I.YUV420.blank a;
+      I.YUV420.fill a (10, 10, 10);
+      let b = I.YUV420.create 64 64 in
+      I.YUV420.fill b (10, 10, 10);
+      I.YUV420.add b a;
+      I.YUV420.add b ~x:10 ~y:10 a;
+      I.YUV420.add b ~x:(-10) ~y:(-10) a;
+      I.YUV420.add b ~x:1000 ~y:1000 a;
     );
   test "converting" (fun () ->
-      let a = Image.YUV420.create 640 480 in
-      let b = Image.YUV420.of_RGBA32 (Image.YUV420.to_RGBA32 a) in
+      let a = I.YUV420.create 640 480 in
+      let b = I.YUV420.of_RGBA32 (I.YUV420.to_RGBA32 a) in
       ignore b
     );
   test "blank" (fun () ->
-      let img = Image.YUV420.create 640 480 in
-      Image.YUV420.blank img;
-      write "blank.bmp" (Image.YUV420.to_BMP img)
+      let img = I.YUV420.create 640 480 in
+      I.YUV420.blank img;
+      write "blank.bmp" (I.YUV420.to_BMP img)
     );
   test "add" (fun () ->
-      let img = Image.YUV420.create 640 480 in
-      Image.YUV420.blank img;
-      Image.YUV420.fill_alpha img 0;
-      let r = Image.YUV420.create 200 100 in
-      Image.YUV420.fill r (Image.Pixel.yuv_of_rgb (0xff,0,0));
-      Image.YUV420.add r ~x:10 ~y:70 img;
-      Image.YUV420.rotate (Image.YUV420.copy img) 200 200 0.7 img;
-      write "add.bmp" (Image.YUV420.to_BMP img)
+      let img = I.YUV420.create 640 480 in
+      I.YUV420.blank img;
+      I.YUV420.fill_alpha img 0;
+      let r = I.YUV420.create 200 100 in
+      I.YUV420.fill r (I.Pixel.yuv_of_rgb (0xff,0,0));
+      I.YUV420.add r ~x:10 ~y:70 img;
+      I.YUV420.rotate (I.YUV420.copy img) 200 200 0.7 img;
+      write "add.bmp" (I.YUV420.to_BMP img)
     );
   test "canvas line" (fun () ->
       for _ = 1 to 100 do
-        let l = Image.CanvasYUV420.Draw.line (0xff,0xff,0xff,0xff) (15,24) (59,78) in
+        let l = I.CanvasYUV420.Draw.line (0xff,0xff,0xff,0xff) (15,24) (59,78) in
         ignore l
       done
     );
   test "render canvas" (fun () ->
-      let r = Image.YUV420.create 200 200 in
-      Image.YUV420.fill r (Image.Pixel.yuv_of_rgb (0xff,0,0));
-      let img = Image.CanvasYUV420.make ~x:150 ~y:200 ~width:600 ~height:600 r in
-      let img = Image.CanvasYUV420.render img in
-      write "canvas.bmp" (Image.YUV420.to_BMP img)
+      let r = I.YUV420.create 200 200 in
+      I.YUV420.fill r (I.Pixel.yuv_of_rgb (0xff,0,0));
+      let img = I.CanvasYUV420.make ~x:150 ~y:200 ~width:600 ~height:600 r in
+      let img = I.CanvasYUV420.render img in
+      write "canvas.bmp" (I.YUV420.to_BMP img)
     );
   test "gradient" (fun () ->
-      let img = Image.YUV420.create 640 480 in
-      Image.YUV420.gradient_uv img (0,0) (100,200) (200,150);
-      write "gradient.bmp" (Image.YUV420.to_BMP img)
+      let img = I.YUV420.create 640 480 in
+      I.YUV420.gradient_uv img (0,0) (100,200) (200,150);
+      write "gradient.bmp" (I.YUV420.to_BMP img)
     );
   test "manual gradient" (fun () ->
       let d = 400 in
-      let img = Image.YUV420.create d d in
+      let img = I.YUV420.create d d in
       for j = 0 to d - 1 do
         for i = 0 to d - 1 do
-          Image.YUV420.set_pixel_rgba img i j (0xff,0,0,(i+j)*0xff/(2*d))
+          I.YUV420.set_pixel_rgba img i j (0xff,0,0,(i+j)*0xff/(2*d))
         done
       done;
-      let bg = Image.YUV420.create d d in
-      Image.YUV420.fill bg (0,0,0);
-      Image.YUV420.add img ~x:50 ~y:50 bg;
-      write "mgradient.bmp" (Image.YUV420.to_BMP bg)
+      let bg = I.YUV420.create d d in
+      I.YUV420.fill bg (0,0,0);
+      I.YUV420.add img ~x:50 ~y:50 bg;
+      write "mgradient.bmp" (I.YUV420.to_BMP bg)
     );
   test "color to alpha" (fun () ->
       let d = 500 in
-      let img = Image.YUV420.create d d in
-      Image.YUV420.fill img (0,0,0);
+      let img = I.YUV420.create d d in
+      I.YUV420.fill img (0,0,0);
       let c = (0xff, 0xff, 20) in
-      let r = Image.YUV420.create 200 200 in
-      Image.YUV420.fill r c;
-      Image.YUV420.add r ~x:100 ~y:150 img;
-      Image.YUV420.alpha_of_color img c 5;
-      write "c2a.bmp" (Image.YUV420.to_BMP img)
+      let r = I.YUV420.create 200 200 in
+      I.YUV420.fill r c;
+      I.YUV420.add r ~x:100 ~y:150 img;
+      I.YUV420.alpha_of_color img c 5;
+      write "c2a.bmp" (I.YUV420.to_BMP img)
     )
 
 let () =
