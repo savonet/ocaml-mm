@@ -50,6 +50,8 @@ module type CanvasImage = sig
 
   val add : t -> ?x:int -> ?y:int -> t -> unit
 
+  val has_alpha : t -> bool
+
   val fill_alpha : t -> int -> unit
 
   val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
@@ -109,7 +111,7 @@ module Canvas (I : CanvasImage) = struct
       | E.Image((x,y),img) ->
         let w = I.width img in
         let h = I.height img in
-        x <= 0 && y <= 0 && x + w >= width && y + h >= height
+        x <= 0 && y <= 0 && x + w >= width && y + h >= height && not (I.has_alpha img)
     in
     List.exists covering_element c.elements
 

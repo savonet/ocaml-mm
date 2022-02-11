@@ -442,6 +442,9 @@ module type CanvasImage = sig
   (** Add source image at given offset to the target image. *)
   val add : t -> ?x:int -> ?y:int -> t -> unit
 
+  (** Whether the image has alpha channel. *)
+  val has_alpha : t -> bool
+
   (** Fill the alpha channel of the image. *)
   val fill_alpha : t -> int -> unit
 

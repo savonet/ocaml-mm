@@ -54,6 +54,7 @@ module Image : sig
   val size : t -> int
 
   val blank : t -> unit
+  val has_alpha : t -> bool
   val fill_alpha : t -> int -> unit
   val scale : t -> t -> unit
   val randomize : t -> unit
