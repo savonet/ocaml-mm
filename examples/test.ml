@@ -123,6 +123,13 @@ let () =
         ignore l
       done
     );
+  test "render canvas" (fun () ->
+      let r = Image.YUV420.create 200 200 in
+      Image.YUV420.fill r (Image.Pixel.yuv_of_rgb (0xff,0,0));
+      let img = C.make ~x:150 ~y:200 ~width:600 ~height:600 r in
+      let img = C.render img in
+      write "canvas.bmp" (Image.YUV420.to_BMP img)
+    );
   test "gradient" (fun () ->
       let img = Image.YUV420.create 640 480 in
       Image.YUV420.gradient_uv img (0,0) (100,200) (200,150);
