@@ -231,7 +231,10 @@ module YUV420 : sig
   (** An image in YUV420 format. *)
   type t
 
-  val make : int -> int -> Data.t -> int -> Data.t -> Data.t -> int -> t
+  (** Create an image with given width, height, alpha channel, Y (with given
+      stride) U and V (with given stride). The strides of U and V are the same,
+      the stride of the alpha channel is the same as Y. *)
+  val make : int -> int -> ?alpha:Data.t -> Data.t -> int -> Data.t -> Data.t -> int -> t
   val make_data : int -> int -> Data.t -> int -> int -> t
   val create : ?blank:bool -> ?y_stride:int -> ?uv_stride:int -> int -> int -> t
 

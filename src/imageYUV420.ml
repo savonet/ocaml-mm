@@ -76,8 +76,8 @@ let fill_alpha img a =
 let blank img = fill img (Pixel.yuv_of_rgb (0, 0, 0))
 let blank_all = blank
 
-let make width height y y_stride u v uv_stride =
-  { y; y_stride; u; v; uv_stride; width; height; alpha = None }
+let make width height ?alpha y y_stride u v uv_stride =
+  { y; y_stride; u; v; uv_stride; width; height; alpha }
 
 let make_data width height data y_stride uv_stride =
   assert (Data.length data = height * (y_stride + uv_stride));
