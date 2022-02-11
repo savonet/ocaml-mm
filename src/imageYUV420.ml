@@ -263,6 +263,11 @@ let rotate src x y a dst =
   ensure_alpha dst;
   rotate src x y a dst
 
+let alpha_to_y img =
+  ensure_alpha img;
+  img.y <- Option.get img.alpha;
+  img.alpha <- None
+
 external scale_alpha : t -> float -> unit = "caml_yuv_scale_alpha"
 
 let scale_alpha img a =

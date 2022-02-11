@@ -288,13 +288,19 @@ module YUV420 : sig
 
   val blank : t -> unit
   val fill : t -> Pixel.yuv -> unit
+
   val fill_alpha : t -> int -> unit
   val disk_alpha : t -> int -> int -> int -> unit
   val alpha_of_color : t -> Pixel.yuv -> int -> unit
 
-  (* [box_alpha img x y width height alpha] Set alpha value
-     on a given image box. *)
+  (** [box_alpha img x y width height alpha] sets alpha value on a given image
+      box. *)
   val box_alpha : t -> int -> int -> int -> int -> float -> unit
+
+  (** Remove alpha channel and set it as Y channel. Useful to inspect the alpha
+      channel. *)
+  val alpha_to_y : t -> unit
+
   val randomize : t -> unit
   val rotate : t -> int -> int -> float -> t -> unit
   val gradient_uv : t -> int * int -> int * int -> int * int -> unit
