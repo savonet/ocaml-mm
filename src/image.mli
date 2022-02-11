@@ -303,6 +303,9 @@ module YUV420 : sig
 
   val randomize : t -> unit
   val rotate : t -> int -> int -> float -> t -> unit
+
+  (** Fill the image with a gradient. It takes as argument the (U,V) at pixel
+     (0,0), at pixel (xmax,0) and at pixel (0,ymax). *)
   val gradient_uv : t -> int * int -> int * int -> int * int -> unit
 
   val get_pixel_y : t -> int -> int -> int

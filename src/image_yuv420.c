@@ -475,10 +475,10 @@ CAMLprim value caml_yuv_gradient_uv(value _img, value uv, value duvx, value duvy
   yuv420_of_value(&img, _img);
   int u = Int_val(Field(uv, 0));
   int v = Int_val(Field(uv, 1));
-  int ux = Int_val(Field(duvx, 0));
-  int vx = Int_val(Field(duvx, 1));
-  int uy = Int_val(Field(duvy, 0));
-  int vy = Int_val(Field(duvy, 1));
+  int ux = Int_val(Field(duvx, 0)) - u;
+  int vx = Int_val(Field(duvx, 1)) - v;
+  int uy = Int_val(Field(duvy, 0)) - u;
+  int vy = Int_val(Field(duvy, 1)) - v;
 
   int i, j;
 
