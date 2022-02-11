@@ -212,18 +212,20 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
   int i, j;
 
   caml_enter_blocking_section();
-  if (src.alpha == NULL)
+  if (src.alpha == NULL) {
     for (j = ja; j < jb; j++)
       for (i = ia; i < ib; i++) {
         int is = i - x;
         int js = j - y;
         Y(dst, i, j) = Y(src, is, js);
-        // TODO: don't do u/v twice
         U(dst, i, j) = U(src, is, js);
         V(dst, i, j) = V(src, is, js);
-        if (dst.alpha)
-          A(dst, i, j) = 0xff;
       }
+    if (dst.alpha)
+      for (j = ja; j < jb; j++)
+        for (i = ia; i < ib; i++)
+          A(dst, i, j) = 0xff;
+  }
   else
     for (j = ja; j < jb; j++)
       for (i = ia; i < ib; i++) {
