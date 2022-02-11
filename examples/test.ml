@@ -127,6 +127,30 @@ let () =
       let img = Image.YUV420.create 640 480 in
       Image.YUV420.gradient_uv img (0,0) (100,200) (200,150);
       write "gradient.bmp" (Image.YUV420.to_BMP img)
+    );
+  test "manual gradient" (fun () ->
+      let d = 400 in
+      let img = Image.YUV420.create d d in
+      for j = 0 to d - 1 do
+        for i = 0 to d - 1 do
+          Image.YUV420.set_pixel_rgba img i j (0xff,0,0,(i+j)*0xff/(2*d))
+        done
+      done;
+      let bg = Image.YUV420.create d d in
+      Image.YUV420.fill bg (0,0,0);
+      Image.YUV420.add img ~x:50 ~y:50 bg;
+      write "mgradient.bmp" (Image.YUV420.to_BMP bg)
+    );
+  test "color to alpha" (fun () ->
+      let d = 500 in
+      let img = Image.YUV420.create d d in
+      Image.YUV420.fill img (0,0,0);
+      let c = (0xff, 0xff, 20) in
+      let r = Image.YUV420.create 200 200 in
+      Image.YUV420.fill r c;
+      Image.YUV420.add r ~x:100 ~y:150 img;
+      Image.YUV420.alpha_of_color img c 5;
+      write "c2a.bmp" (Image.YUV420.to_BMP img)
     )
 
 let () =
