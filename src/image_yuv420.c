@@ -218,6 +218,12 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
         int is = i - x;
         int js = j - y;
         Y(dst, i, j) = Y(src, is, js);
+      }
+    /* U and V only have to be done once every two times */
+    for (j = ja; j < jb; j+=2)
+      for (i = ia; i < ib; i+=2) {
+        int is = i - x;
+        int js = j - y;
         U(dst, i, j) = U(src, is, js);
         V(dst, i, j) = V(src, is, js);
       }
@@ -327,9 +333,8 @@ CAMLprim value caml_yuv_greyscale(value img) {
   int i, j;
 
   caml_enter_blocking_section();
-  for (j = 0; j < yuv.height; j++)
-    for (i = 0; i < yuv.width; i++) {
-      /* int y = Y(yuv,i,j); */
+  for (j = 0; j < yuv.height; j+=2)
+    for (i = 0; i < yuv.width; i+=2) {
       U(yuv, i, j) = 0x7f;
       V(yuv, i, j) = 0x7f;
     }
@@ -544,7 +549,6 @@ CAMLprim value caml_yuv_sepia(value _img)
 
   CAMLreturn(Val_unit);
 }
-
 
 CAMLprim value caml_yuv_lomo(value _img)
 {
