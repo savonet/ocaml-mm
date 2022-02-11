@@ -483,7 +483,7 @@ module Canvas (I : CanvasImage) : sig
   (** Size of a canvas in bytes. *)
   val size : t -> int
 
-  (** Add two canvas. *)
+  (** Add two canvas. The first one is on top of the second one. *)
   val add : t -> t -> t
 
   (** Whether the canvas covers the whole area with images (this function is

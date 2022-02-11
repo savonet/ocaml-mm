@@ -162,6 +162,17 @@ let () =
       I.YUV420.add r ~x:100 ~y:150 img;
       I.YUV420.alpha_of_color img c 5;
       write "c2a.bmp" (I.YUV420.to_BMP img)
+    );
+  time "many adds" (fun () ->
+      let r = I.YUV420.create 500 500 in
+      I.YUV420.fill r (I.Pixel.yuv_of_rgb (0xff,0,0));
+      let img = ref (I.CanvasYUV420.create 2000 2000) in
+      for i = 1 to 100000 do (* only the first 2000 are relevant *)
+        let r = I.CanvasYUV420.make r |> I.CanvasYUV420.translate i i in
+        img := I.CanvasYUV420.add r !img
+      done;
+      let img = I.CanvasYUV420.render !img in
+      write "adds.bmp" (I.YUV420.to_BMP img)
     )
 
 let () =
