@@ -26,7 +26,8 @@ let test ?(skip=false) name f =
       Printf.printf "ok\n%!"
     )
 
-let time ?(skip=false) name f =
+let time ?skip name f =
+  let skip = Option.value ~default:!skip_long skip in
   Printf.printf "- %s... %!" name;
   if skip then Printf.printf "skipped\n%!" else
     let t0 = Sys.time () in
@@ -53,7 +54,7 @@ let () =
       ignore (A.squares a);
       A.amplify 0.5 a
     );
-  time ~skip:!skip_long "adding many buffers" (fun () ->
+  time "adding many buffers" (fun () ->
       let a = A.create 2 44100 in
       for _ = 1 to 10000 do
         let b = A.create 2 44100 in
