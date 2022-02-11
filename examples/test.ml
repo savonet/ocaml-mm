@@ -116,18 +116,17 @@ let () =
       Image.YUV420.rotate (Image.YUV420.copy img) 200 200 0.7 img;
       write "add.bmp" (Image.YUV420.to_BMP img)
     );
-  let module C = Image.Canvas(struct include Image.YUV420 let create w h = create w h let scale = scale ~proportional:false end) in
   test "canvas line" (fun () ->
       for _ = 1 to 100 do
-        let l = C.Draw.line (0xff,0xff,0xff,0xff) (15,24) (59,78) in
+        let l = Image.CanvasYUV420.Draw.line (0xff,0xff,0xff,0xff) (15,24) (59,78) in
         ignore l
       done
     );
   test "render canvas" (fun () ->
       let r = Image.YUV420.create 200 200 in
       Image.YUV420.fill r (Image.Pixel.yuv_of_rgb (0xff,0,0));
-      let img = C.make ~x:150 ~y:200 ~width:600 ~height:600 r in
-      let img = C.render img in
+      let img = Image.CanvasYUV420.make ~x:150 ~y:200 ~width:600 ~height:600 r in
+      let img = Image.CanvasYUV420.render img in
       write "canvas.bmp" (Image.YUV420.to_BMP img)
     );
   test "gradient" (fun () ->

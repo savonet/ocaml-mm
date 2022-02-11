@@ -229,7 +229,7 @@ end
 (** Operations on images stored in YUV420 format, ie one luma (Y) and two chrominance (U and V) channels. *)
 module YUV420 : sig
   (** An image in YUV420 format. *)
-  type t
+  type t = ImageYUV420.t
 
   (** Create an image with given width, height, alpha channel, Y (with given
       stride) U and V (with given stride). The strides of U and V are the same,
@@ -527,3 +527,5 @@ module Canvas (I : CanvasImage) : sig
     val line : Pixel.rgba -> int * int -> int * int -> t
   end
 end
+
+module CanvasYUV420 : module type of Canvas(struct include ImageYUV420 let create w h = create w h let scale = scale ~proportional:false end)

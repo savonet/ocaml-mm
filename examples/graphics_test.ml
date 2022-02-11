@@ -24,7 +24,7 @@ let () =
   if false then show img
 
 let () =
-  let module C = Image.Canvas(struct include Image.YUV420 let create w h = create w h let scale = scale ~proportional:false end) in
+  let module C = Image.CanvasYUV420 in
   let r = Image.YUV420.create 200 200 in
   Image.YUV420.fill r (Image.Pixel.yuv_of_rgb (0xff,0,0));
   let img = C.make ~x:150 ~y:200 ~width:600 ~height:600 r in

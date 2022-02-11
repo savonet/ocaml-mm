@@ -201,3 +201,5 @@ module Canvas (I : CanvasImage) = struct
       make ~x:dx ~y:dy ~width:(-1) ~height:(-1) buf
   end
 end
+
+module CanvasYUV420 = Canvas(struct include ImageYUV420 let create w h = create w h let scale = scale ~proportional:false end)
