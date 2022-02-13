@@ -250,8 +250,7 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
           Y(dst, i, j) = Y(src, is, js);
           U(dst, i, j) = U(src, is, js);
           V(dst, i, j) = V(src, is, js);
-          if (dst.alpha)
-            A(dst, i, j) = 0xff;
+          if (dst.alpha) A(dst, i, j) = 0xff;
         } else {
           Y(dst, i, j) =
               CLIP((Y(src, is, js) * a + Y(dst, i, j) * (0xff - a)) / 0xff);
@@ -294,8 +293,7 @@ CAMLprim value caml_yuv420_get_pixel_rgba(value img, value _i, value _j) {
   CAMLreturn(ans);
 }
 
-CAMLprim value caml_yuv420_set_pixel_rgba(value img, value _i, value _j,
-                                          value c) {
+CAMLprim value caml_yuv420_set_pixel_rgba(value img, value _i, value _j, value c) {
   CAMLparam4(img, _i, _j, c);
   yuv420 yuv;
   yuv420_of_value(&yuv, img);
