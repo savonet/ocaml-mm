@@ -255,13 +255,14 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
         } else {
           Y(dst, i, j) =
               CLIP((Y(src, is, js) * a + Y(dst, i, j) * (0xff - a)) / 0xff);
-          // TODO: don't do u/v twice
-          U(dst, i, j) =
-              CLIP((U(src, is, js) * a + U(dst, i, j) * (0xff - a)) / 0xff);
-          V(dst, i, j) =
-              CLIP((V(src, is, js) * a + V(dst, i, j) * (0xff - a)) / 0xff);
           if (dst.alpha)
             A(dst, i, j) = 0xff - ((0xff - a) * (0xff - A(dst, i, j))) / 0xff;
+          if (i % 2 == 0 && j % 2 == 0) {
+            U(dst, i, j) =
+              CLIP((U(src, is, js) * a + U(dst, i, j) * (0xff - a)) / 0xff);
+            V(dst, i, j) =
+              CLIP((V(src, is, js) * a + V(dst, i, j) * (0xff - a)) / 0xff);
+          }
         }
       }
   caml_leave_blocking_section();
