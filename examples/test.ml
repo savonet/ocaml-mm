@@ -182,6 +182,18 @@ let () =
       let img = I.CanvasYUV420.render !img in
       write "adds.bmp" (I.YUV420.to_BMP img)
     );
+  test "mean cannot clip" (fun () ->
+      (* Ensure that we don't have to clip when computing the mean of two pixels
+         in bytes. *)
+      for s = 0 to 0xff do
+        for t = 0 to 0xff do
+          for a = 0 to 0xff do
+            let p = (s * a + t * (0xff - a)) / 0xff in
+            assert (0 <= p && p <= 0xff)
+          done
+        done
+      done
+    );
   time "many adds with alpha" (fun () ->
       let r = I.YUV420.create 500 500 in
       for j = 0 to 499 do
