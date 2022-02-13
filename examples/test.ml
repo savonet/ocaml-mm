@@ -163,7 +163,7 @@ let () =
       I.YUV420.alpha_of_color img c 5;
       write "c2a.bmp" (I.YUV420.to_BMP img)
     );
-  time "is_opaque" (fun () ->
+  test "is_opaque" (fun () ->
       let img = I.YUV420.create 1000 1000 in
       assert (I.YUV420.is_opaque img);
       I.YUV420.set_pixel_rgba img 10 10 (0,0,0,10);
@@ -181,6 +181,22 @@ let () =
       done;
       let img = I.CanvasYUV420.render !img in
       write "adds.bmp" (I.YUV420.to_BMP img)
+    );
+  time "many adds with alpha" (fun () ->
+      let r = I.YUV420.create 500 500 in
+      for j = 0 to 499 do
+        for i = 0 to 499 do
+          let a = match i mod 3 with 0 -> 0 | 1 -> 0x7f | _ -> 0xff in
+          I.YUV420.set_pixel_rgba r i j (0xff,0,0,a)
+        done
+      done;
+      let img = ref (I.CanvasYUV420.create 2000 2000) in
+      for i = 1 to 100000 do (* only the first 2000 are relevant *)
+        let r = I.CanvasYUV420.make r |> I.CanvasYUV420.translate i i in
+        img := I.CanvasYUV420.add r !img
+      done;
+      let img = I.CanvasYUV420.render !img in
+      write "adds-alpha.bmp" (I.YUV420.to_BMP img)
     );
   time "scale" (fun () ->
       let img = I.YUV420.create 1000 1000 in
