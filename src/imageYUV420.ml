@@ -264,6 +264,15 @@ let rotate src x y a dst =
   ensure_alpha dst;
   rotate src x y a dst
 
+external is_opaque : t -> bool = "caml_yuv_is_opaque"
+
+let is_opaque img =
+  if img.alpha = None then true
+  else is_opaque img
+
+let optimize_alpha img =
+  if is_opaque img then img.alpha <- None
+
 let alpha_to_y img =
   ensure_alpha img;
   img.y <- Option.get img.alpha;

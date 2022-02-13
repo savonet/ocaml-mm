@@ -574,3 +574,28 @@ CAMLprim value caml_yuv_lomo(value _img)
 
   CAMLreturn(Val_unit);
 }
+
+CAMLprim value caml_yuv_is_opaque(value _img)
+{
+  CAMLparam1(_img);
+  yuv420 img;
+  yuv420_of_value(&img, _img);
+
+  int i, j;
+  int ans = 1;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < img.height; j++)
+    {
+      if (!ans) break;
+      for (i = 0; i < img.width; i++)
+        if (A(img, i, j) != 0xff)
+          {
+            ans = 0;
+            break;
+          }
+    }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_bool(ans));
+}

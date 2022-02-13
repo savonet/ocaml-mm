@@ -293,6 +293,13 @@ module YUV420 : sig
   val blank : t -> unit
   val fill : t -> Pixel.yuv -> unit
 
+  (** Whether the image is opaque (it has no transparent or semi-transparent
+      pixel). *)
+  val is_opaque : t -> bool
+
+  (** Optimize the α channel by removing it in the case the image is opaque. *)
+  val optimize_alpha : t -> unit
+
   val fill_alpha : t -> int -> unit
   val disk_alpha : t -> int -> int -> int -> unit
   val alpha_of_color : t -> Pixel.yuv -> int -> unit

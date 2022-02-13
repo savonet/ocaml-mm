@@ -163,6 +163,14 @@ let () =
       I.YUV420.alpha_of_color img c 5;
       write "c2a.bmp" (I.YUV420.to_BMP img)
     );
+  time "is_opaque" (fun () ->
+      let img = I.YUV420.create 1000 1000 in
+      assert (I.YUV420.is_opaque img);
+      I.YUV420.set_pixel_rgba img 10 10 (0,0,0,10);
+      assert (not (I.YUV420.is_opaque img));
+      I.YUV420.set_pixel_rgba img 10 10 (0,0,0,0xff);
+      assert (I.YUV420.is_opaque img)
+    );
   time "many adds" (fun () ->
       let r = I.YUV420.create 500 500 in
       I.YUV420.fill r (I.Pixel.yuv_of_rgb (0xff,0,0));
@@ -180,7 +188,7 @@ let () =
       let img2 = I.YUV420.create 10000 10000 in
       I.YUV420.scale img img2;
       write "scale.bmp" (I.YUV420.to_BMP img2)
-  )
+    )
 
 let () =
   Gc.full_major ()
