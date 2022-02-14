@@ -77,9 +77,10 @@ CAMLprim value caml_yuv420_of_rgb24_string(value img, value s) {
       int g = data[3 * (j * yuv.width + i) + 1];
       int b = data[3 * (j * yuv.width + i) + 2];
       Y(yuv, i, j) = YofRGB(r, g, b);
-      // TODO: don't do u/v twice
-      U(yuv, i, j) = UofRGB(r, g, b);
-      V(yuv, i, j) = VofRGB(r, g, b);
+      if (i % 2 == 0 && j % 2 == 0) {
+        U(yuv, i, j) = UofRGB(r, g, b);
+        V(yuv, i, j) = VofRGB(r, g, b);
+      }
     }
 
   CAMLreturn(Val_unit);
@@ -100,10 +101,11 @@ CAMLprim value caml_yuv420_of_rgba32(value _rgb, value img) {
       int g = Green(&rgb, i, j);
       int b = Blue(&rgb, i, j);
       Y(yuv, i, j) = YofRGB(r, g, b);
-      // TODO: don't do u/v twice
-      U(yuv, i, j) = UofRGB(r, g, b);
-      V(yuv, i, j) = VofRGB(r, g, b);
       A(yuv, i, j) = Alpha(&rgb, i, j);
+      if (i % 2 == 0 && j % 2 == 0) {
+        U(yuv, i, j) = UofRGB(r, g, b);
+        V(yuv, i, j) = VofRGB(r, g, b);
+      }
     }
   caml_leave_blocking_section();
 
@@ -219,13 +221,21 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
 
   caml_enter_blocking_section();
   if (src.alpha == NULL) {
-    for (j = ja; j < jb; j++)
+    int il = ib - ia;
+    for (j = ja; j < jb; j++) {
+      /*
       for (i = ia; i < ib; i++) {
         int is = i - x;
         int js = j - y;
         Y(dst, i, j) = Y(src, is, js);
       }
+      */
+      int is = ia - x;
+      int js = ja - y;
+      memcpy(dst.y + (j * dst.y_stride + ia), src.y + (js * src.y_stride + is), il);
+    }
     /* U and V only have to be done once every two times */
+    /*
     for (j = ja; j < jb; j+=2)
       for (i = ia; i < ib; i+=2) {
         int is = i - x;
@@ -233,10 +243,20 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
         U(dst, i, j) = U(src, is, js);
         V(dst, i, j) = V(src, is, js);
       }
+    */
+    for (j = ja; j < jb; j+=2) {
+      int is = ia - x;
+      int js = ja - y;
+      memcpy(dst.u + (j/2 * dst.uv_stride + ia/2), src.u + (js/2 * src.uv_stride + is/2), il/2);
+      memcpy(dst.v + (j/2 * dst.uv_stride + ia/2), src.v + (js/2 * src.uv_stride + is/2), il/2);
+    }
     if (dst.alpha)
       for (j = ja; j < jb; j++)
+        /*
         for (i = ia; i < ib; i++)
           A(dst, i, j) = 0xff;
+        */
+        memset(dst.alpha + (j * dst.y_stride + ia), 0xff, il);
   }
   else
     for (j = ja; j < jb; j++)
@@ -252,15 +272,12 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
           V(dst, i, j) = V(src, is, js);
           if (dst.alpha) A(dst, i, j) = 0xff;
         } else {
-          Y(dst, i, j) =
-              CLIP((Y(src, is, js) * a + Y(dst, i, j) * (0xff - a)) / 0xff);
+          Y(dst, i, j) = (Y(src, is, js) * a + Y(dst, i, j) * (0xff - a)) / 0xff;
           if (dst.alpha)
             A(dst, i, j) = 0xff - ((0xff - a) * (0xff - A(dst, i, j))) / 0xff;
           if (i % 2 == 0 && j % 2 == 0) {
-            U(dst, i, j) =
-              CLIP((U(src, is, js) * a + U(dst, i, j) * (0xff - a)) / 0xff);
-            V(dst, i, j) =
-              CLIP((V(src, is, js) * a + V(dst, i, j) * (0xff - a)) / 0xff);
+            U(dst, i, j) = (U(src, is, js) * a + U(dst, i, j) * (0xff - a)) / 0xff;
+            V(dst, i, j) = (V(src, is, js) * a + V(dst, i, j) * (0xff - a)) / 0xff;
           }
         }
       }
