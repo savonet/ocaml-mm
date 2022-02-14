@@ -161,8 +161,11 @@ CAMLprim value caml_yuv420_scale(value _src, value _dst) {
     }
   if (src.alpha)
     for (j = 0; j < dst.height; j++)
-      for (i = 0; i < dst.width; i++)
+      for (i = 0; i < dst.width; i++) {
+        is = i * src.width / dst.width;
+        js = j * src.height / dst.height;
         A(dst, i, j) = A(src, is, js);
+      }
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);
