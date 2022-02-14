@@ -198,11 +198,11 @@ CAMLprim value caml_yuv420_scale_coef(value _src, value _dst, value xscale,
       int is = (i - ox) * xd / xn;
       int js = (j - oy) * yd / yn;
       Y(dst, i, j) = Y(src, is, js);
-      // TODO: don't do u/v twice
-      U(dst, i, j) = U(src, is, js);
-      V(dst, i, j) = V(src, is, js);
-      if (src.alpha)
-        A(dst, i, j) = A(src, is, js);
+      if (i % 2 == 0 && j % 2 == 0) {
+        U(dst, i, j) = U(src, is, js);
+        V(dst, i, j) = V(src, is, js);
+      }
+      if (src.alpha) A(dst, i, j) = A(src, is, js);
     }
   caml_leave_blocking_section();
 
