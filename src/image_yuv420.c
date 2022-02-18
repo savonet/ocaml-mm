@@ -445,14 +445,18 @@ CAMLprim value caml_yuv_alpha_of_color(value img, value _y, value _u, value _v, 
   int v = Int_val(_v);
   int d = Int_val(_d);
   int i, j;
+  int yy, uu, vv;
+
+  d = d * d * 3;
 
   caml_enter_blocking_section();
   for (j = 0; j < yuv.height; j++)
     for (i = 0; i < yuv.width; i++)
       {
-        if (abs(Y(yuv, i, j) - y) <= d &&
-            abs(U(yuv, i, j) - u) <= d &&
-            abs(V(yuv, i, j) - v) <= d)
+        yy = Y(yuv, i, j) - y;
+        uu = U(yuv, i, j) - u;
+        vv = V(yuv, i, j) - v;
+        if (yy * yy + uu * uu + vv * vv <= d)
           A(yuv, i, j) = 0;
       }
   caml_leave_blocking_section();
@@ -630,7 +634,7 @@ CAMLprim value caml_yuv_alpha_of_sameness(value _ref, value _img, value _d)
   int i, j;
   int y, u, v;
 
-  d = d * d;
+  d = d * d * 3;
 
   caml_enter_blocking_section();
   for (j = 0; j < img.height; j++)
@@ -660,7 +664,7 @@ CAMLprim value caml_yuv_alpha_of_diff(value _ref, value _img, value _level, valu
   int d;
 
   if (speed < 1) speed = 1;
-  level = level * level;
+  level = level * level * 3;
 
   caml_enter_blocking_section();
   for (j = 0; j < img.height; j++)
