@@ -238,18 +238,19 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
   if (src.alpha == NULL) {
     int il = ib - ia;
     for (j = ja; j < jb; j++) {
+      /*
       for (i = ia; i < ib; i++) {
         int is = i - x;
         int js = j - y;
         Y(dst, i, j) = Y(src, is, js);
       }
-      /*
-      int is = ia - x;
-      int js = ja - y;
-      memcpy(dst.y + (j * dst.y_stride + ia), src.y + (js * src.y_stride + is), il);
       */
+      int is = ia - x;
+      int js = j - y;
+      memcpy(dst.y + (j * dst.y_stride + ia), src.y + (js * src.y_stride + is), il);
     }
     /* U and V only have to be done once every two times */
+    /*
     for (j = ja; j < jb; j+=2)
       for (i = ia; i < ib; i+=2) {
         int is = i - x;
@@ -257,14 +258,13 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
         U(dst, i, j) = U(src, is, js);
         V(dst, i, j) = V(src, is, js);
       }
-    /*
+    */
     for (j = ja; j < jb; j+=2) {
       int is = ia - x;
       int js = j - y;
       memcpy(dst.u + (j/2 * dst.uv_stride + ia/2), src.u + (js/2 * src.uv_stride + is/2), il/2);
       memcpy(dst.v + (j/2 * dst.uv_stride + ia/2), src.v + (js/2 * src.uv_stride + is/2), il/2);
     }
-    */
     if (dst.alpha)
       for (j = ja; j < jb; j++)
         /*
