@@ -248,8 +248,8 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
       }
     */
     for (j = ja; j < jb; j+=2) {
-      int is = ia - x;
-      int js = ja - y;
+      int is = i - x;
+      int js = j - y;
       memcpy(dst.u + (j/2 * dst.uv_stride + ia/2), src.u + (js/2 * src.uv_stride + is/2), il/2);
       memcpy(dst.v + (j/2 * dst.uv_stride + ia/2), src.v + (js/2 * src.uv_stride + is/2), il/2);
     }
