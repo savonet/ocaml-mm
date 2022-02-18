@@ -134,6 +134,15 @@ let () =
       let img = I.CanvasYUV420.render img in
       write "canvas.bmp" (I.YUV420.to_BMP img)
     );
+  test "scale canvas" (fun () ->
+      let img = I.YUV420.create 1000 1000 in
+      I.YUV420.gradient_uv img (0,0) (0xff,0) (0,0xff);
+      let img = I.CanvasYUV420.make img in
+      let img' = I.CanvasYUV420.scale (200,1000) (300,1000) img in
+      let img = I.CanvasYUV420.add img' img in
+      let img = I.CanvasYUV420.render img in
+      write "scale-canvas.bmp" (I.YUV420.to_BMP img)
+    );
   test "gradient" (fun () ->
       let img = I.YUV420.create 640 480 in
       I.YUV420.gradient_uv img (0,0) (100,200) (200,150);
