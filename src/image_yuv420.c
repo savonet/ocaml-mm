@@ -146,6 +146,16 @@ CAMLprim value caml_yuv420_scale(value _src, value _dst) {
   assert(!src.alpha || dst.alpha);
 
   caml_enter_blocking_section();
+  /*
+  for (j = 0; j < dst.height; j++)
+    for (i = 0; i < dst.width; i++) {
+      is = i * src.width / dst.width;
+      js = j * src.height / dst.height;
+      Y(dst, i, j) = Y(src, is, js);
+      U(dst, i, j) = U(src, is, js);
+      V(dst, i, j) = V(src, is, js);
+    }
+  */
   for (j = 0; j < dst.height; j++)
     for (i = 0; i < dst.width; i++) {
       is = i * src.width / dst.width;
@@ -216,29 +226,30 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
   yuv420 src, dst;
   yuv420_of_value(&src, _src);
   yuv420_of_value(&dst, _dst);
+
+  int i, j;
+  // The portion of dst which will actually get modified
   int ia = max(x, 0);
   int ib = min(x + src.width, dst.width);
   int ja = max(y, 0);
   int jb = min(y + src.height, dst.height);
-  int i, j;
 
   caml_enter_blocking_section();
   if (src.alpha == NULL) {
     int il = ib - ia;
     for (j = ja; j < jb; j++) {
-      /*
       for (i = ia; i < ib; i++) {
         int is = i - x;
         int js = j - y;
         Y(dst, i, j) = Y(src, is, js);
       }
-      */
+      /*
       int is = ia - x;
       int js = ja - y;
       memcpy(dst.y + (j * dst.y_stride + ia), src.y + (js * src.y_stride + is), il);
+      */
     }
     /* U and V only have to be done once every two times */
-    /*
     for (j = ja; j < jb; j+=2)
       for (i = ia; i < ib; i+=2) {
         int is = i - x;
@@ -246,13 +257,14 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
         U(dst, i, j) = U(src, is, js);
         V(dst, i, j) = V(src, is, js);
       }
-    */
+    /*
     for (j = ja; j < jb; j+=2) {
-      int is = i - x;
+      int is = ia - x;
       int js = j - y;
       memcpy(dst.u + (j/2 * dst.uv_stride + ia/2), src.u + (js/2 * src.uv_stride + is/2), il/2);
       memcpy(dst.v + (j/2 * dst.uv_stride + ia/2), src.v + (js/2 * src.uv_stride + is/2), il/2);
     }
+    */
     if (dst.alpha)
       for (j = ja; j < jb; j++)
         /*
@@ -261,6 +273,24 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
         */
         memset(dst.alpha + (j * dst.y_stride + ia), 0xff, il);
   }
+  /*
+  else if (src.alpha == NULL) {
+    int il = ib - ia;
+    for (j = ja; j < jb; j++) {
+      for (i = ia; i < ib; i++) {
+        int is = i - x;
+        int js = j - y;
+        Y(dst, i, j) = Y(src, is, js);
+        U(dst, i, j) = U(src, is, js);
+        V(dst, i, j) = V(src, is, js);
+      }
+    }
+    if (dst.alpha)
+      for (j = ja; j < jb; j++)
+        for (i = ia; i < ib; i++)
+          A(dst, i, j) = 0xff;
+  }
+  */
   else
     for (j = ja; j < jb; j++)
       for (i = ia; i < ib; i++) {
