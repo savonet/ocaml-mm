@@ -293,6 +293,9 @@ module YUV420 : sig
   val blank : t -> unit
   val fill : t -> Pixel.yuv -> unit
 
+  (** Flip image horizontally. *)
+  val hmirror : t -> unit
+
   (** Whether the image is opaque (it has no transparent or semi-transparent
       pixel). *)
   val is_opaque : t -> bool

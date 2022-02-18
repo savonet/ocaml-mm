@@ -318,6 +318,8 @@ let alpha_of_diff ref img d s =
 
 external gradient_uv : t -> int * int -> int * int -> int * int -> unit = "caml_yuv_gradient_uv"
 
+external hmirror : t -> unit = "caml_yuv_hmirror"
+
 module Effect = struct
   external greyscale : t -> unit = "caml_yuv_greyscale"
 

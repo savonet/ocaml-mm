@@ -715,3 +715,39 @@ CAMLprim value caml_yuv_alpha_of_diff(value _ref, value _img, value _level, valu
 
   CAMLreturn(Val_unit);
 }
+
+CAMLprim value caml_yuv_hmirror(value _img)
+{
+  CAMLparam1(_img);
+  yuv420 img;
+  yuv420_of_value(&img, _img);
+  int w = img.width;
+  int i, j;
+  int y, u, v;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < img.height; j++) {
+    for (i = 0; i < w/2; i++) {
+      y = Y(img, i, j);
+      Y(img, i, j) = Y(img, w-1-i, j);
+      Y(img, w-1-i, j) = y;
+    }
+  }
+  for (j = 0; j < img.height/2; j++)
+    for (i = 0; i < w/4; i++) {
+      u = U2(img, i, j);
+      U2(img, i, j) = U2(img, w/2-1-i, j);
+      U2(img, w/2-1-i, j) = u;
+      v = V2(img, i, j);
+      V2(img, i, j) = V2(img, w/2-1-i, j);
+      V2(img, w/2-1-i, j) = v;
+    }
+
+  if (img.alpha)
+    for (j = 0; j < img.height; j++)
+      for (i = 0; i < w/2; i++)
+        A(img, i, j) = A(img, w-i, j);
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
