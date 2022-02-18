@@ -304,6 +304,17 @@ module YUV420 : sig
   val disk_alpha : t -> int -> int -> int -> unit
   val alpha_of_color : t -> Pixel.yuv -> int -> unit
 
+  (** Takes a reference image and an image, and make similar portions
+      transparent on the second (the last parameter controls the tolerance). This
+      is useful to make bluescreens withtout bluescreens. *)
+  val alpha_of_sameness : t -> t -> int -> unit
+
+  (** [alpha_of_diff prev curr level speed] takes a previous image and a current
+      image and make parts of the current image more transparent if they were the
+      same. [level] is the distance at which we consider two colors to be the
+      same and [speed] is the inverse of the convergence speed. *)
+  val alpha_of_diff : t -> t -> int -> int -> unit
+
   (** [box_alpha img x y width height alpha] sets alpha value on a given image
       box. *)
   val box_alpha : t -> int -> int -> int -> int -> float -> unit

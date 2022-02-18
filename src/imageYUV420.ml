@@ -304,6 +304,18 @@ let alpha_of_color img (y,u,v) d =
   ensure_alpha img;
   alpha_of_color img y u v d
 
+external alpha_of_sameness : t -> t -> int -> unit = "caml_yuv_alpha_of_sameness"
+
+let alpha_of_sameness ref img d =
+  ensure_alpha img;
+  alpha_of_sameness ref img d
+
+external alpha_of_diff : t -> t -> int -> int -> unit = "caml_yuv_alpha_of_diff"
+
+let alpha_of_diff ref img d s =
+  ensure_alpha img;
+  alpha_of_diff ref img d s
+
 external gradient_uv : t -> int * int -> int * int -> int * int -> unit = "caml_yuv_gradient_uv"
 
 module Effect = struct

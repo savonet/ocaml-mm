@@ -618,3 +618,66 @@ CAMLprim value caml_yuv_is_opaque(value _img)
 
   CAMLreturn(Val_bool(ans));
 }
+
+CAMLprim value caml_yuv_alpha_of_sameness(value _ref, value _img, value _d)
+{
+  CAMLparam3(_ref, _img, _d);
+  yuv420 ref, img;
+  yuv420_of_value(&ref, _ref);
+  yuv420_of_value(&img, _img);
+  int d = Int_val(_d);
+
+  int i, j;
+  int y, u, v;
+
+  d = d * d;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < img.height; j++)
+    for (i = 0; i < img.width; i++) {
+      {
+        y = Y(img, i, j) - Y(ref, i, j);
+        u = U(img, i, j) - U(ref, i, j);
+        v = V(img, i, j) - V(ref, i, j);
+        if (y*y + u*u + v*v <= d) A(img, i, j) = 0;
+      }
+    }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_yuv_alpha_of_diff(value _ref, value _img, value _level, value _speed)
+{
+  CAMLparam4(_ref, _img, _level, _speed);
+  yuv420 ref, img;
+  yuv420_of_value(&ref, _ref);
+  yuv420_of_value(&img, _img);
+  int level = Int_val(_level);
+  int speed = Int_val(_speed);
+  int i, j;
+  int y, u, v;
+  int d;
+
+  if (speed < 1) speed = 1;
+  level = level * level;
+
+  caml_enter_blocking_section();
+  for (j = 0; j < img.height; j++)
+    for (i = 0; i < img.width; i++) {
+      {
+        y = Y(img, i, j) - Y(ref, i, j);
+        u = U(img, i, j) - U(ref, i, j);
+        v = V(img, i, j) - V(ref, i, j);
+        d = y*y + u*u + v*v;
+        if (d <= level)
+          A(img, i, j) = A(img, i, j) * (speed * level - (level - d)) / (speed * level);
+        else
+          d = level - min(level, d-level);
+          A(img, i, j) = 0xff - (0xff - A(img, i, j)) * (speed * level - (level - d)) / (speed * level);
+      }
+    }
+  caml_leave_blocking_section();
+
+  CAMLreturn(Val_unit);
+}
