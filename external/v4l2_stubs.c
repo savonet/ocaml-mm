@@ -44,14 +44,13 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <unistd.h>
 #include <sys/select.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/mman.h>
-#include <linux/videodev.h>
 #include <linux/videodev2.h>
-#include <libv4l2.h>
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
@@ -69,13 +68,13 @@ static int xioctl(int fh, int request, void *arg)
 }
 
 
-CAMLprim value caml_v4l2_open(value device, value w, value h, value stride)
+CAMLprim value caml_v4l2_open(value device, value w, value h)
 {
   CAMLparam1(device);
 
   // TODO: error codes
   // TODO: flags
-  int fd = v4l2_open(String_val(device), O_RDWR | O_NONBLOCK);
+  int fd = open(String_val(device), O_RDWR | O_NONBLOCK);
   assert(fd >= 0);
 
   // TODO: different formats ?
@@ -86,7 +85,6 @@ CAMLprim value caml_v4l2_open(value device, value w, value h, value stride)
   fmt.fmt.pix.height       = Int_val(h);
   fmt.fmt.pix.pixelformat  = V4L2_PIX_FMT_RGB24;
   fmt.fmt.pix.field        = V4L2_FIELD_INTERLACED;
-  //fmt.fmt.pix.bytesperline = Int_val(stride);
   xioctl(fd, VIDIOC_S_FMT, &fmt);
   // TODO: check returned sizes
   assert(fmt.fmt.pix.pixelformat == V4L2_PIX_FMT_RGB24);
@@ -141,7 +139,7 @@ CAMLprim value caml_v4l2_grab(value _fd, value data)
   xioctl(fd, VIDIOC_QUERYBUF, &vbuf);
 
   mbuflen = vbuf.length;
-  mbuf = v4l2_mmap(NULL, mbuflen, PROT_READ | PROT_WRITE, MAP_SHARED, fd, vbuf.m.offset);
+  mbuf = mmap(NULL, mbuflen, PROT_READ | PROT_WRITE, MAP_SHARED, fd, vbuf.m.offset);
   assert(mbuf != MAP_FAILED);
 
   memset(&vbuf, 0, sizeof(vbuf));
@@ -177,96 +175,13 @@ CAMLprim value caml_v4l2_grab(value _fd, value data)
   type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   xioctl(fd, VIDIOC_STREAMOFF, &type);
 
-  v4l2_munmap(mbuf, mbuflen);
+  munmap(mbuf, mbuflen);
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_v4l2_close(value fd)
-{
-  CAMLparam0();
-
-  v4l2_close(Int_val(fd));
-
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim value caml_v4l1_open(value device, value w, value h, value stride)
-{
-  CAMLparam1(device);
-  int fd;
-  struct video_capability cap;
-  struct video_window win;
-  struct video_picture vpic;
-
-  fd = open(String_val(device), O_RDONLY);
-  assert(fd >= 0);
-  assert(ioctl(fd, VIDIOCGCAP, &cap) >= 0);
-  assert(ioctl(fd, VIDIOCGWIN, &win) >= 0);
-  assert(ioctl(fd, VIDIOCGPICT, &vpic) >= 0);
-
-  if (cap.type & VID_TYPE_MONOCHROME) {
-    vpic.depth=8;
-    vpic.palette=VIDEO_PALETTE_GREY;    /* 8bit grey */
-    if(ioctl(fd, VIDIOCSPICT, &vpic) < 0) {
-      vpic.depth=6;
-      if(ioctl(fd, VIDIOCSPICT, &vpic) < 0) {
-        vpic.depth=4;
-        if(ioctl(fd, VIDIOCSPICT, &vpic) < 0) {
-          //fprintf(stderr, "Unable to find a supported capture format.\n");
-          close(fd);
-          assert(0);
-        }
-      }
-    }
-  }
-  else {
-    vpic.depth=24;
-    vpic.palette=VIDEO_PALETTE_RGB24;
-
-    if(ioctl(fd, VIDIOCSPICT, &vpic) < 0) {
-      vpic.palette=VIDEO_PALETTE_RGB565;
-      vpic.depth=16;
-
-      if(ioctl(fd, VIDIOCSPICT, &vpic)==-1) {
-        vpic.palette=VIDEO_PALETTE_RGB555;
-        vpic.depth=15;
-
-        if(ioctl(fd, VIDIOCSPICT, &vpic)==-1) {
-          //fprintf(stderr, "Unable to find a supported capture format.\n");
-          //return -1;
-          close(fd);
-          assert(0);
-        }
-      }
-    }
-  }
-  assert(!(cap.type & VID_TYPE_MONOCHROME));
-  assert(vpic.depth == 24);
-  assert(vpic.palette == VIDEO_PALETTE_RGB24);
-
-  CAMLreturn(Val_int(fd));
-}
-
-CAMLprim value caml_v4l1_grab(value fd, value data)
-{
-  CAMLparam1(data);
-  int len = caml_ba_byte_size(Caml_ba_array_val(data));
-  int ret;
-
-  caml_enter_blocking_section();
-  ret = read(fd, Caml_ba_data_val(data), len);
-  caml_leave_blocking_section();
-
-  if (ret < 0)
-    printf("error: %d\n", errno);
-  assert(ret == len);
-
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim value caml_v4l1_close(value fd)
 {
   CAMLparam0();
 

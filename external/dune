@@ -68,3 +68,17 @@
  (optional)
  (synopsis
   "High-level APIs to create and manipulate multimedia streams -- optional oss module"))
+
+(library
+ (name mm_v4l2)
+ (public_name mm.v4l2)
+ (modules mm_v4l2)
+ (libraries mm.base mm.image)
+ (foreign_stubs
+  (language c)
+  (names v4l2_stubs))
+ (enabled_if
+  (= %{system} linux))
+ (optional)
+ (synopsis
+  "High-level APIs to create and manipulate multimedia streams -- optional v4l2 module"))

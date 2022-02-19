@@ -30,6 +30,9 @@ sine_wav:
 graphics:
 	@dune exec ./graphics_test.exe
 
+webcam:
+	@dune exec ./webcam.exe
+
 test:
 	@dune exec ./test.exe
 

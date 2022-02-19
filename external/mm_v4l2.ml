@@ -31,48 +31,28 @@
  *
  *)
 
-module G = Image.Generic
+open Mm_image
 
-module V4L1 = struct
-  type device = Unix.file_descr
+type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
-  external opendev : string -> int -> int -> int -> device = "caml_v4l1_open"
-  external grab : device -> G.data -> unit = "caml_v4l1_grab"
-  external close : device -> unit = "caml_v4l1_close"
-end
+type device =
+  {
+    fd : Unix.file_descr;
+    width : int;
+    height : int;
+  }
 
-module V4L2 = struct
-  type device = Unix.file_descr
+external open_device : string -> int -> int -> Unix.file_descr = "caml_v4l2_open"
 
-  external opendev : string -> int -> int -> int -> device = "caml_v4l2_open"
-  external grab : device -> G.data -> unit = "caml_v4l2_grab"
-  external close : device -> unit = "caml_v4l2_close"
-end
+let open_device dev width height =
+  let fd = open_device dev width height in
+  { fd; width; height }
 
-module V4L = V4L2
+external grab : device -> data -> unit = "caml_v4l2_grab"
 
-class reader device width height =
-  object (self)
-    val dev = V4L.opendev device width height (3 * width)
+let grab dev =
+  let data = Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.c_layout (dev.width * dev.height * 3) in
+  grab dev data;
+  Image.RGBA32.make dev.width dev.height data
 
-    val img =
-      let data =
-        Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.c_layout
-          (width * height * 3)
-      in
-      G.make_rgb G.Pixel.RGB24 width height data
-
-    method frame_rate = 12.
-    method width = width
-    method height = height
-
-    method read buf ofs len =
-      V4L.grab dev (fst (G.rgb_data img));
-      for i = ofs to ofs + len - 1 do
-        buf.(i) <- Image.RGBA32.create width height;
-        G.convert ~copy:true ~proportional:true img (G.of_RGBA32 buf.(i))
-      done;
-      len
-
-    method close = V4L.close dev
-  end
+external close : device -> unit = "caml_v4l2_close"
