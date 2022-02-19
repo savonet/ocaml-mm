@@ -31,6 +31,8 @@
  *
  */
 
+/* See https://www.kernel.org/doc/html/v4.12/media/uapi/v4l/v4l2grab.c.html */
+
 #include <caml/alloc.h>
 #include <caml/bigarray.h>
 #include <caml/fail.h>
@@ -51,6 +53,7 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <linux/videodev2.h>
+#include <libv4l2.h>
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
@@ -59,10 +62,8 @@ static int xioctl(int fh, int request, void *arg)
   int r;
 
   do {
-    r = ioctl(fh, request, arg);
-  } while (r == -1 && ((errno == EINTR) || (errno == EAGAIN)));
-
-  assert(r != -1);
+    r = v4l2_ioctl(fh, request, arg);
+  } while (r == -1 && (errno == EINTR || errno == EAGAIN));
 
   return r;
 }
@@ -72,9 +73,10 @@ CAMLprim value caml_v4l2_open(value device, value w, value h)
 {
   CAMLparam1(device);
 
+  int r;
   // TODO: error codes
   // TODO: flags
-  int fd = open(String_val(device), O_RDWR | O_NONBLOCK);
+  int fd = v4l2_open(String_val(device), O_RDWR | O_NONBLOCK);
   assert(fd >= 0);
 
   // TODO: different formats ?
@@ -84,10 +86,14 @@ CAMLprim value caml_v4l2_open(value device, value w, value h)
   fmt.fmt.pix.width        = Int_val(w);
   fmt.fmt.pix.height       = Int_val(h);
   fmt.fmt.pix.pixelformat  = V4L2_PIX_FMT_RGB24;
+  /* fmt.fmt.pix.pixelformat  = V4L2_PIX_FMT_YUV420; */
   fmt.fmt.pix.field        = V4L2_FIELD_INTERLACED;
-  xioctl(fd, VIDIOC_S_FMT, &fmt);
+  r = xioctl(fd, VIDIOC_S_FMT, &fmt);
+  assert (r != -1);
   // TODO: check returned sizes
   assert(fmt.fmt.pix.pixelformat == V4L2_PIX_FMT_RGB24);
+  assert(fmt.fmt.pix.width == Int_val(w));
+  assert(fmt.fmt.pix.height == Int_val(h));
 
   CAMLreturn(Val_int(fd));
 }
@@ -123,34 +129,46 @@ CAMLprim value caml_v4l2_grab(value _fd, value data)
   enum v4l2_buf_type type;
   struct timeval tv;
   fd_set fds;
-  int ret;
+  int r;
 
   caml_enter_blocking_section();
 
+  // Initiate memory mapping
+  // TODO: support more than 1
+  CLEAR(req);
   req.count = 1;
   req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   req.memory = V4L2_MEMORY_MMAP;
-  xioctl(fd, VIDIOC_REQBUFS, &req);
+  r = xioctl(fd, VIDIOC_REQBUFS, &req);
 
+  if (r == -1) caml_failwith(strerror(errno));
+
+  // Mmap buffer
   memset(&vbuf, 0, sizeof(vbuf));
   vbuf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   vbuf.memory = V4L2_MEMORY_MMAP;
   vbuf.index  = 0;
-  xioctl(fd, VIDIOC_QUERYBUF, &vbuf);
+  r = xioctl(fd, VIDIOC_QUERYBUF, &vbuf);
+  assert (r != -1);
 
   mbuflen = vbuf.length;
-  mbuf = mmap(NULL, mbuflen, PROT_READ | PROT_WRITE, MAP_SHARED, fd, vbuf.m.offset);
+  mbuf = v4l2_mmap(NULL, mbuflen, PROT_READ | PROT_WRITE, MAP_SHARED, fd, vbuf.m.offset);
   assert(mbuf != MAP_FAILED);
 
+  // Enqueue buffer
   memset(&vbuf, 0, sizeof(vbuf));
   vbuf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   vbuf.memory = V4L2_MEMORY_MMAP;
   vbuf.index = 0;
-  xioctl(fd, VIDIOC_QBUF, &vbuf);
+  r = xioctl(fd, VIDIOC_QBUF, &vbuf);
+  assert (r != -1);
 
+  // Start streaming
   type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  xioctl(fd, VIDIOC_STREAMON, &type);
+  r = xioctl(fd, VIDIOC_STREAMON, &type);
+  assert (r != -1);
 
+  // Capture image
   do {
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
@@ -159,23 +177,24 @@ CAMLprim value caml_v4l2_grab(value _fd, value data)
     tv.tv_sec = 2;
     tv.tv_usec = 0;
 
-    ret = select(fd + 1, &fds, NULL, NULL, &tv);
-  } while ((ret == -1 && (errno == EINTR)));
-  assert(ret != -1);
+    r = select(fd + 1, &fds, NULL, NULL, &tv);
+  } while (r == -1 && errno == EINTR);
+  assert(r != -1);
 
   memset(&vbuf, 0, sizeof(vbuf));
   vbuf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   vbuf.memory = V4L2_MEMORY_MMAP;
-  xioctl(fd, VIDIOC_DQBUF, &vbuf);
+  r = xioctl(fd, VIDIOC_DQBUF, &vbuf);
+  assert (r != -1);
 
   memcpy(buf, mbuf, vbuf.bytesused);
 
-  xioctl(fd, VIDIOC_QBUF, &vbuf);
-
+  // Stop capture
   type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  xioctl(fd, VIDIOC_STREAMOFF, &type);
+  r = xioctl(fd, VIDIOC_STREAMOFF, &type);
+  assert (r != -1);
 
-  munmap(mbuf, mbuflen);
+  v4l2_munmap(mbuf, mbuflen);
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);
@@ -185,7 +204,7 @@ CAMLprim value caml_v4l2_close(value fd)
 {
   CAMLparam0();
 
-  close(Int_val(fd));
+  v4l2_close(Int_val(fd));
 
   CAMLreturn(Val_unit);
 }

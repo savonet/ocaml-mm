@@ -35,24 +35,14 @@ open Mm_image
 
 type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
-type device =
-  {
-    fd : Unix.file_descr;
-    width : int;
-    height : int;
-  }
+type device = Unix.file_descr
 
 external open_device : string -> int -> int -> Unix.file_descr = "caml_v4l2_open"
 
-let open_device dev width height =
-  let fd = open_device dev width height in
-  { fd; width; height }
+external grab : Unix.file_descr -> data -> unit = "caml_v4l2_grab"
 
-external grab : device -> data -> unit = "caml_v4l2_grab"
-
-let grab dev =
-  let data = Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.c_layout (dev.width * dev.height * 3) in
-  grab dev data;
-  Image.RGBA32.make dev.width dev.height data
+let grab_rgba32 dev img =
+  let data = Image.RGBA32.data img in
+  grab dev data
 
 external close : device -> unit = "caml_v4l2_close"
