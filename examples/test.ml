@@ -127,6 +127,12 @@ let () =
         ignore l
       done
     );
+  test "hmirror" (fun () ->
+      let img = I.YUV420.create 1000 1000 in
+      I.YUV420.gradient_uv img (0,0) (0xff,0) (0,0xff);
+      I.YUV420.hmirror img;
+      write "hmirror.bmp" (I.YUV420.to_BMP img)
+    );
   test "render canvas" (fun () ->
       let r = I.YUV420.create 200 200 in
       I.YUV420.fill r (I.Pixel.yuv_of_rgb (0xff,0,0));
