@@ -43,7 +43,8 @@ let () =
       Audio.noise a;
       Audio.pan 0.4 a;
       ignore (Audio.squares a);
-      Audio.amplify 0.5 a
+      Audio.amplify 0.5 a;
+      ignore(Audio.(of_array (to_array a)))
     );
   time ~skip:!skip_long "adding many buffers" (fun () ->
       let a = Audio.create 2 44100 in

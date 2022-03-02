@@ -504,3 +504,35 @@ CAMLprim double caml_mm_audio_squares(value _src) {
 CAMLprim value caml_mm_audio_squares_bytes(value _src) {
   return caml_copy_double(caml_mm_audio_squares(_src));
 }
+
+CAMLprim value caml_mm_audio_to_array(value _src) {
+  CAMLparam1(_src);
+  CAMLlocal1(_dst);
+  float *src = Caml_ba_data_val(_src);
+  int len = Caml_ba_array_val(_src)->dim[0];
+  int i;
+
+  _dst = caml_alloc_float_array(len);
+  for (i = 0; i < len; i++) {
+    Store_double_field(_dst, i, src[i]);
+  }
+
+  CAMLreturn(_dst);
+}
+
+CAMLprim value caml_mm_audio_of_array(value _src) {
+  CAMLparam1(_src);
+  CAMLlocal1(_dst);
+  intnat len[1];
+  intnat i;
+  float *dst;
+
+  len[0] = Wosize_val(_src) / Double_wosize;
+  _dst = caml_ba_alloc(CAML_BA_FLOAT64 | CAML_BA_C_LAYOUT, 1, NULL, len);
+  dst = Caml_ba_data_val(_dst);
+  for (i = 0; i < len[0]; i++) {
+    dst[i] = Double_field(_src, i);
+  }
+
+  CAMLreturn(_dst);
+}
