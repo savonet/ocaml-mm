@@ -137,7 +137,13 @@ module Mono = struct
   let unsafe_set (buf : t) = Bigarray.Array1.unsafe_set buf
 
 
-  external of_array : float array -> t = "caml_mm_audio_of_array"
+  external copy_float_array : float array -> t -> unit = "caml_mm_copy_float_array"
+
+  let of_array src =
+    let dst = create (Array.length src) in
+    copy_float_array src dst;
+    dst
+
   external to_array : t -> float array = "caml_mm_audio_to_array"
 
   let sub buf off len = Bigarray.Array1.sub buf off len
