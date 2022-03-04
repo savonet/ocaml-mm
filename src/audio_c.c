@@ -523,14 +523,13 @@ CAMLprim value caml_mm_audio_to_array(value _src) {
 CAMLprim value caml_mm_audio_of_array(value _src) {
   CAMLparam1(_src);
   CAMLlocal1(_dst);
-  intnat len[1];
-  intnat i;
+  long len = Wosize_val(_src) / Double_wosize;
+  long i;
   float *dst;
 
-  len[0] = Wosize_val(_src) / Double_wosize;
-  _dst = caml_ba_alloc(CAML_BA_FLOAT64 | CAML_BA_C_LAYOUT, 1, NULL, len);
+  _dst = caml_ba_alloc_dims(CAML_BA_FLOAT64 | CAML_BA_C_LAYOUT, 1, NULL, len);
   dst = Caml_ba_data_val(_dst);
-  for (i = 0; i < len[0]; i++) {
+  for (i = 0; i < len; i++) {
     dst[i] = Double_field(_src, i);
   }
 
