@@ -32,7 +32,6 @@
  *)
 
 open ImageBase
-
 module RGBA32 = ImageRGBA32
 
 type t = {
@@ -100,7 +99,7 @@ let default_stride width y_stride uv_stride =
   in
   (y_stride, uv_stride)
 
-let create ?(blank=false) ?y_stride ?uv_stride width height =
+let create ?(blank = false) ?y_stride ?uv_stride width height =
   let y_stride, uv_stride = default_stride width y_stride uv_stride in
   let y = Data.aligned align (height * y_stride) in
   let u, v =
@@ -154,13 +153,11 @@ let of_PPM s =
   remove_alpha img;
   img
 
-let to_BMP img =
-  to_RGBA32 img |> RGBA32.to_BMP
+let to_BMP img = to_RGBA32 img |> RGBA32.to_BMP
 
 let copy img =
   let dst =
-    create ~y_stride:img.y_stride ~uv_stride:img.uv_stride img.width
-      img.height
+    create ~y_stride:img.y_stride ~uv_stride:img.uv_stride img.width img.height
   in
   Bigarray.Array1.blit img.y dst.y;
   Bigarray.Array1.blit img.u dst.u;
@@ -179,11 +176,11 @@ let blit_all src dst =
     Data.blit src.u 0 dst.u 0 (dst.height / 2 * dst.uv_stride);
     Data.blit src.v 0 dst.v 0 (dst.height / 2 * dst.uv_stride);
     match src.alpha with
-    | None -> dst.alpha <- None
-    | Some alpha -> (
-        match dst.alpha with
-        | None -> dst.alpha <- Some (Data.copy alpha)
-        | Some alpha' -> Bigarray.Array1.blit alpha alpha'))
+      | None -> dst.alpha <- None
+      | Some alpha -> (
+          match dst.alpha with
+            | None -> dst.alpha <- Some (Data.copy alpha)
+            | Some alpha' -> Bigarray.Array1.blit alpha alpha'))
   else (
     dst.y <- Data.copy src.y;
     dst.u <- Data.copy src.u;
@@ -191,16 +188,15 @@ let blit_all src dst =
     dst.y_stride <- src.y_stride;
     dst.uv_stride <- src.uv_stride;
     match src.alpha with
-    | None -> dst.alpha <- None
-    | Some alpha -> dst.alpha <- Some (Data.copy alpha))
+      | None -> dst.alpha <- None
+      | Some alpha -> dst.alpha <- Some (Data.copy alpha))
 
 let blit src dst = blit_all src dst
 
 external randomize : t -> unit = "caml_yuv_randomize"
 external add : t -> int -> int -> t -> unit = "caml_yuv420_add"
 
-let add src ?(x = 0) ?(y = 0) dst =
-  add src x y dst
+let add src ?(x = 0) ?(y = 0) dst = add src x y dst
 
 external set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
   = "caml_yuv420_set_pixel_rgba"
@@ -211,7 +207,7 @@ let set_pixel_rgba img i j ((_, _, _, a) as p) =
   if a <> 0xff then ensure_alpha img;
   set_pixel_rgba img i j p
 
-  (*
+(*
   let set_pixel_rgba img i j (r,g,b,a) =
     let data = img.data in
     let width = img.width in
@@ -266,12 +262,8 @@ let rotate src x y a dst =
 
 external is_opaque : t -> bool = "caml_yuv_is_opaque"
 
-let is_opaque img =
-  if img.alpha = None then true
-  else is_opaque img
-
-let optimize_alpha img =
-  if is_opaque img then img.alpha <- None
+let is_opaque img = if img.alpha = None then true else is_opaque img
+let optimize_alpha img = if is_opaque img then img.alpha <- None
 
 let alpha_to_y img =
   ensure_alpha img;
@@ -298,13 +290,15 @@ let box_alpha img x y r =
   ensure_alpha img;
   box_alpha img x y r
 
-external alpha_of_color : t -> int -> int -> int -> int -> unit = "caml_yuv_alpha_of_color"
+external alpha_of_color : t -> int -> int -> int -> int -> unit
+  = "caml_yuv_alpha_of_color"
 
-let alpha_of_color img (y,u,v) d =
+let alpha_of_color img (y, u, v) d =
   ensure_alpha img;
   alpha_of_color img y u v d
 
-external alpha_of_sameness : t -> t -> int -> unit = "caml_yuv_alpha_of_sameness"
+external alpha_of_sameness : t -> t -> int -> unit
+  = "caml_yuv_alpha_of_sameness"
 
 let alpha_of_sameness ref img d =
   ensure_alpha img;
@@ -316,17 +310,15 @@ let alpha_of_diff ref img d s =
   ensure_alpha img;
   alpha_of_diff ref img d s
 
-external gradient_uv : t -> int * int -> int * int -> int * int -> unit = "caml_yuv_gradient_uv"
+external gradient_uv : t -> int * int -> int * int -> int * int -> unit
+  = "caml_yuv_gradient_uv"
 
 external hmirror : t -> unit = "caml_yuv_hmirror"
 
 module Effect = struct
   external greyscale : t -> unit = "caml_yuv_greyscale"
-
   external invert : t -> unit = "caml_yuv_invert"
-
   external sepia : t -> unit = "caml_yuv_sepia"
-
   external lomo : t -> unit = "caml_yuv_lomo"
 
   module Alpha = struct

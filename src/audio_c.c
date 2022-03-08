@@ -234,7 +234,7 @@ CAMLprim value caml_mm_audio_to_s24le(value a, value _dst, value _offs) {
 }
 
 CAMLprim value caml_mm_audio_to_s16(value _le, value a, value _dst,
-                                     value _dst_offs) {
+                                    value _dst_offs) {
   CAMLparam4(_le, a, _dst, _dst_offs);
   int little_endian = Bool_val(_le);
   int dst_offs = Int_val(_dst_offs);
@@ -276,7 +276,7 @@ CAMLprim value caml_mm_audio_to_s16(value _le, value a, value _dst,
 }
 
 CAMLprim value caml_mm_audio_convert_s16(value _le, value _src, value _offset,
-                                          value _dst) {
+                                         value _dst) {
   CAMLparam4(_le, _src, _offset, _dst);
   int little_endian = Bool_val(_le);
   const char *src = String_val(_src);
@@ -366,7 +366,7 @@ CAMLprim value caml_mm_audio_of_u8(value _src, value _offset, value _dst) {
 }
 
 CAMLprim value caml_mm_audio_convert_s32le(value _src, value _offset,
-                                            value _dst) {
+                                           value _dst) {
   CAMLparam3(_src, _offset, _dst);
   const char *src = String_val(_src);
   int offset = Int_val(_offset);
@@ -392,7 +392,7 @@ CAMLprim value caml_mm_audio_convert_s32le(value _src, value _offset,
 }
 
 CAMLprim value caml_mm_audio_convert_s24le(value _src, value _offset,
-                                            value _dst) {
+                                           value _dst) {
   CAMLparam3(_src, _offset, _dst);
   const char *src = String_val(_src);
   int nc = Wosize_val(_dst);
@@ -448,7 +448,7 @@ CAMLprim value caml_mm_audio_add_coef(value _src, double coef, value _to_add) {
 }
 
 CAMLprim value caml_mm_audio_add_coef_bytes(value _src, value _coef,
-                                             value _to_add) {
+                                            value _to_add) {
   double coef = Double_val(_coef);
   return caml_mm_audio_add_coef(_src, coef, _to_add);
 }

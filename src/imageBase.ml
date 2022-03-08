@@ -35,9 +35,9 @@ module List = struct
   include List
 
   let rec iter_right f = function
-    | x::l ->
-      iter_right f l;
-      f x
+    | x :: l ->
+        iter_right f l;
+        f x
     | [] -> ()
 end
 
@@ -52,7 +52,7 @@ module Data = struct
     Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.C_layout n
 
   (** [round n k] rounds [n] to the nearest upper multiple of [k]. *)
-  let round k n = ((n + (k - 1)) / k) * k
+  let round k n = (n + (k - 1)) / k * k
 
   (** [aligned k n] allocates [n] bytes at a multiple of [k]. *)
   external aligned : int -> int -> t = "caml_data_aligned"
@@ -96,22 +96,17 @@ end
 module Point = struct
   type t = int * int
 
-  let min (x,y) (x',y') = (min x x', min y y')
-
-  let max (x,y) (x',y') = (max x x', max y y')
-
-  let lt (x,y) (x',y') = x < x' && y < y'
-
-  let le (x,y) (x',y') = x <= x' && y <= y'
-
-  let neg (x,y) = (-x,-y)
+  let min (x, y) (x', y') = (min x x', min y y')
+  let max (x, y) (x', y') = (max x x', max y y')
+  let lt (x, y) (x', y') = x < x' && y < y'
+  let le (x, y) (x', y') = x <= x' && y <= y'
+  let neg (x, y) = (-x, -y)
 end
 
 module Fraction = struct
   type t = int * int
 
-  let min (a,b) (a',b') =
-    if a * b' < a' * b then (a,b) else (a',b')
+  let min (a, b) (a', b') = if a * b' < a' * b then (a, b) else (a', b')
 end
 
 module Draw = struct

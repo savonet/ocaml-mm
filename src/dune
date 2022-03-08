@@ -22,7 +22,14 @@
  (name mm_image)
  (public_name mm.image)
  (libraries bigarray)
- (modules imageBase imageBGRA imageRGBA32 imageYUV420 imageGeneric imageCanvas image)
+ (modules
+  imageBase
+  imageBGRA
+  imageRGBA32
+  imageYUV420
+  imageGeneric
+  imageCanvas
+  image)
  (foreign_stubs
   (extra_deps config.h)
   (language c)

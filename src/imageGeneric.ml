@@ -70,20 +70,20 @@ module Pixel = struct
   let string_of_format = function
     | RGB x -> (
         match x with
-        | RGB24 -> "RGB24"
-        | BGR24 -> "BGR24"
-        | RGB32 -> "RGB32"
-        | BGR32 -> "BGR32"
-        | RGBA32 -> "RGBA32")
+          | RGB24 -> "RGB24"
+          | BGR24 -> "BGR24"
+          | RGB32 -> "RGB32"
+          | BGR32 -> "BGR32"
+          | RGBA32 -> "RGBA32")
     | YUV x -> (
         match x with
-        | YUV422 -> "YUV422"
-        | YUV444 -> "YUV444"
-        | YUV411 -> "YUV411"
-        | YUV410 -> "YUV410"
-        | YUVJ420 -> "YUVJ420"
-        | YUVJ422 -> "YUVJ422"
-        | YUVJ444 -> "YUVJ444")
+          | YUV422 -> "YUV422"
+          | YUV444 -> "YUV444"
+          | YUV411 -> "YUV411"
+          | YUV410 -> "YUV410"
+          | YUVJ420 -> "YUVJ420"
+          | YUVJ422 -> "YUVJ422"
+          | YUVJ444 -> "YUVJ444")
 end
 
 type data =
@@ -105,27 +105,25 @@ type t = { data : t_data; width : int; height : int }
 
 let rgb_data img =
   match img.data with
-  | RGB rgb -> (rgb.rgb_data, rgb.rgb_stride)
-  | _ -> assert false
+    | RGB rgb -> (rgb.rgb_data, rgb.rgb_stride)
+    | _ -> assert false
 
 let yuv_data img =
   match img.data with
-  | YUV yuv -> ((yuv.y, yuv.y_stride), (yuv.u, yuv.v, yuv.uv_stride))
-  | _ -> assert false
+    | YUV yuv -> ((yuv.y, yuv.y_stride), (yuv.u, yuv.v, yuv.uv_stride))
+    | _ -> assert false
 
 let width img = img.width
 let height img = img.height
 
 let pixel_format img =
   match img.data with
-  | RGB rgb -> Pixel.RGB rgb.rgb_pixel
-  | YUV yuv -> Pixel.YUV yuv.yuv_pixel
+    | RGB rgb -> Pixel.RGB rgb.rgb_pixel
+    | YUV yuv -> Pixel.YUV yuv.yuv_pixel
 
 let make_rgb pix ?stride width height data =
   let stride =
-    match stride with
-    | Some s -> s
-    | None -> width * Pixel.size (Pixel.RGB pix)
+    match stride with Some s -> s | None -> width * Pixel.size (Pixel.RGB pix)
   in
   let rgb_data = { rgb_pixel = pix; rgb_data = data; rgb_stride = stride } in
   { data = RGB rgb_data; width; height }
@@ -138,11 +136,7 @@ let of_RGBA32 img =
       rgb_stride = img.RGBA32.stride;
     }
   in
-  {
-    data = RGB rgb_data;
-    width = img.RGBA32.width;
-    height = img.RGBA32.height;
-  }
+  { data = RGB rgb_data; width = img.RGBA32.width; height = img.RGBA32.height }
 
 let to_RGBA32 img =
   let rgb_data = match img.data with RGB d -> d | _ -> assert false in
@@ -165,17 +159,12 @@ let of_YUV420 img =
       uv_stride = img.YUV420.uv_stride;
     }
   in
-  {
-    data = YUV yuv_data;
-    width = img.YUV420.width;
-    height = img.YUV420.height;
-  }
+  { data = YUV yuv_data; width = img.YUV420.width; height = img.YUV420.height }
 
 let to_YUV420 img =
   let yuv = match img.data with YUV yuv -> yuv | _ -> assert false in
   assert (yuv.yuv_pixel = Pixel.YUVJ420);
-  YUV420.make img.width img.height yuv.y yuv.y_stride yuv.u yuv.v
-    yuv.uv_stride
+  YUV420.make img.width img.height yuv.y yuv.y_stride yuv.u yuv.v yuv.uv_stride
 
 external rgba32_to_bgr32 : data -> int -> data -> int -> int * int -> unit
   = "caml_RGBA32_to_BGR32"
@@ -188,50 +177,50 @@ external rgb32_to_rgba32 : data -> int -> data -> int -> int * int -> unit
 
 let blank img =
   match img.data with
-  | RGB rgb -> (
-      match rgb.rgb_pixel with
-      | Pixel.RGBA32 -> RGBA32.blank (to_RGBA32 img)
-      | _ -> failwith "Not implemented")
-  | YUV yuv -> (
-      match yuv.yuv_pixel with
-      | Pixel.YUVJ420 -> YUV420.blank (to_YUV420 img)
-      | _ -> failwith "Not implemented")
+    | RGB rgb -> (
+        match rgb.rgb_pixel with
+          | Pixel.RGBA32 -> RGBA32.blank (to_RGBA32 img)
+          | _ -> failwith "Not implemented")
+    | YUV yuv -> (
+        match yuv.yuv_pixel with
+          | Pixel.YUVJ420 -> YUV420.blank (to_YUV420 img)
+          | _ -> failwith "Not implemented")
 
 let convert ?(proportional = true) ?scale_kind src dst =
   match (src.data, dst.data) with
-  | RGB s, RGB d
-    when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.RGBA32 ->
-    let src = to_RGBA32 src in
-    let dst = to_RGBA32 dst in
-    RGBA32.Scale.onto ?kind:scale_kind ~proportional src dst
-  | YUV s, RGB d
-    when s.yuv_pixel = Pixel.YUVJ420 && d.rgb_pixel = Pixel.RGBA32 ->
-    let src = to_YUV420 src in
-    let src = YUV420.to_RGBA32 src in
-    let dst = to_RGBA32 dst in
-    RGBA32.Scale.onto ?kind:scale_kind ~proportional src dst
-  | RGB s, YUV d
-    when s.rgb_pixel = Pixel.RGBA32 && d.yuv_pixel = Pixel.YUVJ420 ->
-    let src = to_RGBA32 src in
-    let src = YUV420.of_RGBA32 src in
-    let dst = to_YUV420 dst in
-    YUV420.scale ~proportional src dst
-  | RGB s, RGB d
-    when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.BGR32 ->
-    if src.width = dst.width && src.height = dst.height then
-      rgba32_to_bgr32 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride
-        (src.width, src.height)
-    else raise Not_implemented
-  | RGB s, RGB d
-    when s.rgb_pixel = Pixel.RGB24 && d.rgb_pixel = Pixel.RGBA32 ->
-    if src.width = dst.width && src.height = dst.height then
-      rgb24_to_rgba32 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride
-        (src.width, src.height)
-    else raise Not_implemented
-  | RGB s, RGB d
-    when s.rgb_pixel = Pixel.RGB32 && d.rgb_pixel = Pixel.RGBA32 ->
-    if src.width = dst.width && src.height = dst.height then
-      rgb32_to_rgba32 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride
-        (src.width, src.height)
-    else raise Not_implemented
-  | _ -> raise Not_implemented
+    | RGB s, RGB d when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.RGBA32
+      ->
+        let src = to_RGBA32 src in
+        let dst = to_RGBA32 dst in
+        RGBA32.Scale.onto ?kind:scale_kind ~proportional src dst
+    | YUV s, RGB d
+      when s.yuv_pixel = Pixel.YUVJ420 && d.rgb_pixel = Pixel.RGBA32 ->
+        let src = to_YUV420 src in
+        let src = YUV420.to_RGBA32 src in
+        let dst = to_RGBA32 dst in
+        RGBA32.Scale.onto ?kind:scale_kind ~proportional src dst
+    | RGB s, YUV d
+      when s.rgb_pixel = Pixel.RGBA32 && d.yuv_pixel = Pixel.YUVJ420 ->
+        let src = to_RGBA32 src in
+        let src = YUV420.of_RGBA32 src in
+        let dst = to_YUV420 dst in
+        YUV420.scale ~proportional src dst
+    | RGB s, RGB d when s.rgb_pixel = Pixel.RGBA32 && d.rgb_pixel = Pixel.BGR32
+      ->
+        if src.width = dst.width && src.height = dst.height then
+          rgba32_to_bgr32 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride
+            (src.width, src.height)
+        else raise Not_implemented
+    | RGB s, RGB d when s.rgb_pixel = Pixel.RGB24 && d.rgb_pixel = Pixel.RGBA32
+      ->
+        if src.width = dst.width && src.height = dst.height then
+          rgb24_to_rgba32 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride
+            (src.width, src.height)
+        else raise Not_implemented
+    | RGB s, RGB d when s.rgb_pixel = Pixel.RGB32 && d.rgb_pixel = Pixel.RGBA32
+      ->
+        if src.width = dst.width && src.height = dst.height then
+          rgb32_to_rgba32 s.rgb_data s.rgb_stride d.rgb_data d.rgb_stride
+            (src.width, src.height)
+        else raise Not_implemented
+    | _ -> raise Not_implemented

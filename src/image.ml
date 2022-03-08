@@ -32,13 +32,8 @@
  *)
 
 include ImageBase
-
 module BGRA = ImageBGRA
-
 module RGBA32 = ImageRGBA32
-
 module YUV420 = ImageYUV420
-
 module Generic = ImageGeneric
-
 include ImageCanvas

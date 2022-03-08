@@ -7,9 +7,9 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 
 #include "image_pixel.h"
 #include "image_rgb.h"
@@ -212,7 +212,8 @@ CAMLprim value caml_yuv420_scale_coef(value _src, value _dst, value xscale,
         U(dst, i, j) = U(src, is, js);
         V(dst, i, j) = V(src, is, js);
       }
-      if (src.alpha) A(dst, i, j) = A(src, is, js);
+      if (src.alpha)
+        A(dst, i, j) = A(src, is, js);
     }
   caml_leave_blocking_section();
 
@@ -247,7 +248,8 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
       */
       int is = ia - x;
       int js = j - y;
-      memcpy(dst.y + (j * dst.y_stride + ia), src.y + (js * src.y_stride + is), il);
+      memcpy(dst.y + (j * dst.y_stride + ia), src.y + (js * src.y_stride + is),
+             il);
     }
     /* U and V only have to be done once every two times */
     /*
@@ -259,11 +261,13 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
         V(dst, i, j) = V(src, is, js);
       }
     */
-    for (j = ja; j < jb; j+=2) {
+    for (j = ja; j < jb; j += 2) {
       int is = ia - x;
       int js = j - y;
-      memcpy(dst.u + (j/2 * dst.uv_stride + ia/2), src.u + (js/2 * src.uv_stride + is/2), il/2);
-      memcpy(dst.v + (j/2 * dst.uv_stride + ia/2), src.v + (js/2 * src.uv_stride + is/2), il/2);
+      memcpy(dst.u + (j / 2 * dst.uv_stride + ia / 2),
+             src.u + (js / 2 * src.uv_stride + is / 2), il / 2);
+      memcpy(dst.v + (j / 2 * dst.uv_stride + ia / 2),
+             src.v + (js / 2 * src.uv_stride + is / 2), il / 2);
     }
     if (dst.alpha)
       for (j = ja; j < jb; j++)
@@ -303,14 +307,18 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
           Y(dst, i, j) = Y(src, is, js);
           U(dst, i, j) = U(src, is, js);
           V(dst, i, j) = V(src, is, js);
-          if (dst.alpha) A(dst, i, j) = 0xff;
+          if (dst.alpha)
+            A(dst, i, j) = 0xff;
         } else {
-          Y(dst, i, j) = (Y(src, is, js) * a + Y(dst, i, j) * (0xff - a)) / 0xff;
+          Y(dst, i, j) =
+              (Y(src, is, js) * a + Y(dst, i, j) * (0xff - a)) / 0xff;
           if (dst.alpha)
             A(dst, i, j) = 0xff - ((0xff - a) * (0xff - A(dst, i, j))) / 0xff;
           if (i % 2 == 0 && j % 2 == 0) {
-            U(dst, i, j) = (U(src, is, js) * a + U(dst, i, j) * (0xff - a)) / 0xff;
-            V(dst, i, j) = (V(src, is, js) * a + V(dst, i, j) * (0xff - a)) / 0xff;
+            U(dst, i, j) =
+                (U(src, is, js) * a + U(dst, i, j) * (0xff - a)) / 0xff;
+            V(dst, i, j) =
+                (V(src, is, js) * a + V(dst, i, j) * (0xff - a)) / 0xff;
           }
         }
       }
@@ -343,7 +351,8 @@ CAMLprim value caml_yuv420_get_pixel_rgba(value img, value _i, value _j) {
   CAMLreturn(ans);
 }
 
-CAMLprim value caml_yuv420_set_pixel_rgba(value img, value _i, value _j, value c) {
+CAMLprim value caml_yuv420_set_pixel_rgba(value img, value _i, value _j,
+                                          value c) {
   CAMLparam4(img, _i, _j, c);
   yuv420 yuv;
   yuv420_of_value(&yuv, img);
@@ -388,8 +397,8 @@ CAMLprim value caml_yuv_greyscale(value img) {
   int i, j;
 
   caml_enter_blocking_section();
-  for (j = 0; j < yuv.height; j+=2)
-    for (i = 0; i < yuv.width; i+=2) {
+  for (j = 0; j < yuv.height; j += 2)
+    for (i = 0; i < yuv.width; i += 2) {
       U(yuv, i, j) = 0x7f;
       V(yuv, i, j) = 0x7f;
     }
@@ -465,8 +474,8 @@ CAMLprim value caml_yuv_box_alpha_bytecode(value *argv, int argn) {
                                    argv[5]);
 }
 
-CAMLprim value caml_yuv_alpha_of_color(value img, value _y, value _u, value _v, value _d)
-{
+CAMLprim value caml_yuv_alpha_of_color(value img, value _y, value _u, value _v,
+                                       value _d) {
   CAMLparam5(img, _y, _u, _v, _d);
   yuv420 yuv;
   yuv420_of_value(&yuv, img);
@@ -481,21 +490,20 @@ CAMLprim value caml_yuv_alpha_of_color(value img, value _y, value _u, value _v, 
 
   caml_enter_blocking_section();
   for (j = 0; j < yuv.height; j++)
-    for (i = 0; i < yuv.width; i++)
-      {
-        yy = Y(yuv, i, j) - y;
-        uu = U(yuv, i, j) - u;
-        vv = V(yuv, i, j) - v;
-        if (yy * yy + uu * uu + vv * vv <= d)
-          A(yuv, i, j) = 0;
-      }
+    for (i = 0; i < yuv.width; i++) {
+      yy = Y(yuv, i, j) - y;
+      uu = U(yuv, i, j) - u;
+      vv = V(yuv, i, j) - v;
+      if (yy * yy + uu * uu + vv * vv <= d)
+        A(yuv, i, j) = 0;
+    }
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_yuv_rotate(value _src, value _ox, value _oy, value _angle, value _dst)
-{
+CAMLprim value caml_yuv_rotate(value _src, value _ox, value _oy, value _angle,
+                               value _dst) {
   CAMLparam5(_src, _ox, _oy, _angle, _dst);
   yuv420 src, dst;
   yuv420_of_value(&src, _src);
@@ -512,14 +520,12 @@ CAMLprim value caml_yuv_rotate(value _src, value _ox, value _oy, value _angle, v
     for (i = 0; i < dst.width; i++) {
       i2 = (i - ox) * cosa + (j - oy) * sina + ox;
       j2 = -(i - ox) * sina + (j - oy) * cosa + oy;
-      if (0 <= i2 && i2 < src.width && 0 <= j2 && j2 < src.height)
-        {
-          Y(dst, i, j) = Y(src, i2, j2);
-          U(dst, i, j) = U(src, i2, j2);
-          V(dst, i, j) = V(dst, i2, j2);
-          A(dst, i, j) = src.alpha ? A(src, i2, j2) : 0xff;
-        }
-      else
+      if (0 <= i2 && i2 < src.width && 0 <= j2 && j2 < src.height) {
+        Y(dst, i, j) = Y(src, i2, j2);
+        U(dst, i, j) = U(src, i2, j2);
+        V(dst, i, j) = V(dst, i2, j2);
+        A(dst, i, j) = src.alpha ? A(src, i2, j2) : 0xff;
+      } else
         A(dst, i, j) = 0;
     }
   caml_leave_blocking_section();
@@ -527,8 +533,8 @@ CAMLprim value caml_yuv_rotate(value _src, value _ox, value _oy, value _angle, v
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_yuv_gradient_uv(value _img, value uv, value duvx, value duvy)
-{
+CAMLprim value caml_yuv_gradient_uv(value _img, value uv, value duvx,
+                                    value duvy) {
   CAMLparam4(_img, uv, duvx, duvy);
   yuv420 img;
   yuv420_of_value(&img, _img);
@@ -555,8 +561,7 @@ CAMLprim value caml_yuv_gradient_uv(value _img, value uv, value duvx, value duvy
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_yuv_invert(value _img)
-{
+CAMLprim value caml_yuv_invert(value _img) {
   CAMLparam1(_img);
   yuv420 img;
   yuv420_of_value(&img, _img);
@@ -575,8 +580,7 @@ CAMLprim value caml_yuv_invert(value _img)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_yuv_sepia(value _img)
-{
+CAMLprim value caml_yuv_sepia(value _img) {
   CAMLparam1(_img);
   yuv420 img;
   yuv420_of_value(&img, _img);
@@ -609,8 +613,7 @@ CAMLprim value caml_yuv_sepia(value _img)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_yuv_lomo(value _img)
-{
+CAMLprim value caml_yuv_lomo(value _img) {
   CAMLparam1(_img);
   yuv420 img;
   yuv420_of_value(&img, _img);
@@ -628,8 +631,7 @@ CAMLprim value caml_yuv_lomo(value _img)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_yuv_is_opaque(value _img)
-{
+CAMLprim value caml_yuv_is_opaque(value _img) {
   CAMLparam1(_img);
   yuv420 img;
   yuv420_of_value(&img, _img);
@@ -638,23 +640,21 @@ CAMLprim value caml_yuv_is_opaque(value _img)
   int ans = 1;
 
   caml_enter_blocking_section();
-  for (j = 0; j < img.height; j++)
-    {
-      if (!ans) break;
-      for (i = 0; i < img.width; i++)
-        if (A(img, i, j) != 0xff)
-          {
-            ans = 0;
-            break;
-          }
-    }
+  for (j = 0; j < img.height; j++) {
+    if (!ans)
+      break;
+    for (i = 0; i < img.width; i++)
+      if (A(img, i, j) != 0xff) {
+        ans = 0;
+        break;
+      }
+  }
   caml_leave_blocking_section();
 
   CAMLreturn(Val_bool(ans));
 }
 
-CAMLprim value caml_yuv_alpha_of_sameness(value _ref, value _img, value _d)
-{
+CAMLprim value caml_yuv_alpha_of_sameness(value _ref, value _img, value _d) {
   CAMLparam3(_ref, _img, _d);
   yuv420 ref, img;
   yuv420_of_value(&ref, _ref);
@@ -673,7 +673,8 @@ CAMLprim value caml_yuv_alpha_of_sameness(value _ref, value _img, value _d)
         y = Y(img, i, j) - Y(ref, i, j);
         u = U(img, i, j) - U(ref, i, j);
         v = V(img, i, j) - V(ref, i, j);
-        if (y*y + u*u + v*v <= d) A(img, i, j) = 0;
+        if (y * y + u * u + v * v <= d)
+          A(img, i, j) = 0;
       }
     }
   caml_leave_blocking_section();
@@ -681,8 +682,8 @@ CAMLprim value caml_yuv_alpha_of_sameness(value _ref, value _img, value _d)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_yuv_alpha_of_diff(value _ref, value _img, value _level, value _speed)
-{
+CAMLprim value caml_yuv_alpha_of_diff(value _ref, value _img, value _level,
+                                      value _speed) {
   CAMLparam4(_ref, _img, _level, _speed);
   yuv420 ref, img;
   yuv420_of_value(&ref, _ref);
@@ -693,7 +694,8 @@ CAMLprim value caml_yuv_alpha_of_diff(value _ref, value _img, value _level, valu
   int y, u, v;
   int d;
 
-  if (speed < 1) speed = 1;
+  if (speed < 1)
+    speed = 1;
   level = level * level * 3;
 
   caml_enter_blocking_section();
@@ -703,12 +705,15 @@ CAMLprim value caml_yuv_alpha_of_diff(value _ref, value _img, value _level, valu
         y = Y(img, i, j) - Y(ref, i, j);
         u = U(img, i, j) - U(ref, i, j);
         v = V(img, i, j) - V(ref, i, j);
-        d = y*y + u*u + v*v;
+        d = y * y + u * u + v * v;
         if (d <= level)
-          A(img, i, j) = A(img, i, j) * (speed * level - (level - d)) / (speed * level);
+          A(img, i, j) =
+              A(img, i, j) * (speed * level - (level - d)) / (speed * level);
         else
-          d = level - min(level, d-level);
-          A(img, i, j) = 0xff - (0xff - A(img, i, j)) * (speed * level - (level - d)) / (speed * level);
+          d = level - min(level, d - level);
+        A(img, i, j) = 0xff - (0xff - A(img, i, j)) *
+                                  (speed * level - (level - d)) /
+                                  (speed * level);
       }
     }
   caml_leave_blocking_section();
@@ -716,8 +721,7 @@ CAMLprim value caml_yuv_alpha_of_diff(value _ref, value _img, value _level, valu
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_yuv_hmirror(value _img)
-{
+CAMLprim value caml_yuv_hmirror(value _img) {
   CAMLparam1(_img);
   yuv420 img;
   yuv420_of_value(&img, _img);
@@ -727,26 +731,26 @@ CAMLprim value caml_yuv_hmirror(value _img)
 
   caml_enter_blocking_section();
   for (j = 0; j < img.height; j++) {
-    for (i = 0; i < w/2; i++) {
+    for (i = 0; i < w / 2; i++) {
       y = Y(img, i, j);
-      Y(img, i, j) = Y(img, w-1-i, j);
-      Y(img, w-1-i, j) = y;
+      Y(img, i, j) = Y(img, w - 1 - i, j);
+      Y(img, w - 1 - i, j) = y;
     }
   }
-  for (j = 0; j < img.height/2; j++)
-    for (i = 0; i < w/4; i++) {
+  for (j = 0; j < img.height / 2; j++)
+    for (i = 0; i < w / 4; i++) {
       u = U2(img, i, j);
-      U2(img, i, j) = U2(img, w/2-1-i, j);
-      U2(img, w/2-1-i, j) = u;
+      U2(img, i, j) = U2(img, w / 2 - 1 - i, j);
+      U2(img, w / 2 - 1 - i, j) = u;
       v = V2(img, i, j);
-      V2(img, i, j) = V2(img, w/2-1-i, j);
-      V2(img, w/2-1-i, j) = v;
+      V2(img, i, j) = V2(img, w / 2 - 1 - i, j);
+      V2(img, w / 2 - 1 - i, j) = v;
     }
 
   if (img.alpha)
     for (j = 0; j < img.height; j++)
-      for (i = 0; i < w/2; i++)
-        A(img, i, j) = A(img, w-i, j);
+      for (i = 0; i < w / 2; i++)
+        A(img, i, j) = A(img, w - i, j);
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);

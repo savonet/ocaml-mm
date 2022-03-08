@@ -234,7 +234,9 @@ module YUV420 : sig
   (** Create an image with given width, height, alpha channel, Y (with given
       stride) U and V (with given stride). The strides of U and V are the same,
       the stride of the alpha channel is the same as Y. *)
-  val make : int -> int -> ?alpha:Data.t -> Data.t -> int -> Data.t -> Data.t -> int -> t
+  val make :
+    int -> int -> ?alpha:Data.t -> Data.t -> int -> Data.t -> Data.t -> int -> t
+
   val make_data : int -> int -> Data.t -> int -> int -> t
   val create : ?blank:bool -> ?y_stride:int -> ?uv_stride:int -> int -> int -> t
 
@@ -548,7 +550,8 @@ module Canvas (I : CanvasImage) : sig
   val scale : ?scaler:(I.t -> I.t -> unit) -> Fraction.t -> Fraction.t -> t -> t
 
   (** Resize the image, scaling and changing the viewport. *)
-  val resize : ?proportional:bool -> ?scaler:(I.t -> I.t -> unit) -> int -> int -> t -> t
+  val resize :
+    ?proportional:bool -> ?scaler:(I.t -> I.t -> unit) -> int -> int -> t -> t
 
   module Draw : sig
     (** Draw a line (the result is typically added to another image). *)
@@ -556,4 +559,9 @@ module Canvas (I : CanvasImage) : sig
   end
 end
 
-module CanvasYUV420 : module type of Canvas(struct include ImageYUV420 let create w h = create w h let scale = scale ~proportional:false end)
+module CanvasYUV420 : module type of Canvas (struct
+  include ImageYUV420
+
+  let create w h = create w h
+  let scale = scale ~proportional:false
+end)

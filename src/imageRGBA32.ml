@@ -32,14 +32,14 @@
  *)
 
 open ImageBase
-
 module BGRA = ImageBGRA
 
 module Color = struct
   type t = int * int * int * int
 end
 
-type data = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+type data =
+  (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
 type t = {
   (* Order matters for C callbacks! *)
@@ -81,15 +81,14 @@ external blit_off_scale : t -> t -> int * int -> int * int -> bool -> unit
 
 let blit_all src dst =
   assert (
-    src.width = dst.width && src.height = dst.height
-    && src.stride = dst.stride);
+    src.width = dst.width && src.height = dst.height && src.stride = dst.stride);
   blit src dst
 
 let blit ?(blank = true) ?(x = 0) ?(y = 0) ?w ?h src dst =
   match (w, h) with
-  | None, None -> blit_off src dst x y blank
-  | Some w, Some h -> blit_off_scale src dst (x, y) (w, h) blank
-  | _, _ -> assert false
+    | None, None -> blit_off src dst x y blank
+    | Some w, Some h -> blit_off_scale src dst (x, y) (w, h) blank
+    | _, _ -> assert false
 
 external fill_all : t -> Color.t -> unit = "caml_rgb_fill"
 external blank_all : t -> unit = "caml_rgb_blank"
@@ -154,18 +153,17 @@ module Scale = struct
 
   let scale_coef_kind k src dst (dw, sw) (dh, sh) =
     match k with
-    | Linear -> scale_coef src dst (dw, sw) (dh, sh)
-    | Bilinear ->
-      let x = float dw /. float sw in
-      let y = float dh /. float sh in
-      bilinear_scale_coef src dst x y
+      | Linear -> scale_coef src dst (dw, sw) (dh, sh)
+      | Bilinear ->
+          let x = float dw /. float sw in
+          let y = float dh /. float sh in
+          bilinear_scale_coef src dst x y
 
   let onto ?(kind = Linear) ?(proportional = false) src dst =
     let sw, sh = (src.width, src.height) in
     let dw, dh = (dst.width, dst.height) in
     if dw = sw && dh = sh then blit_all src dst
-    else if not proportional then
-      scale_coef_kind kind src dst (dw, sw) (dh, sh)
+    else if not proportional then scale_coef_kind kind src dst (dw, sw) (dh, sh)
     else (
       let n, d = if dh * sw < sh * dw then (dh, sh) else (dw, sw) in
       scale_coef_kind kind src dst (n, d) (n, d))
@@ -224,8 +222,7 @@ let of_PPM ?alpha data =
   if datalen < 3 * w * h then
     raise
       (Invalid_format
-         (Printf.sprintf "Got %d bytes of data instead of expected %d."
-            datalen
+         (Printf.sprintf "Got %d bytes of data instead of expected %d." datalen
             (3 * w * h)));
   let ans = create w h in
   for j = 0 to h - 1 do
@@ -237,9 +234,9 @@ let of_PPM ?alpha data =
       in
       let a =
         match alpha with
-        | Some (ra, ga, ba) ->
-          if r = ra && g = ga && b = ba then 0x00 else 0xff
-        | None -> 0xff
+          | Some (ra, ga, ba) ->
+              if r = ra && g = ga && b = ba then 0x00 else 0xff
+          | None -> 0xff
       in
       set_pixel ans i j (r, g, b, a)
     done
@@ -248,7 +245,7 @@ let of_PPM ?alpha data =
 
 external to_int_image : t -> int array array = "caml_rgb_to_color_array"
 
-  (*
+(*
   let to_int_image buf =
     let w = buf.width in
     let h = buf.height in
@@ -275,12 +272,12 @@ external add_off_scale : t -> t -> int * int -> int * int -> unit
 
 let add ?(x = 0) ?(y = 0) ?w ?h src dst =
   match (w, h) with
-  | None, None ->
-    if x = 0 && y = 0 && src.width = dst.width && src.height = dst.height
-    then add_fast src dst
-    else add_off src dst x y
-  | Some w, Some h -> add_off_scale src dst (x, y) (w, h)
-  | _, _ -> assert false
+    | None, None ->
+        if x = 0 && y = 0 && src.width = dst.width && src.height = dst.height
+        then add_fast src dst
+        else add_off src dst x y
+    | Some w, Some h -> add_off_scale src dst (x, y) (w, h)
+    | _, _ -> assert false
 
 external swap_rb : t -> unit = "caml_rgba_swap_rb"
 

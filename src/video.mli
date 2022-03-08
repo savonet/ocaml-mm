@@ -113,7 +113,7 @@ val randomize : t -> int -> int -> unit
 
 (** Videos with canvas images. *)
 module Canvas : sig
-  module Image : module type of Mm_image.Image.Canvas(Image)
+  module Image : module type of Mm_image.Image.Canvas (Image)
 
   (** An image. *)
   type image = Image.t
