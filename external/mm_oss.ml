@@ -59,8 +59,8 @@ class writer ?(device = "/dev/dsp") channels sample_rate =
         w := !w + self#stream_write buf (ofs + !w) (len - !w)
       done
 
-    method write buf =
-      let s = Audio.S16LE.make buf in
+    method write buf ofs len =
+      let s = Audio.S16LE.make buf ofs len in
       self#stream_really_write s 0 (String.length s)
 
     method close = self#stream_close
@@ -80,13 +80,12 @@ class reader ?(device = "/dev/dsp") channels sample_rate =
     method length : int = assert false
     method duration : float = assert false
 
-    method read buf =
-      let len = Audio.length buf in
+    method read buf ofs len =
       let slen = Audio.S16LE.length channels len in
       let s = Bytes.create slen in
       let r = self#stream_read s 0 slen in
       let len = Audio.S16LE.length channels r in
-      Audio.S16LE.to_audio (Bytes.unsafe_to_string s) 0 (Audio.sub buf 0 len);
+      Audio.S16LE.to_audio (Bytes.unsafe_to_string s) 0 buf ofs len;
       len
 
     method seek (_ : int) : unit = assert false

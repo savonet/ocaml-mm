@@ -148,9 +148,9 @@ static inline uint8_t u8_clip(double s) {
 #ifdef DEBUG
     printf("Wrong sample: %f\n", s);
 #endif
-    return 255;
+    return INT8_MAX;
   } else
-    return (s * 127. + 128.);
+    return (s * INT8_MAX + INT8_MAX);
 }
 
 #define u8tof(x) (((double)x - INT8_MAX) / INT8_MAX)
@@ -179,70 +179,71 @@ static inline uint8_t u8_clip(double s) {
   s32tof(((int32_t *)src)[offset / 4 + i * nc + c])
 #endif
 
-CAMLprim value caml_mm_audio_to_s32le(value a, value _dst, value _offs) {
-  CAMLparam3(a, _dst, _offs);
+CAMLprim value caml_mm_audio_to_s32le(value _src, value _src_offs, value _dst,
+                                      value _dst_offs, value _len) {
+  CAMLparam2(_src, _dst);
+  CAMLlocal1(src);
   int c, i;
-  int offs = Int_val(_offs);
-  int nc = Wosize_val(a);
+  int dst_offs = Int_val(_dst_offs);
+  int src_offs = Int_val(_src_offs);
+  int nc = Wosize_val(_src);
   if (nc == 0)
     CAMLreturn(Val_unit);
-  int len = Caml_ba_array_val(Field(a, 0))->dim[0];
-  float *src;
+  int len = Int_val(_len);
   int32_t *dst = (int32_t *)Bytes_val(_dst);
 
-  if (caml_string_length(_dst) < offs + len * nc * 4)
+  if (caml_string_length(_dst) < dst_offs + len * nc * 4)
     caml_invalid_argument("pcm_to_s32le: destination buffer too short");
 
   for (c = 0; c < nc; c++) {
-    src = Caml_ba_data_val(Field(a, c));
-    caml_release_runtime_system();
+    src = Field(_src, c);
     for (i = 0; i < len; i++) {
-      dst[i * nc + c] = s32_clip(src[i + offs]);
+      dst[i * nc + c + dst_offs] = s32_clip(Double_field(src, i + src_offs));
 #ifdef BIGENDIAN
-      dst[i * nc + c] = bswap_32(dst[i * nc + c]);
+      dst[i * nc + c + dst_offs] = bswap_32(dst[i * nc + c + dst_offs]);
 #endif
     }
-    caml_acquire_runtime_system();
   }
 
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_mm_audio_to_s24le(value a, value _dst, value _offs) {
-  CAMLparam3(a, _dst, _offs);
+CAMLprim value caml_mm_audio_to_s24le(value _src, value _src_offs, value _dst,
+                                      value _dst_offs, value _len) {
+  CAMLparam2(_src, _dst);
+  CAMLlocal1(src);
   int c, i;
-  int offs = Int_val(_offs);
-  int nc = Wosize_val(a);
+  int dst_offs = Int_val(_dst_offs);
+  int src_offs = Int_val(_src_offs);
+  int nc = Wosize_val(_src);
   if (nc == 0)
     CAMLreturn(Val_unit);
-  int len = Caml_ba_array_val(Field(a, 0))->dim[0];
-  float *src;
+  int len = Int_val(_len);
   int24_t *dst = (int24_t *)Bytes_val(_dst);
 
-  if (caml_string_length(_dst) < offs + len * nc * 3)
+  if (caml_string_length(_dst) < dst_offs + len * nc * 3)
     caml_invalid_argument("pcm_to_s24le: destination buffer too short");
 
   for (c = 0; c < nc; c++) {
-    src = Caml_ba_data_val(Field(a, c));
-    caml_release_runtime_system();
+    src = Field(_src, c);
     for (i = 0; i < len; i++)
-      s24_clip(src[offs + i], dst[i * nc + c]);
-    caml_acquire_runtime_system();
+      s24_clip(Double_field(src, i + src_offs), dst[i * nc + c + dst_offs]);
   }
 
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_mm_audio_to_s16(value _le, value a, value _dst,
-                                    value _dst_offs) {
-  CAMLparam4(_le, a, _dst, _dst_offs);
+CAMLprim value caml_mm_audio_to_s16(value _le, value _src, value _src_offs,
+                                    value _dst, value _dst_offs, value _len) {
+  CAMLparam2(_src, _dst);
+  CAMLlocal1(src);
   int little_endian = Bool_val(_le);
   int dst_offs = Int_val(_dst_offs);
-  int nc = Wosize_val(a);
+  int src_offs = Int_val(_src_offs);
+  int nc = Wosize_val(_src);
   if (nc == 0)
     CAMLreturn(Val_unit);
-  int len = Caml_ba_array_val(Field(a, 0))->dim[0];
-  float *src;
+  int len = Int_val(_len);
   int16_t *dst = (int16_t *)Bytes_val(_dst);
   int c, i;
 
@@ -253,21 +254,21 @@ CAMLprim value caml_mm_audio_to_s16(value _le, value a, value _dst,
 
   if (little_endian == 1)
     for (c = 0; c < nc; c++) {
-      src = Caml_ba_data_val(Field(a, c));
+      src = Field(_src, c);
       for (i = 0; i < len; i++) {
-        dst[i * nc + c] = s16_clip(src[i]);
+        dst[i * nc + c + dst_offs] = s16_clip(Double_field(src, i + src_offs));
 #ifdef BIGENDIAN
-        dst[i * nc + c] = bswap_16(dst[i * nc + c]);
+        dst[i * nc + c + dst_offs] = bswap_16(dst[i * nc + c + dst_offs]);
 #endif
       }
     }
   else
     for (c = 0; c < nc; c++) {
-      src = Caml_ba_data_val(Field(a, c));
+      src = Field(_src, c);
       for (i = 0; i < len; i++) {
-        dst[i * nc + c] = s16_clip(src[i]);
+        dst[i * nc + c + dst_offs] = s16_clip(Double_field(src, i + src_offs));
 #ifndef BIGENDIAN
-        dst[i * nc + c] = bswap_16(dst[i * nc + c]);
+        dst[i * nc + c + dst_offs] = bswap_16(dst[i * nc + c + dst_offs]);
 #endif
       }
     }
@@ -275,51 +276,63 @@ CAMLprim value caml_mm_audio_to_s16(value _le, value a, value _dst,
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_mm_audio_convert_s16(value _le, value _src, value _offset,
-                                         value _dst) {
-  CAMLparam4(_le, _src, _offset, _dst);
+CAMLprim value caml_mm_audio_to_s16_byte(value *argv, int argn) {
+  return caml_mm_audio_to_s16(argv[0], argv[1], argv[2], argv[3], argv[4],
+                              argv[5]);
+}
+
+CAMLprim value caml_mm_audio_convert_s16(value _le, value _src, value _src_offs,
+                                         value _dst, value _dst_offs,
+                                         value _len) {
+  CAMLparam2(_src, _dst);
+  CAMLlocal1(dst);
   int little_endian = Bool_val(_le);
   const char *src = String_val(_src);
-  int offset = Int_val(_offset);
+  int src_offs = Int_val(_src_offs);
+  int dst_offs = Int_val(_dst_offs);
   int nc = Wosize_val(_dst);
   if (nc == 0)
     CAMLreturn(Val_unit);
-  int len = Caml_ba_array_val(Field(_dst, 0))->dim[0];
-  float *dstc;
+  int len = Int_val(_len);
   int i, c;
 
-  if ((offset + len) * nc * 2 > caml_string_length(_src))
+  if ((src_offs + len) * nc * 2 > caml_string_length(_src))
     caml_invalid_argument("convert_native: output buffer too small");
 
   if (little_endian == 1)
     for (c = 0; c < nc; c++) {
-      dstc = (float *)Caml_ba_data_val(Field(_dst, c));
-      caml_release_runtime_system();
+      dst = Field(_dst, c);
       for (i = 0; i < len; i++)
-        dstc[i] = get_s16le(src, offset, nc, c, i);
-      caml_acquire_runtime_system();
+        Store_double_field(dst, i + dst_offs,
+                           get_s16le(src, src_offs, nc, c, i));
     }
   else
     for (c = 0; c < nc; c++) {
-      dstc = (float *)Caml_ba_data_val(Field(_dst, c));
-      caml_release_runtime_system();
+      dst = Field(_dst, c);
       for (i = 0; i < len; i++)
-        dstc[i] = get_s16be(src, offset, nc, c, i);
-      caml_acquire_runtime_system();
+        Store_double_field(dst, i + dst_offs,
+                           get_s16be(src, src_offs, nc, c, i));
     }
 
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_mm_audio_to_u8(value a, value _dst, value _dst_offs) {
-  CAMLparam3(a, _dst, _dst_offs);
+CAMLprim value caml_mm_audio_convert_s16_byte(value *argv, int argn) {
+  return caml_mm_audio_convert_s16(argv[0], argv[1], argv[2], argv[3], argv[4],
+                                   argv[5]);
+}
+
+CAMLprim value caml_mm_audio_to_u8(value _src, value _src_offs, value _dst,
+                                   value _dst_offs, value _len) {
+  CAMLparam2(_src, _dst);
+  CAMLlocal1(src);
   int c, i;
   int dst_offs = Int_val(_dst_offs);
-  int nc = Wosize_val(a);
+  int src_offs = Int_val(_src_offs);
+  int nc = Wosize_val(_src);
   if (nc == 0)
     CAMLreturn(Val_unit);
-  int len = Caml_ba_array_val(Field(a, 0))->dim[0];
-  float *src;
+  int len = Int_val(_len);
   uint8_t *dst = (uint8_t *)Bytes_val(_dst);
 
   if (caml_string_length(_dst) < nc * (dst_offs + len))
@@ -328,206 +341,89 @@ CAMLprim value caml_mm_audio_to_u8(value a, value _dst, value _dst_offs) {
   dst = dst + nc * dst_offs;
 
   for (c = 0; c < nc; c++) {
-    src = (float *)Caml_ba_data_val(Field(a, c));
-    caml_release_runtime_system();
+    src = Field(_src, c);
     for (i = 0; i < len; i++) {
-      dst[i * nc + c] = u8_clip(src[i]);
+      dst[i * nc + c + dst_offs] = u8_clip(Double_field(src, i + src_offs));
     }
-    caml_acquire_runtime_system();
   }
 
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_mm_audio_of_u8(value _src, value _offset, value _dst) {
-  CAMLparam3(_src, _offset, _dst);
+CAMLprim value caml_mm_audio_of_u8(value _src, value _src_offs, value _dst,
+                                   value _dst_offs, value _len) {
+  CAMLparam2(_src, _dst);
+  CAMLlocal1(dst);
   const char *src = String_val(_src);
-  int offset = Int_val(_offset);
+  int src_offs = Int_val(_src_offs);
+  int dst_offs = Int_val(_dst_offs);
   int nc = Wosize_val(_dst);
   if (nc == 0)
     CAMLreturn(Val_unit);
-  int len = Caml_ba_array_val(Field(_dst, 0))->dim[0];
+  int len = Int_val(_len);
   assert(nc > 0);
   int i, c;
-  float *dstc;
 
-  if (len + offset > caml_string_length(_src))
+  if (len + src_offs > caml_string_length(_src))
     caml_invalid_argument("convert_native: output buffer too small");
 
   for (c = 0; c < nc; c++) {
-    dstc = (float *)Caml_ba_data_val(Field(_dst, c));
-    caml_release_runtime_system();
+    dst = Field(_dst, c);
     for (i = 0; i < len; i++)
-      dstc[i] = get_u8(src, offset, nc, c, i);
-    caml_acquire_runtime_system();
+      Store_double_field(dst, i + dst_offs, get_u8(src, src_offs, nc, c, i));
   }
 
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_mm_audio_convert_s32le(value _src, value _offset,
-                                           value _dst) {
-  CAMLparam3(_src, _offset, _dst);
-  const char *src = String_val(_src);
-  int offset = Int_val(_offset);
-  int nc = Wosize_val(_dst);
-  if (nc == 0)
-    CAMLreturn(Val_unit);
-  int len = Caml_ba_array_val(Field(_dst, 0))->dim[0];
-  int i, c;
-  float *dstc;
-
-  if (caml_string_length(_src) < offset + len * nc * 4)
-    caml_invalid_argument("convert_native: output buffer too small");
-
-  for (c = 0; c < nc; c++) {
-    dstc = Caml_ba_data_val(Field(_dst, c));
-    caml_release_runtime_system();
-    for (i = 0; i < len; i++)
-      dstc[i] = get_s32le(src, offset, nc, c, i);
-    caml_acquire_runtime_system();
-  }
-
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim value caml_mm_audio_convert_s24le(value _src, value _offset,
-                                           value _dst) {
-  CAMLparam3(_src, _offset, _dst);
-  const char *src = String_val(_src);
-  int nc = Wosize_val(_dst);
-  if (nc == 0)
-    CAMLreturn(Val_unit);
-  int offset = Int_val(_offset);
-  int len = Caml_ba_array_val(Field(_dst, 0))->dim[0];
-  int i, c;
-  float *dstc;
-
-  if (caml_string_length(_src) < offset + len * nc * 3)
-    caml_invalid_argument("convert_native: output buffer too small");
-
-  for (c = 0; c < nc; c++) {
-    dstc = Caml_ba_data_val(Field(_dst, c));
-    caml_release_runtime_system();
-    for (i = 0; i < len; i++)
-      dstc[i] = get_s24le(src, offset, nc, c, i);
-    caml_acquire_runtime_system();
-  }
-
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim value caml_mm_audio_add(value _src, value _to_add) {
-  CAMLparam2(_src, _to_add);
-  float *src = Caml_ba_data_val(_src);
-  float *to_add = Caml_ba_data_val(_to_add);
-  int len = Caml_ba_array_val(_src)->dim[0];
-  int i;
-
-  caml_release_runtime_system();
-  for (i = 0; i < len; i++)
-    src[i] = src[i] + to_add[i];
-  caml_acquire_runtime_system();
-
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim value caml_mm_audio_add_coef(value _src, double coef, value _to_add) {
-  CAMLparam2(_src, _to_add);
-  float *src = Caml_ba_data_val(_src);
-  float *to_add = Caml_ba_data_val(_to_add);
-  int len = Caml_ba_array_val(_src)->dim[0];
-  int i;
-
-  caml_release_runtime_system();
-  for (i = 0; i < len; i++)
-    src[i] = src[i] + coef * to_add[i];
-  caml_acquire_runtime_system();
-
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim value caml_mm_audio_add_coef_bytes(value _src, value _coef,
-                                            value _to_add) {
-  double coef = Double_val(_coef);
-  return caml_mm_audio_add_coef(_src, coef, _to_add);
-}
-
-CAMLprim value caml_mm_audio_amplify(double coef, value _src) {
-  CAMLparam1(_src);
-  float *src = Caml_ba_data_val(_src);
-  int len = Caml_ba_array_val(_src)->dim[0];
-  int i;
-
-  caml_release_runtime_system();
-  for (i = 0; i < len; i++)
-    src[i] = coef * src[i];
-  caml_acquire_runtime_system();
-
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim value caml_mm_audio_amplify_bytes(value _coef, value _src) {
-  double coef = Double_val(_coef);
-  return caml_mm_audio_amplify(coef, _src);
-}
-
-CAMLprim value caml_mm_audio_clip(value _src) {
-  CAMLparam1(_src);
-  float *src = Caml_ba_data_val(_src);
-  int len = Caml_ba_array_val(_src)->dim[0];
-  int i;
-
-  caml_release_runtime_system();
-  for (i = 0; i < len; i++)
-    src[i] = clip(src[i]);
-  caml_acquire_runtime_system();
-
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim double caml_mm_audio_squares(value _src) {
-  CAMLparam1(_src);
-  float *src = Caml_ba_data_val(_src);
-  int len = Caml_ba_array_val(_src)->dim[0];
-  int i;
-  float square = 0;
-
-  caml_release_runtime_system();
-  for (i = 0; i < len; i++)
-    square += src[i] * src[i];
-  caml_acquire_runtime_system();
-
-  CAMLreturn(square);
-}
-
-CAMLprim value caml_mm_audio_squares_bytes(value _src) {
-  return caml_copy_double(caml_mm_audio_squares(_src));
-}
-
-CAMLprim value caml_mm_audio_to_array(value _src) {
-  CAMLparam1(_src);
-  CAMLlocal1(_dst);
-  float *src = Caml_ba_data_val(_src);
-  int len = Caml_ba_array_val(_src)->dim[0];
-  int i;
-
-  _dst = caml_alloc_float_array(len);
-  for (i = 0; i < len; i++) {
-    Store_double_field(_dst, i, src[i]);
-  }
-
-  CAMLreturn(_dst);
-}
-
-CAMLprim value caml_mm_copy_float_array(value _src, value _dst) {
+CAMLprim value caml_mm_audio_convert_s32le(value _src, value _src_offs,
+                                           value _dst, value _dst_offs,
+                                           value _len) {
   CAMLparam2(_src, _dst);
-  float *dst = Caml_ba_data_val(_dst);
-  int len = Caml_ba_array_val(_dst)->dim[0];
-  long i;
+  CAMLlocal1(dst);
+  const char *src = String_val(_src);
+  int src_offs = Int_val(_src_offs);
+  int dst_offs = Int_val(_dst_offs);
+  int nc = Wosize_val(_dst);
+  if (nc == 0)
+    CAMLreturn(Val_unit);
+  int len = Int_val(_len);
+  int i, c;
 
-  for (i = 0; i < len; i++) {
-    dst[i] = Double_field(_src, i);
+  if (caml_string_length(_src) < src_offs + len * nc * 4)
+    caml_invalid_argument("convert_native: output buffer too small");
+
+  for (c = 0; c < nc; c++) {
+    dst = Field(_dst, c);
+    for (i = 0; i < len; i++)
+      Store_double_field(dst, i + dst_offs, get_s32le(src, src_offs, nc, c, i));
   }
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_mm_audio_convert_s24le(value _src, value _src_offs,
+                                           value _dst, value _dst_offs,
+                                           value _len) {
+  CAMLparam2(_src, _dst);
+  CAMLlocal1(dst);
+  const char *src = String_val(_src);
+  int src_offs = Int_val(_src_offs);
+  int dst_offs = Int_val(_dst_offs);
+  int nc = Wosize_val(_dst);
+  if (nc == 0)
+    CAMLreturn(Val_unit);
+  int len = Int_val(_len);
+  int i, c;
+
+  if (caml_string_length(_src) < src_offs + len * nc * 3)
+    caml_invalid_argument("convert_native: output buffer too small");
+
+  for (c = 0; c < nc; c++) {
+    dst = Field(_dst, c);
+    for (i = 0; i < len; i++)
+      Store_double_field(dst, i + dst_offs, get_s24le(src, src_offs, nc, c, i));
+  }
+
   CAMLreturn(Val_unit);
 }

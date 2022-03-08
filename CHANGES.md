@@ -1,6 +1,7 @@
 0.8.0 (unreleased)
 =====
 - Add support for image and video canvas.
+- Switch audio data type to `float array`
 
 0.7.5 (03-02-2022)
 =====

@@ -15,6 +15,6 @@ val rw :
   ; prepare : unit
   ; wait : int -> bool
   ; recover : exn -> unit
-  ; read : Audio.t -> int
-  ; write : Audio.t -> int
+  ; read : Audio.t -> int -> int -> int
+  ; write : Audio.t -> int -> int -> int
   ; close : unit >

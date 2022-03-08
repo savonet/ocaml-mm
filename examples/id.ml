@@ -15,14 +15,14 @@ let () =
   let buf = Audio.create read#channels blen in
   let loop = ref true in
   while !loop do
-    let n = read#read buf in
+    let n = read#read buf 0 blen in
     if n = 0 then loop := false;
-    let c = FFT.complex_create (Audio.to_mono buf) in
+    let c = FFT.complex_create (Audio.to_mono buf 0 n) in
     FFT.Window.cosine c;
     FFT.fft fft c;
     let c = Array.map (fun c -> c.Complex.re) c in
-    let buf = Audio.of_array (Array.make read#channels c) in
-    write#write buf
+    let buf = Array.make read#channels c in
+    write#write buf 0 (Audio.length buf)
   done;
   write#close;
   read#close

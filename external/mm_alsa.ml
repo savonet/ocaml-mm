@@ -62,7 +62,7 @@ let rw channels samplerate ?(device = "default") ?(playback = false)
     Alsa.Pcm.set_params dev params;
     Alsa.Pcm.set_nonblock dev (not blocking)
 
-    method read buf = Alsa.Pcm.readn_float_ba dev buf
-    method write buf = Alsa.Pcm.writen_float_ba dev buf
+    method read = Alsa.Pcm.readn_float dev
+    method write = Alsa.Pcm.writen_float dev
     method close = Alsa.Pcm.close dev
   end

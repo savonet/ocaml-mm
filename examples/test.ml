@@ -44,19 +44,69 @@ module A = Audio
 
 let () =
   Printf.printf "## Testing audio\n\n%!";
+  let len = 44100 in
+  let iter = 10000 in
   test "basic functions" (fun () ->
-      let a = A.create 2 44100 in
-      A.noise a;
-      A.pan 0.4 a;
-      ignore (A.squares a);
-      A.amplify 0.5 a;
-      ignore Audio.(of_array (to_array a)));
+      let a = A.create 2 len in
+      A.noise a 0 len;
+      A.pan 0.4 a 0 len;
+      ignore (A.squares a 0 len);
+      assert (A.length a = len);
+      A.amplify 0.5 a 0 len);
+  let b = A.create 2 len in
+  let a = A.create 2 len in
   time "adding many buffers" (fun () ->
-      let a = A.create 2 44100 in
       for _ = 1 to 10000 do
-        let b = A.create 2 44100 in
-        A.add b a
+        A.add b 0 a 0 len
       done);
+  let src = A.make 2 len 1. in
+  let buf = Bytes.create (A.U8.size 2 len) in
+  let dst = A.create 2 len in
+  time "u8 conversion" (fun () ->
+    for _ = 1 to iter do
+      A.U8.of_audio src 0 buf 0 len;
+      A.U8.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
+    done);
+  assert (dst.(1).(len-1) = 1.);
+  let src = A.make 2 len 1. in
+  let buf = Bytes.create (A.S16LE.size 2 len) in
+  let dst = A.create 2 len in
+  time "s16le conversion" (fun () ->
+    for _ = 1 to iter do
+      A.S16LE.of_audio src 0 buf 0 len;
+      A.S16LE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
+    done);
+  assert (dst.(1).(len-1) = 1.);
+  assert (dst.(1).(len-1) = 1.);
+  let src = A.make 2 len 1. in
+  let buf = Bytes.create (A.S16BE.size 2 len) in
+  let dst = A.create 2 len in
+  time "s16be conversion" (fun () ->
+    for _ = 1 to iter do
+      A.S16BE.of_audio src 0 buf 0 len;
+      A.S16BE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
+    done);
+  assert (dst.(1).(len-1) = 1.);
+  assert (dst.(1).(len-1) = 1.);
+  let src = A.make 2 len 1. in
+  let buf = Bytes.create (A.S24LE.size 2 len) in
+  let dst = A.create 2 len in
+  time "s24le conversion" (fun () ->
+    for _ = 1 to iter do
+      A.S24LE.of_audio src 0 buf 0 len;
+      A.S24LE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
+    done);
+  assert (dst.(1).(len-1) = 1.);
+  assert (dst.(1).(len-1) = 1.);
+  let src = A.make 2 len 1. in
+  let buf = Bytes.create (A.S32LE.size 2 len) in
+  let dst = A.create 2 len in
+  time "s32le conversion" (fun () ->
+    for _ = 1 to iter do
+      A.S32LE.of_audio src 0 buf 0 len;
+      A.S32LE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
+    done);
+  assert (dst.(1).(len-1) = 1.);
   Printf.printf "\n"
 
 module I = Image

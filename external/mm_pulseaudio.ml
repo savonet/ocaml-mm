@@ -31,7 +31,6 @@
  *
  *)
 
-open Mm_audio
 open Pulseaudio
 
 class writer client_name stream_name channels rate =
@@ -46,8 +45,6 @@ class writer client_name stream_name channels rate =
       in
       Simple.create ~client_name ~dir:Dir_playback ~stream_name ~sample ()
 
-    method write buf =
-      Simple.write dev (Audio.to_array buf) 0 (Audio.length buf)
-
+    method write = Simple.write dev
     method close = Simple.free dev
   end
