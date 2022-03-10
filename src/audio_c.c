@@ -427,3 +427,30 @@ CAMLprim value caml_mm_audio_convert_s24le(value _src, value _src_offs,
 
   CAMLreturn(Val_unit);
 }
+
+CAMLprim value caml_mm_audio_of_ba(value _src) {
+  CAMLparam1(_src);
+  CAMLlocal1(_dst);
+  float *src = Caml_ba_data_val(_src);
+  int len = Caml_ba_array_val(_src)->dim[0];
+  int i;
+
+  _dst = caml_alloc_float_array(len);
+  for (i = 0; i < len; i++) {
+    Store_double_field(_dst, i, src[i]);
+  }
+
+  CAMLreturn(_dst);
+}
+
+CAMLprim value caml_mm_audio_copy_to_ba(value _src, value _dst) {
+  CAMLparam2(_src, _dst);
+  float *dst = Caml_ba_data_val(_dst);
+  int len = Caml_ba_array_val(_dst)->dim[0];
+  long i;
+
+  for (i = 0; i < len; i++) {
+    dst[i] = Double_field(_src, i);
+  }
+  CAMLreturn(Val_unit);
+}

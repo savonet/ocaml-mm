@@ -88,6 +88,8 @@ module Mono : sig
   val sub : t -> int -> int -> t
   val blit : t -> int -> t -> int -> int -> unit
   val copy : t -> int -> int -> t
+  val of_ba : (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t -> t
+  val to_ba : t -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t
 
   (** Length in samples. *)
   val length : t -> int
@@ -351,6 +353,8 @@ val sub : t -> int -> int -> t
 val clip : t -> int -> int -> unit
 val noise : t -> int -> int -> unit
 val squares : t -> int -> int -> float
+val of_ba : (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t array -> t
+val to_ba : t -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t array
 
 (** Amplify a portion of the buffer by a given coefficient. *)
 val amplify : float -> t -> int -> int -> unit
