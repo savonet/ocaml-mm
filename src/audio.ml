@@ -136,8 +136,14 @@ module Mono = struct
     blit src ofs dst 0 len;
     dst
 
-  external of_ba : (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t -> float array = "caml_mm_audio_of_ba"
+  external copy_from_ba : (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t -> float array -> int -> int -> unit = "caml_mm_audio_copy_from_ba"
   external copy_to_ba : float array -> int -> int -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t -> unit = "caml_mm_audio_copy_to_ba"
+
+  let of_ba buf =
+    let len =  Bigarray.Array1.dim buf in
+    let dst = Array.create_float len in
+    copy_from_ba buf dst 0 len;
+    dst 
 
   let to_ba buf ofs len =
     let ba = Bigarray.Array1.create Bigarray.float32 Bigarray.c_layout len in
@@ -928,6 +934,8 @@ let of_mono b = [| b |]
 let resample ?mode ratio data offset length =
   Array.map (fun buf -> Mono.resample ?mode ratio buf offset length) data
 
+let copy_from_ba ba buf ofs len = Array.iteri (fun i b -> Mono.copy_from_ba ba.(i) b ofs len) buf 
+let copy_to_ba buf ofs len ba = Array.iteri (fun i b -> Mono.copy_to_ba buf.(i) ofs len b) ba
 let of_ba = Array.map Mono.of_ba
 let to_ba buf ofs len = Array.map (fun b -> Mono.to_ba b ofs len) buf
 

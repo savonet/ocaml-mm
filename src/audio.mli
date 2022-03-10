@@ -1,4 +1,4 @@
-(*
+	(*
  * Copyright 2011 The Savonet Team
  *
  * This file is part of ocaml-mm.
@@ -88,6 +88,8 @@ module Mono : sig
   val sub : t -> int -> int -> t
   val blit : t -> int -> t -> int -> int -> unit
   val copy : t -> int -> int -> t
+  val copy_to_ba : t -> int -> int -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t -> unit
+  val copy_from_ba : (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t -> t -> int -> int -> unit
   val of_ba : (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t -> t
   val to_ba : t -> int -> int -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t
 
@@ -353,6 +355,8 @@ val sub : t -> int -> int -> t
 val clip : t -> int -> int -> unit
 val noise : t -> int -> int -> unit
 val squares : t -> int -> int -> float
+val copy_to_ba : t -> int -> int -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t array -> unit
+val copy_from_ba : (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t array -> t -> int -> int -> unit
 val of_ba : (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t array -> t
 val to_ba : t -> int -> int -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t array
 

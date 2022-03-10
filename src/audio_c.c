@@ -428,16 +428,15 @@ CAMLprim value caml_mm_audio_convert_s24le(value _src, value _src_offs,
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_mm_audio_of_ba(value _src) {
-  CAMLparam1(_src);
-  CAMLlocal1(_dst);
+CAMLprim value caml_mm_audio_copy_from_ba(value _src, value _dst, value _ofs, value _len) {
+  CAMLparam2(_src, _dst);
   float *src = Caml_ba_data_val(_src);
-  int len = Caml_ba_array_val(_src)->dim[0];
+  int ofs = Int_val(_ofs);
+  int len = Int_val(_len);
   int i;
 
-  _dst = caml_alloc_float_array(len);
   for (i = 0; i < len; i++) {
-    Store_double_field(_dst, i, src[i]);
+    Store_double_field(_dst, i + ofs, src[i]);
   }
 
   CAMLreturn(_dst);
