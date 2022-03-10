@@ -443,14 +443,15 @@ CAMLprim value caml_mm_audio_of_ba(value _src) {
   CAMLreturn(_dst);
 }
 
-CAMLprim value caml_mm_audio_copy_to_ba(value _src, value _dst) {
+CAMLprim value caml_mm_audio_copy_to_ba(value _src, value _ofs, value _len, value _dst) {
   CAMLparam2(_src, _dst);
   float *dst = Caml_ba_data_val(_dst);
-  int len = Caml_ba_array_val(_dst)->dim[0];
+  int len = Int_val(_len);
+  int ofs = Int_val(_ofs);
   long i;
 
   for (i = 0; i < len; i++) {
-    dst[i] = Double_field(_src, i);
+    dst[i] = Double_field(_src, i + ofs);
   }
   CAMLreturn(Val_unit);
 }
