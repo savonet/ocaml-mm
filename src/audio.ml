@@ -198,7 +198,7 @@ module Mono = struct
     for i = 0 to len - 1 do
       let s = Array.unsafe_get b (ofs + i) in
       Array.unsafe_set b (ofs + i)
-        (if s < -1. then -1. else if 1. < s then 1. else s)
+        (if Float.is_nan s then 0. else if s < -1. then -1. else if 1. < s then 1. else s)
     done
 
   let squares b ofs len =
