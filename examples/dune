@@ -59,6 +59,12 @@
  (libraries graphics mm))
 
 (executable
+ (name webcam)
+ (modules webcam)
+ (optional)
+ (libraries graphics mm mm.v4l2))
+
+(executable
  (name test)
  (modules test)
  (optional)
