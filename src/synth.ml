@@ -38,9 +38,9 @@ class type t =
     method set_volume : float -> unit
     method note_on : int -> float -> unit
     method note_off : int -> float -> unit
-    method fill_add : Audio.buffer -> unit
-    method play_add : MIDI.buffer -> int -> Audio.buffer -> unit
-    method play : MIDI.buffer -> int -> Audio.buffer -> unit
+    method fill_add : Audio.buffer -> int -> int -> unit
+    method play_add : MIDI.buffer -> int -> Audio.buffer -> int -> int -> unit
+    method play : MIDI.buffer -> int -> Audio.buffer -> int -> int -> unit
     method reset : unit
   end
 
@@ -71,12 +71,12 @@ class virtual base =
       List.iter (fun note -> if note.note = n then note.generator#release) notes;
       notes <- List.filter (fun note -> not note.generator#dead) notes
 
-    method fill_add buf =
-      List.iter (fun note -> note.generator#fill_add buf) notes
+    method fill_add buf ofs len =
+      List.iter (fun note -> note.generator#fill_add buf ofs len) notes
 
-    method private fill buf =
-      Audio.clear buf;
-      self#fill_add buf
+    method private fill buf ofs len =
+      Audio.clear buf ofs len;
+      self#fill_add buf ofs len
 
     method private event =
       function
@@ -86,24 +86,23 @@ class virtual base =
       | _ -> ()
 
     (* TODO: add offset for evs *)
-    method play_add evs eofs buf =
-      let len = Audio.length buf in
+    method play_add evs eofs buf bofs len =
       let rec play o evs ofs =
         match evs with
           | (t, _) :: _ when t >= eofs + len -> ()
           | (t, _) :: tl when t < eofs -> play t tl ofs
           | (t, e) :: tl ->
               let delta = t - max eofs o in
-              self#fill_add (Audio.sub buf ofs delta);
+              self#fill_add buf (bofs + ofs) delta;
               self#event e;
               play t tl (ofs + delta)
-          | [] -> self#fill_add (Audio.sub buf ofs (len - o))
+          | [] -> self#fill_add buf (bofs + ofs) (len - o)
       in
       play 0 (MIDI.data evs) 0
 
-    method play evs eofs buf =
-      Audio.clear buf;
-      self#play_add evs eofs buf
+    method play evs eofs buf bofs len =
+      Audio.clear buf bofs len;
+      self#play_add evs eofs buf bofs len
 
     method reset = notes <- []
   end
@@ -144,13 +143,14 @@ class monophonic (g : Audio.Generator.t) =
       (* TODO: check for the last note? *)
       g#release
 
-    method fill_add buf = g#fill_add buf
+    method fill_add = g#fill_add
 
-    method play_add (_ : MIDI.buffer) (_ : int) (_ : Audio.buffer) : unit =
+    method play_add (_ : MIDI.buffer) (_ : int) (_ : Audio.buffer) (_ : int)
+        (_ : int) : unit =
       assert false
 
-    method play evs eofs buf : unit =
-      self#play_add evs eofs buf;
+    method play evs eofs buf bofs len : unit =
+      self#play_add evs eofs buf bofs len;
       assert false
 
     method reset = g#set_volume 0.
@@ -159,21 +159,24 @@ class monophonic (g : Audio.Generator.t) =
 module Multitrack = struct
   class type t =
     object
-      method play_add : MIDI.Multitrack.buffer -> int -> Audio.buffer -> unit
-      method play : MIDI.Multitrack.buffer -> int -> Audio.buffer -> unit
+      method play_add :
+        MIDI.Multitrack.buffer -> int -> Audio.buffer -> int -> int -> unit
+
+      method play :
+        MIDI.Multitrack.buffer -> int -> Audio.buffer -> int -> int -> unit
     end
 
   class create n (f : int -> synth) =
     object (self)
       val synth = Array.init n f
 
-      method play_add (evs : MIDI.Multitrack.buffer) eofs buf =
+      method play_add (evs : MIDI.Multitrack.buffer) eofs buf bofs len =
         for c = 0 to Array.length synth - 1 do
-          synth.(c)#play_add evs.(c) eofs buf
+          synth.(c)#play_add evs.(c) eofs buf bofs len
         done
 
-      method play evs eofs buf =
-        Audio.clear buf;
-        self#play_add evs eofs buf
+      method play evs eofs buf bofs len =
+        Audio.clear buf bofs len;
+        self#play_add evs eofs buf bofs len
     end
 end

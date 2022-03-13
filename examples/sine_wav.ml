@@ -13,9 +13,9 @@ let () =
     new Audio.Generator.of_mono (new Audio.Mono.Generator.sine sample_rate 440.)
   in
   for _ = 0 to (sample_rate / blen * total_duration) - 1 do
-    sine#fill buf;
-    wav#write buf;
-    ao#write buf
+    sine#fill buf 0 blen;
+    wav#write buf 0 blen;
+    ao#write buf 0 blen
   done;
   wav#close;
   ao#close

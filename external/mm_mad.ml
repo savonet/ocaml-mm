@@ -51,7 +51,7 @@ class virtual reader =
     method private mf = match mf with Some mf -> mf | _ -> assert false
 
     initializer
-    let f = Mad.openstream (fun b ofs len -> self#stream_read b ofs len) in
+    let f = Mad.openstream self#stream_read in
     (* let _, c, _ = Mad.get_output_format f in *)
     (* TODO: we should decode a frame in order to get the real number of
        channels... *)
@@ -60,11 +60,10 @@ class virtual reader =
     channels <- c;
     rb <- Audio.Ringbuffer_ext.create channels 0
 
-    method private decode = Mad.decode_frame_float_ba self#mf
+    method private decode = Mad.decode_frame_float self#mf
     method close = self#stream_close
 
-    method read buf =
-      let len = Audio.length buf in
+    method read buf ofs len =
       let r = ref (-1) in
       while !r <> 0 && Audio.Ringbuffer_ext.read_space rb < len do
         let data =
@@ -76,7 +75,7 @@ class virtual reader =
       done;
       let maxlen = Audio.Ringbuffer_ext.read_space rb in
       let len = min maxlen len in
-      Audio.Ringbuffer_ext.read rb (Audio.sub buf 0 len);
+      Audio.Ringbuffer_ext.read rb (Audio.sub buf ofs len);
       len
 
     (* TODO *)
