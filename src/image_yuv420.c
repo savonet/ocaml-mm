@@ -15,8 +15,8 @@
 #include "image_rgb.h"
 #include "image_yuv420.h"
 
-#define max(a, b) (a > b) ? a : b
-#define min(a, b) (a < b) ? a : b
+#define max(a, b) (a > b ? a : b)
+#define min(a, b) (a < b ? a : b)
 #define round(r, n) (((n + (r - 1)) / r) * r)
 
 CAMLprim value caml_yuv420_fill(value img, value p) {

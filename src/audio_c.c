@@ -428,7 +428,8 @@ CAMLprim value caml_mm_audio_convert_s24le(value _src, value _src_offs,
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_mm_audio_copy_from_ba(value _src, value _dst, value _ofs, value _len) {
+CAMLprim value caml_mm_audio_copy_from_ba(value _src, value _dst, value _ofs,
+                                          value _len) {
   CAMLparam2(_src, _dst);
   float *src = Caml_ba_data_val(_src);
   int ofs = Int_val(_ofs);
@@ -442,7 +443,8 @@ CAMLprim value caml_mm_audio_copy_from_ba(value _src, value _dst, value _ofs, va
   CAMLreturn(_dst);
 }
 
-CAMLprim value caml_mm_audio_copy_to_ba(value _src, value _ofs, value _len, value _dst) {
+CAMLprim value caml_mm_audio_copy_to_ba(value _src, value _ofs, value _len,
+                                        value _dst) {
   CAMLparam2(_src, _dst);
   float *dst = Caml_ba_data_val(_dst);
   int len = Int_val(_len);
