@@ -12,7 +12,8 @@
  (name mm)
  (synopsis "The mm library contains high-level to create and manipulate multimedia streams (audio, video, MIDI)")
  (depends
-  (ocaml (and :with-test (>= 4.07)))
+  (ocaml (>= 4.08))
+  (ocaml (and :with-test (>= 4.12))) 
   dune
   dune-configurator)
  (depopts

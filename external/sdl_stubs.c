@@ -18,16 +18,17 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * As a special exception to the GNU Library General Public License, you may
- * link, statically or dynamically, a "work that uses the Library" with a publicly
- * distributed version of the Library to produce an executable file containing
- * portions of the Library, and distribute that executable file under terms of
- * your choice, without any of the additional requirements listed in clause 6
- * of the GNU Library General Public License.
- * By "a publicly distributed version of the Library", we mean either the unmodified
- * Library as distributed by The Savonet Team, or a modified version of the Library that is
- * distributed under the conditions defined in clause 3 of the GNU Library General
- * Public License. This exception does not however invalidate any other reasons why
- * the executable file might be covered by the GNU Library General Public License.
+ * link, statically or dynamically, a "work that uses the Library" with a
+ * publicly distributed version of the Library to produce an executable file
+ * containing portions of the Library, and distribute that executable file under
+ * terms of your choice, without any of the additional requirements listed in
+ * clause 6 of the GNU Library General Public License. By "a publicly
+ * distributed version of the Library", we mean either the unmodified Library as
+ * distributed by The Savonet Team, or a modified version of the Library that is
+ * distributed under the conditions defined in clause 3 of the GNU Library
+ * General Public License. This exception does not however invalidate any other
+ * reasons why the executable file might be covered by the GNU Library General
+ * Public License.
  *
  */
 
@@ -45,8 +46,7 @@
 
 #include "image_rgb.h"
 
-CAMLprim value caml_sdl_rgb_to32(value _rgb, value _surf, value shift)
-{
+CAMLprim value caml_sdl_rgb_to32(value _rgb, value _surf, value shift) {
   CAMLparam3(_rgb, _surf, shift);
   /*
   int sr = Int_val(Field(shift, 0));
@@ -62,7 +62,7 @@ CAMLprim value caml_sdl_rgb_to32(value _rgb, value _surf, value shift)
 
   for (j = 0; j < h; j++)
     for (i = 0; i < w; i++)
-      surf[j*w+i] = htonl(Int_pixel(&rgb,i,j)) >> 8;
+      surf[j * w + i] = htonl(Int_pixel(&rgb, i, j)) >> 8;
 
   CAMLreturn(Val_unit);
 }

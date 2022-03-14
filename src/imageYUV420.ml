@@ -153,7 +153,9 @@ let of_PPM s =
   remove_alpha img;
   img
 
-let to_BMP img = to_RGBA32 img |> RGBA32.to_BMP
+let to_BMP img =
+  let img = to_RGBA32 img in
+  RGBA32.to_BMP img
 
 let copy img =
   let dst =

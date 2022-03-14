@@ -18,45 +18,45 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * As a special exception to the GNU Library General Public License, you may
- * link, statically or dynamically, a "work that uses the Library" with a publicly
- * distributed version of the Library to produce an executable file containing
- * portions of the Library, and distribute that executable file under terms of
- * your choice, without any of the additional requirements listed in clause 6
- * of the GNU Library General Public License.
- * By "a publicly distributed version of the Library", we mean either the unmodified
- * Library as distributed by The Savonet Team, or a modified version of the Library that is
- * distributed under the conditions defined in clause 3 of the GNU Library General
- * Public License. This exception does not however invalidate any other reasons why
- * the executable file might be covered by the GNU Library General Public License.
+ * link, statically or dynamically, a "work that uses the Library" with a
+ * publicly distributed version of the Library to produce an executable file
+ * containing portions of the Library, and distribute that executable file under
+ * terms of your choice, without any of the additional requirements listed in
+ * clause 6 of the GNU Library General Public License. By "a publicly
+ * distributed version of the Library", we mean either the unmodified Library as
+ * distributed by The Savonet Team, or a modified version of the Library that is
+ * distributed under the conditions defined in clause 3 of the GNU Library
+ * General Public License. This exception does not however invalidate any other
+ * reasons why the executable file might be covered by the GNU Library General
+ * Public License.
  *
  */
 
 #include <caml/alloc.h>
 #include <caml/bigarray.h>
+#include <caml/custom.h>
 #include <caml/fail.h>
 #include <caml/memory.h>
 #include <caml/misc.h>
 #include <caml/mlvalues.h>
 #include <caml/signals.h>
-#include <caml/custom.h>
 
 #include <assert.h>
-#include <string.h>
-#include <fcntl.h>
 #include <errno.h>
-#include <sys/select.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/mman.h>
+#include <fcntl.h>
+#include <libv4l2.h>
 #include <linux/videodev.h>
 #include <linux/videodev2.h>
-#include <libv4l2.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/types.h>
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
-static int xioctl(int fh, int request, void *arg)
-{
+static int xioctl(int fh, int request, void *arg) {
   int r;
 
   do {
@@ -68,9 +68,7 @@ static int xioctl(int fh, int request, void *arg)
   return r;
 }
 
-
-CAMLprim value caml_v4l2_open(value device, value w, value h, value stride)
-{
+CAMLprim value caml_v4l2_open(value device, value w, value h, value stride) {
   CAMLparam1(device);
 
   // TODO: error codes
@@ -79,14 +77,14 @@ CAMLprim value caml_v4l2_open(value device, value w, value h, value stride)
   assert(fd >= 0);
 
   // TODO: different formats ?
-  struct v4l2_format  fmt;
+  struct v4l2_format fmt;
   CLEAR(fmt);
-  fmt.type                 = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  fmt.fmt.pix.width        = Int_val(w);
-  fmt.fmt.pix.height       = Int_val(h);
-  fmt.fmt.pix.pixelformat  = V4L2_PIX_FMT_RGB24;
-  fmt.fmt.pix.field        = V4L2_FIELD_INTERLACED;
-  //fmt.fmt.pix.bytesperline = Int_val(stride);
+  fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  fmt.fmt.pix.width = Int_val(w);
+  fmt.fmt.pix.height = Int_val(h);
+  fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_RGB24;
+  fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
+  // fmt.fmt.pix.bytesperline = Int_val(stride);
   xioctl(fd, VIDIOC_S_FMT, &fmt);
   // TODO: check returned sizes
   assert(fmt.fmt.pix.pixelformat == V4L2_PIX_FMT_RGB24);
@@ -112,8 +110,7 @@ CAMLprim value caml_v4l2_grab(value fd, value data)
 }
 */
 
-CAMLprim value caml_v4l2_grab(value _fd, value data)
-{
+CAMLprim value caml_v4l2_grab(value _fd, value data) {
   CAMLparam1(data);
   int fd = Int_val(_fd);
   int len = caml_ba_byte_size(Caml_ba_array_val(data));
@@ -135,13 +132,14 @@ CAMLprim value caml_v4l2_grab(value _fd, value data)
   xioctl(fd, VIDIOC_REQBUFS, &req);
 
   memset(&vbuf, 0, sizeof(vbuf));
-  vbuf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  vbuf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   vbuf.memory = V4L2_MEMORY_MMAP;
-  vbuf.index  = 0;
+  vbuf.index = 0;
   xioctl(fd, VIDIOC_QUERYBUF, &vbuf);
 
   mbuflen = vbuf.length;
-  mbuf = v4l2_mmap(NULL, mbuflen, PROT_READ | PROT_WRITE, MAP_SHARED, fd, vbuf.m.offset);
+  mbuf = v4l2_mmap(NULL, mbuflen, PROT_READ | PROT_WRITE, MAP_SHARED, fd,
+                   vbuf.m.offset);
   assert(mbuf != MAP_FAILED);
 
   memset(&vbuf, 0, sizeof(vbuf));
@@ -183,8 +181,7 @@ CAMLprim value caml_v4l2_grab(value _fd, value data)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_v4l2_close(value fd)
-{
+CAMLprim value caml_v4l2_close(value fd) {
   CAMLparam0();
 
   v4l2_close(Int_val(fd));
@@ -192,8 +189,7 @@ CAMLprim value caml_v4l2_close(value fd)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_v4l1_open(value device, value w, value h, value stride)
-{
+CAMLprim value caml_v4l1_open(value device, value w, value h, value stride) {
   CAMLparam1(device);
   int fd;
   struct video_capability cap;
@@ -207,35 +203,34 @@ CAMLprim value caml_v4l1_open(value device, value w, value h, value stride)
   assert(ioctl(fd, VIDIOCGPICT, &vpic) >= 0);
 
   if (cap.type & VID_TYPE_MONOCHROME) {
-    vpic.depth=8;
-    vpic.palette=VIDEO_PALETTE_GREY;    /* 8bit grey */
-    if(ioctl(fd, VIDIOCSPICT, &vpic) < 0) {
-      vpic.depth=6;
-      if(ioctl(fd, VIDIOCSPICT, &vpic) < 0) {
-        vpic.depth=4;
-        if(ioctl(fd, VIDIOCSPICT, &vpic) < 0) {
-          //fprintf(stderr, "Unable to find a supported capture format.\n");
+    vpic.depth = 8;
+    vpic.palette = VIDEO_PALETTE_GREY; /* 8bit grey */
+    if (ioctl(fd, VIDIOCSPICT, &vpic) < 0) {
+      vpic.depth = 6;
+      if (ioctl(fd, VIDIOCSPICT, &vpic) < 0) {
+        vpic.depth = 4;
+        if (ioctl(fd, VIDIOCSPICT, &vpic) < 0) {
+          // fprintf(stderr, "Unable to find a supported capture format.\n");
           close(fd);
           assert(0);
         }
       }
     }
-  }
-  else {
-    vpic.depth=24;
-    vpic.palette=VIDEO_PALETTE_RGB24;
+  } else {
+    vpic.depth = 24;
+    vpic.palette = VIDEO_PALETTE_RGB24;
 
-    if(ioctl(fd, VIDIOCSPICT, &vpic) < 0) {
-      vpic.palette=VIDEO_PALETTE_RGB565;
-      vpic.depth=16;
+    if (ioctl(fd, VIDIOCSPICT, &vpic) < 0) {
+      vpic.palette = VIDEO_PALETTE_RGB565;
+      vpic.depth = 16;
 
-      if(ioctl(fd, VIDIOCSPICT, &vpic)==-1) {
-        vpic.palette=VIDEO_PALETTE_RGB555;
-        vpic.depth=15;
+      if (ioctl(fd, VIDIOCSPICT, &vpic) == -1) {
+        vpic.palette = VIDEO_PALETTE_RGB555;
+        vpic.depth = 15;
 
-        if(ioctl(fd, VIDIOCSPICT, &vpic)==-1) {
-          //fprintf(stderr, "Unable to find a supported capture format.\n");
-          //return -1;
+        if (ioctl(fd, VIDIOCSPICT, &vpic) == -1) {
+          // fprintf(stderr, "Unable to find a supported capture format.\n");
+          // return -1;
           close(fd);
           assert(0);
         }
@@ -249,8 +244,7 @@ CAMLprim value caml_v4l1_open(value device, value w, value h, value stride)
   CAMLreturn(Val_int(fd));
 }
 
-CAMLprim value caml_v4l1_grab(value fd, value data)
-{
+CAMLprim value caml_v4l1_grab(value fd, value data) {
   CAMLparam1(data);
   int len = caml_ba_byte_size(Caml_ba_array_val(data));
   int ret;
@@ -266,8 +260,7 @@ CAMLprim value caml_v4l1_grab(value fd, value data)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_v4l1_close(value fd)
-{
+CAMLprim value caml_v4l1_close(value fd) {
   CAMLparam0();
 
   close(Int_val(fd));

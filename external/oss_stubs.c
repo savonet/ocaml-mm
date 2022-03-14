@@ -18,16 +18,17 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * As a special exception to the GNU Library General Public License, you may
- * link, statically or dynamically, a "work that uses the Library" with a publicly
- * distributed version of the Library to produce an executable file containing
- * portions of the Library, and distribute that executable file under terms of
- * your choice, without any of the additional requirements listed in clause 6
- * of the GNU Library General Public License.
- * By "a publicly distributed version of the Library", we mean either the unmodified
- * Library as distributed by The Savonet Team, or a modified version of the Library that is
- * distributed under the conditions defined in clause 3 of the GNU Library General
- * Public License. This exception does not however invalidate any other reasons why
- * the executable file might be covered by the GNU Library General Public License.
+ * link, statically or dynamically, a "work that uses the Library" with a
+ * publicly distributed version of the Library to produce an executable file
+ * containing portions of the Library, and distribute that executable file under
+ * terms of your choice, without any of the additional requirements listed in
+ * clause 6 of the GNU Library General Public License. By "a publicly
+ * distributed version of the Library", we mean either the unmodified Library as
+ * distributed by The Savonet Team, or a modified version of the Library that is
+ * distributed under the conditions defined in clause 3 of the GNU Library
+ * General Public License. This exception does not however invalidate any other
+ * reasons why the executable file might be covered by the GNU Library General
+ * Public License.
  *
  */
 
@@ -38,12 +39,11 @@
 #include <caml/misc.h>
 #include <caml/mlvalues.h>
 
-#include <sys/soundcard.h>
-#include <sys/ioctl.h>
 #include <assert.h>
+#include <sys/ioctl.h>
+#include <sys/soundcard.h>
 
-CAMLprim value caml_oss_dsp_setfmt(value fd, value fmt)
-{
+CAMLprim value caml_oss_dsp_setfmt(value fd, value fmt) {
   int f = Int_val(fmt);
 
   /* TODO: raise errors */
@@ -53,8 +53,7 @@ CAMLprim value caml_oss_dsp_setfmt(value fd, value fmt)
   return Val_int(f);
 }
 
-CAMLprim value caml_oss_dsp_channels(value fd, value chans)
-{
+CAMLprim value caml_oss_dsp_channels(value fd, value chans) {
   int c = Int_val(chans);
 
   assert(ioctl(Int_val(fd), SNDCTL_DSP_CHANNELS, &c) != -1);
@@ -62,8 +61,7 @@ CAMLprim value caml_oss_dsp_channels(value fd, value chans)
   return Val_int(c);
 }
 
-CAMLprim value caml_oss_dsp_speed(value fd, value speed)
-{
+CAMLprim value caml_oss_dsp_speed(value fd, value speed) {
   int s = Int_val(speed);
 
   assert(ioctl(Int_val(fd), SNDCTL_DSP_SPEED, &s) != -1);
