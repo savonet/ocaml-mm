@@ -46,7 +46,7 @@ let () =
     let b = App_sink.pull_buffer_string (App_sink.of_element audiosink) in
     let samples = Audio.S16LE.length audio_channels (String.length b) in
     let buf = Audio.create audio_channels samples in
-    Audio.S16LE.to_audio b 0 buf;
-    oss#write buf
+    Audio.S16LE.to_audio b 0 buf 0 (Audio.length buf);
+    oss#write buf 0 (Audio.length buf)
   done;
   ignore (Element.set_state bin State_null)

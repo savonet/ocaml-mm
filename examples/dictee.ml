@@ -39,12 +39,12 @@ let () =
   let prevnotes = ref [] in
   synth#set_volume 0.1;
   while !loop do
-    let r = f#read buf in
-    agc#process buf;
+    let r = f#read buf 0 blen in
+    agc#process buf 0 blen;
     loop := r <> 0;
     let notes =
       FFT.notes f#sample_rate fft ~note_min:(Audio.Note.create 0 4)
-        ~volume_min:0.01 ~filter_harmonics:false (Audio.to_mono buf)
+        ~volume_min:0.01 ~filter_harmonics:false (Audio.to_mono buf 0 blen)
     in
     let notes =
       List.sort (fun (_, v1) (_, v2) -> if v1 < v2 then 1 else -1) notes
@@ -63,11 +63,11 @@ let () =
         mid#note_on mchan n (10. *. v))
       (list_diff ncmp notes !prevnotes);
     prevnotes := notes;
-    synth#fill_add buf;
+    synth#fill_add buf 0 blen;
     mid#advance blen;
-    Audio.amplify 2. buf;
-    wav#write buf;
-    if oss_out then oss#write buf
+    Audio.amplify 2. buf 0 blen;
+    wav#write buf 0 blen;
+    if oss_out then oss#write buf 0 blen
   done;
   wav#close;
   mid#close;

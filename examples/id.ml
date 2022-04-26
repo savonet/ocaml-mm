@@ -17,7 +17,7 @@ let () =
   while !loop do
     let n = read#read buf 0 blen in
     if n = 0 then loop := false;
-    let c = FFT.complex_create (Audio.to_mono buf 0 n) in
+    let c = FFT.complex_create (Audio.to_mono buf 0 n) 0 n in
     FFT.Window.cosine c;
     FFT.fft fft c;
     let c = Array.map (fun c -> c.Complex.re) c in

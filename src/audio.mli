@@ -164,9 +164,9 @@ module Mono : sig
       (** Length of the FFT buffer analysis in samples. *)
       val length : t -> int
 
-      (** [complex_create buf] create a array of complex numbers by copying data
-         from [buf] (the imaginary part is null). *)
-      val complex_create : buffer -> Complex.t array
+      (** [complex_create buf off len] create a array of complex numbers by
+          copying data from [buf] (the imaginary part is null). *)
+      val complex_create : buffer -> int -> int -> Complex.t array
 
       (** Perform an FFT analysis. *)
       val fft : t -> Complex.t array -> unit

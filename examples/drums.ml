@@ -36,7 +36,7 @@ let no = Audio.create channels blen
 
 let gen i =
   let buf = Audio.create channels blen in
-  (i 440. 1.)#fill buf;
+  (i 440. 1.)#fill buf 0 blen;
   buf
 
 let bd = gen bd
@@ -52,10 +52,10 @@ let () =
   (* MIDI.insert mbuf (0, MIDI.Note_on (MIDI.note_of_name "a4", 1.)); *)
   (* keybd#read sample_rate [|mbuf|] 0 blen; *)
   (* synth_sd#play mbuf 0 buf 0 blen; *)
-  let buf = Audio.append bd sd in
+  let buf = Audio.append bd 0 blen sd 0 blen in
   while true do
     (* wav#write buf 0 blen; *)
-    oss#write buf
+    oss#write buf 0 (2*blen)
   done;
   (* wav#close; *)
   oss#close

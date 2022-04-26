@@ -14,11 +14,11 @@ let () =
   in
   let loop = ref true in
   while !loop do
-    let r = f#read buf in
+    let r = f#read buf 0 blen in
     loop := r <> 0;
     (* delay#process buf 0 r; *)
     (* bqf#process buf 0 r; *)
-    oss#write (Audio.sub buf 0 r)
+    oss#write buf 0 r
   done;
   oss#close;
   f#close

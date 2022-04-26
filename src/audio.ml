@@ -316,9 +316,9 @@ module Mono = struct
 
       let length f = f.n
 
-      let complex_create buf =
-        Array.init (buffer_length buf) (fun i ->
-            { Complex.re = buf.(i); Complex.im = 0. })
+      let complex_create buf ofs len =
+        Array.init len (fun i ->
+            { Complex.re = buf.(ofs + i); Complex.im = 0. })
 
       let ccoef k c =
         { Complex.re = k *. c.Complex.re; Complex.im = k *. c.Complex.im }
@@ -427,7 +427,7 @@ module Mono = struct
         assert (len = length f);
         let bdur = float len /. float sr in
         let fdf = float (length f) in
-        let c = complex_create buf in
+        let c = complex_create buf 0 len in
         fft f c;
         let ans = ref [] in
         let kstart = max 0 (int_of_float (Note.freq note_min *. bdur)) in
