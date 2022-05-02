@@ -19,6 +19,7 @@ depopts: ["alsa" "ao" "mad" "pulseaudio" "ocamlsdl" "theora"]
 conflicts: [
   "mad" {< "0.5.0"}
   "alsa" {< "0.3.0"}
+  "liquidsoap" {< "2.0.4"}
 ]
 build: [
   ["dune" "subst"] {dev}
