@@ -80,6 +80,22 @@ module Draw : sig
   val line : (int -> int -> unit) -> int * int -> int * int -> unit
 end
 
+(** Operation on bitmaps, which are black and white images. *)
+module Bitmap : sig
+  (** A bitmap. *)
+  type t
+
+  val create : int -> int -> t
+
+  val width : t -> int
+
+  val height : t -> int
+
+  val get_pixel : t -> int -> int -> bool
+
+  val set_pixel : t -> int -> int -> bool -> unit
+end
+
 (** Operations on images stored in RGB8 format, ie RGB channels, one byte each. *)
 module RGB8 : sig
   (** Operations on colors. *)

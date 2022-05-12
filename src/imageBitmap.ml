@@ -31,10 +31,20 @@
  *
  *)
 
-include ImageBase
-module Bitmap = ImageBitmap
-module BGRA = ImageBGRA
-module RGBA32 = ImageRGBA32
-module YUV420 = ImageYUV420
-module Generic = ImageGeneric
-include ImageCanvas
+type t =
+  {
+    data : bool array array;
+    width : int
+  }
+
+let create width height =
+  let data = Array.init height (fun _ -> Array.make width false) in
+  { data; width }
+
+let width img = img.width
+
+let height img = Array.length img.data
+
+let get_pixel img i j = img.data.(j).(i)
+
+let set_pixel img i j c = img.data.(j).(i) <- c

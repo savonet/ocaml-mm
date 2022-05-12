@@ -24,6 +24,7 @@
  (libraries bigarray)
  (modules
   imageBase
+  imageBitmap
   imageBGRA
   imageRGBA32
   imageYUV420
