@@ -99,12 +99,20 @@ module Bitmap : sig
 
   val scale : t -> t -> unit
 
+  (** Operations on bitmap fonts. *)
   module Font : sig
+    (** A font. *)
     type t
 
+    (** Our native font. *)
     val native : t
 
-    val render : t -> string -> bitmap
+    (** Height in pixels of characters. *)
+    val height : t -> int
+
+    (** Render text with given font, at given height (in pixels per
+        character). *)
+    val render : ?font:t -> ?height:int -> string -> bitmap
   end
 end
 

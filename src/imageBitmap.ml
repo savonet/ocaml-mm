@@ -54,8 +54,8 @@ let get_pixel img i j = img.(j).(i)
 let set_pixel img i j c = img.(j).(i) <- c
 
 let fill img f =
-  for j = 0 to width img - 1 do
-    for i = 0 to height img - 1 do
+  for j = 0 to height img - 1 do
+    for i = 0 to width img - 1 do
       set_pixel img i j (f i j)
     done
   done
@@ -66,6 +66,11 @@ let scale src tgt =
   let hs = height src in
   let ht = height tgt in
   fill tgt (fun i j -> get_pixel src (i * ws / wt) (j * hs / ht))
+
+let rescale p q img =
+  let img2 = create (width img * p / q) (height img * p / q) in
+  scale img img2;
+  img2
 
 (** Bitmap fonts. *)
 module Font = struct
@@ -82,6 +87,8 @@ module Font = struct
       char_space : int;
       line_space : int;
     }
+
+  let height font = font.height
 
   (** Our native font. *)
   let native : t =
@@ -151,7 +158,8 @@ module Font = struct
     let default = create_white width height in
     { map; width; height; default; uppercase = true; char_space = 1; line_space = 2 }
 
-  let render font text =
+  let render ?(font=native) ?height text =
+    let height = Option.value ~default:font.height height in
     let ans = ref (Array.make font.height [||]) in
     (* Current line. *)
     let line = ref 0 in
@@ -168,10 +176,10 @@ module Font = struct
         ans := Array.append !ans (Array.make (font.line_space + font.height) [||]);
         incr line)
       else (
-        let c = CharMap.find text.[i] (Lazy.force font.map) in
+        let c = CharMap.find ((if font.uppercase then Char.uppercase_ascii else Fun.id) text.[i]) (Lazy.force font.map) in
         for j = 0 to font.height - 1 do
           !ans.(voff + j) <- Array.append !ans.(voff + j) c.(j)
         done)
     done;
-    make !ans
+    rescale height font.height (make !ans)
 end

@@ -265,6 +265,10 @@ let () =
       I.YUV420.gradient_uv img (0, 0) (0xff, 0) (0, 0xff);
       let img2 = I.YUV420.create 10000 10000 in
       I.YUV420.scale img img2;
-      write "scale.bmp" (I.YUV420.to_BMP img2))
+      write "scale.bmp" (I.YUV420.to_BMP img2));
+  test "font" (fun () ->
+      let img = I.Bitmap.Font.render ~height:30 "Hello, world!" in
+      write "hello-world.bmp" (I.YUV420.to_BMP (I.YUV420.of_bitmap img))
+    )
 
 let () = Gc.full_major ()
