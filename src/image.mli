@@ -267,6 +267,7 @@ module YUV420 : sig
   val of_RGB24_string : string -> int -> t
   val of_RGBA32 : RGBA32.t -> t
   val to_RGBA32 : t -> RGBA32.t
+  val of_bitmap : Bitmap.t -> t
   val to_BMP : t -> string
   val of_PPM : string -> t
 

@@ -89,6 +89,14 @@ module Pixel = struct
   type yuv = int * int * int
   type yuva = (int * int * int) * int
 
+  module RGBA = struct
+    type t = RGBA
+
+    let black = (0,0,0,0xff)
+
+    let white = (0xff,0xff,0xff,0xff)
+  end
+
   external yuv_of_rgb : rgb -> yuv = "caml_yuv_of_rgb"
   external rgb_of_yuv : yuv -> rgb = "caml_rgb_of_yuv"
 end
