@@ -1,3 +1,7 @@
+0.8.1 (unreleased)
+=====
+- Add support for bitmaps and bitmap fonts.
+
 0.8.0 (13-03-2022)
 =====
 - Add support for image and video canvas.
