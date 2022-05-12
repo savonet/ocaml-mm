@@ -110,9 +110,9 @@ module Bitmap : sig
     (** Height in pixels of characters. *)
     val height : t -> int
 
-    (** Render text with given font, at given height (in pixels per
-        character). *)
-    val render : ?font:t -> ?height:int -> string -> bitmap
+    (** Render text with given font, at given size (height of characters in
+        pixels). *)
+    val render : ?font:t -> ?size:int -> string -> bitmap
   end
 end
 

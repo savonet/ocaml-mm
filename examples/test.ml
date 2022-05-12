@@ -267,7 +267,7 @@ let () =
       I.YUV420.scale img img2;
       write "scale.bmp" (I.YUV420.to_BMP img2));
   test "font" (fun () ->
-      let img = I.Bitmap.Font.render ~height:30 "Hello, world!" in
+      let img = I.Bitmap.Font.render ~size:30 "Hello, world!" in
       write "hello-world.bmp" (I.YUV420.to_BMP (I.YUV420.of_bitmap img))
     )
 

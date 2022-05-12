@@ -158,8 +158,8 @@ module Font = struct
     let default = create_white width height in
     { map; width; height; default; uppercase = true; char_space = 1; line_space = 2 }
 
-  let render ?(font=native) ?height text =
-    let height = Option.value ~default:font.height height in
+  let render ?(font=native) ?size text =
+    let height = Option.value ~default:font.height size in
     let ans = ref (Array.make font.height [||]) in
     (* Current line. *)
     let line = ref 0 in
