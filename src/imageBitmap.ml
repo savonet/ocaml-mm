@@ -37,8 +37,16 @@ type t =
     width : int
   }
 
-let create width height =
-  let data = Array.init height (fun _ -> Array.make width false) in
+let create c width height =
+  let data = Array.init height (fun _ -> Array.make width c) in
+  { data; width }
+
+let create_white = create true
+
+let create = create false
+
+let init width height f =
+  let data = Array.init height (fun j -> Array.init width (fun i -> f i j)) in
   { data; width }
 
 let width img = img.width
@@ -48,3 +56,86 @@ let height img = Array.length img.data
 let get_pixel img i j = img.data.(j).(i)
 
 let set_pixel img i j c = img.data.(j).(i) <- c
+
+(** Bitmap fonts. *)
+module Font = struct
+  module CharMap = Map.Make(struct type t = char let compare (c:t) (d:t) = Stdlib.compare c d end)
+
+  (** A fixed-size font. *)
+  type nonrec t =
+    {
+      map : t CharMap.t Lazy.t;
+      width : int; (** width of a char in pixels *)
+      height : int; (** height of a char in pixels *)
+      default : t; (** default displayed character when not supported *)
+      uppercase : bool; (** whether only uppercase caracters are supported *)
+    }
+
+  (** Our native font. *)
+  let native : t =
+    let prebitmap =
+      [
+        ('A', [| " * "; "* *"; "***"; "* *"; "* *" |]);
+        ('B', [| "** "; "* *"; "** "; "* *"; "** " |]);
+        ('C', [| " **"; "*  "; "*  "; "*  "; " **" |]);
+        ('D', [| "** "; "* *"; "* *"; "* *"; "** " |]);
+        ('E', [| "***"; "*  "; "** "; "*  "; "***" |]);
+        ('F', [| "***"; "*  "; "** "; "*  "; "*  " |]);
+        ('G', [| " **"; "*  "; "* *"; "* *"; " **" |]);
+        ('H', [| "* *"; "* *"; "***"; "* *"; "* *" |]);
+        ('I', [| " * "; " * "; " * "; " * "; " * " |]);
+        ('J', [| "  *"; "  *"; "  *"; "* *"; " * " |]);
+        ('K', [| "* *"; "** "; "*  "; "** "; "* *" |]);
+        ('L', [| "*  "; "*  "; "*  "; "*  "; "***" |]);
+        ('M', [| "* *"; "***"; "* *"; "* *"; "* *" |]);
+        ('N', [| "* *"; "***"; "***"; "***"; "* *" |]);
+        ('O', [| " * "; "* *"; "* *"; "* *"; " * " |]);
+        ('P', [| "** "; "* *"; "** "; "*  "; "*  " |]);
+        ('Q', [| " * "; "* *"; "* *"; "* *"; " **" |]);
+        ('R', [| "** "; "* *"; "** "; "* *"; "* *" |]);
+        ('S', [| " **"; "*  "; " * "; "  *"; "** " |]);
+        ('T', [| "***"; " * "; " * "; " * "; " * " |]);
+        ('U', [| "* *"; "* *"; "* *"; "* *"; "***" |]);
+        ('V', [| "* *"; "* *"; "* *"; "* *"; " * " |]);
+        ('W', [| "* *"; "* *"; "* *"; "***"; "* *" |]);
+        ('X', [| "* *"; "* *"; " * "; "* *"; "* *" |]);
+        ('Y', [| "* *"; "* *"; " * "; " * "; " * " |]);
+        ('Z', [| "***"; "  *"; " * "; "*  "; "***" |]);
+        ('0', [| " * "; "* *"; "* *"; "* *"; " * " |]);
+        ('1', [| " * "; "** "; " * "; " * "; " * " |]);
+        ('2', [| " * "; "* *"; "  *"; " * "; "***" |]);
+        ('3', [| "** "; "  *"; " * "; "  *"; "** " |]);
+        ('4', [| "  *"; " **"; "***"; "  *"; "  *" |]);
+        ('5', [| "***"; "*  "; "** "; "  *"; "** " |]);
+        ('6', [| " **"; "*  "; "** "; "* *"; " * " |]);
+        ('7', [| "***"; "  *"; " * "; " * "; " * " |]);
+        ('8', [| " * "; "* *"; " * "; "* *"; " * " |]);
+        ('9', [| " * "; "* *"; " **"; "  *"; " * " |]);
+        (' ', [| "   "; "   "; "   "; "   "; "   " |]);
+        ('.', [| "   "; "   "; "   "; "   "; " * " |]);
+        (',', [| "   "; "   "; "   "; " * "; " * " |]);
+        ('!', [| " * "; " * "; " * "; "   "; " * " |]);
+        ('?', [| " * "; "* *"; " **"; " * "; " * " |]);
+        ('-', [| "   "; "   "; "***"; "   "; "   " |]);
+        ('+', [| "   "; " * "; "***"; " * "; "   " |]);
+        ('=', [| "   "; "***"; "   "; "***"; "   " |]);
+        (':', [| "   "; " * "; "   "; " * "; "   " |]);
+        ('<', [| "  *"; " * "; "*  "; " * "; "  *" |]);
+        ('>', [| "*  "; " * "; "  *"; " * "; "*  " |]);
+      ]
+    in
+    let width = 3 in
+    let height = 5 in
+    let map =
+      Lazy.from_fun
+        (fun () ->
+           List.fold_left
+             (fun f (c, b) ->
+                let bmp = init width height (fun i j -> b.(j).[i] <> ' ') in
+                CharMap.add c bmp f
+             ) CharMap.empty prebitmap
+        )
+    in
+    let default = create_white width height in
+    { map; width; height; default; uppercase = true }
+end
