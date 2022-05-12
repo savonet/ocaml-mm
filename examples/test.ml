@@ -67,8 +67,9 @@ let () =
       for _ = 1 to iter do
         A.U8.of_audio src 0 buf 0 len;
         A.U8.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
-      done);
-  assert (dst.(1).(len - 1) = 1.);
+      done;
+      assert (dst.(1).(len - 1) = 1.)
+    );
   let src = A.make 2 len 1. in
   let buf = Bytes.create (A.S16LE.size 2 len) in
   let dst = A.create 2 len in
@@ -76,9 +77,10 @@ let () =
       for _ = 1 to iter do
         A.S16LE.of_audio src 0 buf 0 len;
         A.S16LE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
-      done);
-  assert (dst.(1).(len - 1) = 1.);
-  assert (dst.(1).(len - 1) = 1.);
+      done;
+      assert (dst.(1).(len - 1) = 1.);
+      assert (dst.(1).(len - 1) = 1.)
+    );
   let src = A.make 2 len 1. in
   let buf = Bytes.create (A.S16BE.size 2 len) in
   let dst = A.create 2 len in
@@ -86,9 +88,10 @@ let () =
       for _ = 1 to iter do
         A.S16BE.of_audio src 0 buf 0 len;
         A.S16BE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
-      done);
-  assert (dst.(1).(len - 1) = 1.);
-  assert (dst.(1).(len - 1) = 1.);
+      done;
+      assert (dst.(1).(len - 1) = 1.);
+      assert (dst.(1).(len - 1) = 1.)
+    );
   let src = A.make 2 len 1. in
   let buf = Bytes.create (A.S24LE.size 2 len) in
   let dst = A.create 2 len in
@@ -96,9 +99,10 @@ let () =
       for _ = 1 to iter do
         A.S24LE.of_audio src 0 buf 0 len;
         A.S24LE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
-      done);
-  assert (dst.(1).(len - 1) = 1.);
-  assert (dst.(1).(len - 1) = 1.);
+      done;
+      assert (dst.(1).(len - 1) = 1.);
+      assert (dst.(1).(len - 1) = 1.)
+    );
   let src = A.make 2 len 1. in
   let buf = Bytes.create (A.S32LE.size 2 len) in
   let dst = A.create 2 len in
@@ -106,8 +110,9 @@ let () =
       for _ = 1 to iter do
         A.S32LE.of_audio src 0 buf 0 len;
         A.S32LE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
-      done);
-  assert (dst.(1).(len - 1) = 1.);
+      done;
+      assert (dst.(1).(len - 1) = 1.)
+    );
   Printf.printf "\n"
 
 module I = Image
@@ -267,7 +272,7 @@ let () =
       I.YUV420.scale img img2;
       write "scale.bmp" (I.YUV420.to_BMP img2));
   test "font" (fun () ->
-      let img = I.Bitmap.Font.render ~size:30 "Hello, world!" in
+      let img = I.Bitmap.Font.render ~size:30 "Hello, world!\nHow are you?" in
       write "hello-world.bmp" (I.YUV420.to_BMP (I.YUV420.of_bitmap img))
     )
 

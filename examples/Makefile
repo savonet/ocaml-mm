@@ -33,5 +33,8 @@ graphics:
 test:
 	@dune exec ./test.exe
 
+quick-test:
+	@dune exec ./test.exe -- --skip-long
+
 valgrind: build
 	valgrind ../_build/default/examples/test.exe --skip-long

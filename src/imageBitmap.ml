@@ -72,6 +72,15 @@ let rescale p q img =
   scale img img2;
   img2
 
+let blit src ?(x=0) ?(y=0) dst =
+  let width = min (width src) (width dst - x) in
+  let height = min (height src) (height dst - y) in
+  for j = 0 to height - 1 do
+    for i = 0 to width - 1 do
+      set_pixel dst (x + i) (y + j) (get_pixel src i j)
+    done
+  done
+
 (** Bitmap fonts. *)
 module Font = struct
   module CharMap = Map.Make(struct type t = char let compare (c:t) (d:t) = Stdlib.compare c d end)
@@ -160,26 +169,32 @@ module Font = struct
 
   let render ?(font=native) ?size text =
     let height = Option.value ~default:font.height size in
-    let ans = ref (Array.make font.height [||]) in
-    (* Current line. *)
-    let line = ref 0 in
+    let text_height, text_width =
+      let h = ref 1 in
+      let max = ref 0 in
+      let cur = ref 0 in
+      for i = 0 to String.length text - 1 do
+        if text.[i] = '\n' then (max := Stdlib.max !max !cur; cur := 0; incr h)
+        else incr cur
+      done;
+      max := Stdlib.max !max !cur;
+      !h, !max
+    in
+    let img =
+      create
+        (text_width * font.width + (text_width-1) * font.char_space)
+        (text_height * font.height + (text_height-1) * font.line_space)
+    in
+    let xoff = ref 0 in
+    let yoff = ref 0 in
     for i = 0 to String.length text - 1 do
-      (* Vertical offset. *)
-      let voff = !line * (font.height + font.line_space) in
-      if Array.length !ans.(voff) <> 0 then
-        (* Add a space *)
-        for j = 0 to font.height - 1 do
-          !ans.(voff + j) <-
-            Array.append !ans.(voff + j) (Array.make font.char_space false)
-        done;
-      if text.[i] = '\n' then (
-        ans := Array.append !ans (Array.make (font.line_space + font.height) [||]);
-        incr line)
-      else (
-        let c = CharMap.find ((if font.uppercase then Char.uppercase_ascii else Fun.id) text.[i]) (Lazy.force font.map) in
-        for j = 0 to font.height - 1 do
-          !ans.(voff + j) <- Array.append !ans.(voff + j) c.(j)
-        done)
+      let c = text.[i] in
+      if c = '\n' then (xoff := 0; yoff := !yoff + font.height + font.line_space)
+      else
+        let c = if font.uppercase then Char.uppercase_ascii c else c in
+        let c = CharMap.find c (Lazy.force font.map) in
+        blit c ~x:!xoff ~y:!yoff img;
+        xoff := !xoff + font.width + font.char_space
     done;
-    rescale height font.height (make !ans)
+    rescale height font.height img
 end
