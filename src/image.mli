@@ -85,6 +85,8 @@ module Bitmap : sig
   (** A bitmap. *)
   type t
 
+  type bitmap = t
+
   val create : int -> int -> t
 
   val width : t -> int
@@ -94,6 +96,16 @@ module Bitmap : sig
   val get_pixel : t -> int -> int -> bool
 
   val set_pixel : t -> int -> int -> bool -> unit
+
+  val scale : t -> t -> unit
+
+  module Font : sig
+    type t
+
+    val native : t
+
+    val render : t -> string -> bitmap
+  end
 end
 
 (** Operations on images stored in RGB8 format, ie RGB channels, one byte each. *)

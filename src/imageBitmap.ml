@@ -31,31 +31,41 @@
  *
  *)
 
-type t =
-  {
-    data : bool array array;
-    width : int
-  }
+type t = bool array array
 
-let create c width height =
-  let data = Array.init height (fun _ -> Array.make width c) in
-  { data; width }
+type bitmap = t
+
+let create c width height : t = Array.init height (fun _ -> Array.make width c)
 
 let create_white = create true
 
 let create = create false
 
-let init width height f =
-  let data = Array.init height (fun j -> Array.init width (fun i -> f i j)) in
-  { data; width }
+let make data : t = data
 
-let width img = img.width
+let init width height f = make (Array.init height (fun j -> Array.init width (fun i -> f i j)))
 
-let height img = Array.length img.data
+let width (img : t) = if Array.length img = 0 then 0 else Array.length img.(0)
 
-let get_pixel img i j = img.data.(j).(i)
+let height (img : t) = Array.length img
 
-let set_pixel img i j c = img.data.(j).(i) <- c
+let get_pixel img i j = img.(j).(i)
+
+let set_pixel img i j c = img.(j).(i) <- c
+
+let fill img f =
+  for j = 0 to width img - 1 do
+    for i = 0 to height img - 1 do
+      set_pixel img i j (f i j)
+    done
+  done
+
+let scale src tgt =
+  let ws = width src in
+  let wt = width tgt in
+  let hs = height src in
+  let ht = height tgt in
+  fill tgt (fun i j -> get_pixel src (i * ws / wt) (j * hs / ht))
 
 (** Bitmap fonts. *)
 module Font = struct
@@ -69,6 +79,8 @@ module Font = struct
       height : int; (** height of a char in pixels *)
       default : t; (** default displayed character when not supported *)
       uppercase : bool; (** whether only uppercase caracters are supported *)
+      char_space : int;
+      line_space : int;
     }
 
   (** Our native font. *)
@@ -137,5 +149,29 @@ module Font = struct
         )
     in
     let default = create_white width height in
-    { map; width; height; default; uppercase = true }
+    { map; width; height; default; uppercase = true; char_space = 1; line_space = 2 }
+
+  let render font text =
+    let ans = ref (Array.make font.height [||]) in
+    (* Current line. *)
+    let line = ref 0 in
+    for i = 0 to String.length text - 1 do
+      (* Vertical offset. *)
+      let voff = !line * (font.height + font.line_space) in
+      if Array.length !ans.(voff) <> 0 then
+        (* Add a space *)
+        for j = 0 to font.height - 1 do
+          !ans.(voff + j) <-
+            Array.append !ans.(voff + j) (Array.make font.char_space false)
+        done;
+      if text.[i] = '\n' then (
+        ans := Array.append !ans (Array.make (font.line_space + font.height) [||]);
+        incr line)
+      else (
+        let c = CharMap.find text.[i] (Lazy.force font.map) in
+        for j = 0 to font.height - 1 do
+          !ans.(voff + j) <- Array.append !ans.(voff + j) c.(j)
+        done)
+    done;
+    make !ans
 end
