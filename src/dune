@@ -41,7 +41,7 @@
 (library
  (name mm_video)
  (public_name mm.video)
- (libraries mm.base mm.image)
+ (libraries mm.base mm.image mm.audio)
  (modules video)
  (synopsis
   "High-level APIs to create and manipulate multimedia streams -- video module"))

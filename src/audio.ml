@@ -1681,6 +1681,7 @@ module IO = struct
         self#output "RIFF";
         self#output_int 0;
         self#output "WAVE";
+
         (* Format *)
         self#output "fmt ";
         self#output_int 16;
@@ -1690,6 +1691,7 @@ module IO = struct
         self#output_int (self#sample_rate * self#channels * bits_per_sample / 8);
         self#output_short (self#channels * bits_per_sample / 8);
         self#output_short bits_per_sample;
+
         (* Data *)
         self#output "data";
         (* size of the data, to be updated afterwards *)

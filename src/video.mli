@@ -33,7 +33,10 @@
 
 (** Operations on video data. *)
 
+open Mm_audio
 open Mm_image
+
+module YUV420 = Image.YUV420
 
 (** Images of videos. *)
 module Image : sig
@@ -180,6 +183,22 @@ module FPS : sig
 
   (** Convert a frame rate to a fraction. *)
   val to_frac : t -> int * int
+end
+
+(** Operation on files in AVI format. *)
+module AVI : sig
+  (** Writing AVI files. *)
+  module Writer : sig
+    (** Generate a header for the AVI file. *)
+    val header : ?format:[> `YUV420 ] -> width:int -> height:int -> framerate:int -> ?channels:int -> ?samplerate:int -> ?vendor:string -> unit -> string
+
+    (** Operations on chunks, which are blocks of (audio / video) data. *)
+    module Chunk : sig
+      val audio_s16le : Audio.t -> string
+
+      val video_yuv420 : YUV420.t -> string
+    end
+  end
 end
 
 module IO : sig

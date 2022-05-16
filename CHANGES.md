@@ -1,6 +1,7 @@
 0.8.1 (unreleased)
 =====
 - Add support for bitmaps and bitmap fonts.
+- Working AVI video output.
 
 0.8.0 (13-03-2022)
 =====

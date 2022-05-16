@@ -233,13 +233,13 @@ let get_pixel_v img i j = Data.get img.v ((j / 2 * img.uv_stride) + (i / 2))
 external get_pixel_rgba : t -> int -> int -> Pixel.rgba
   = "caml_yuv420_get_pixel_rgba"
 
-let of_bitmap bmp =
+let of_bitmap ?(fg=Pixel.RGBA.white) ?(bg=Pixel.RGBA.transparent) bmp =
   let width = Bitmap.width bmp in
   let height = Bitmap.height bmp in
   let img = create width height in
   for j = 0 to height - 1 do
     for i = 0 to width - 1 do
-      set_pixel_rgba img i j (if Bitmap.get_pixel bmp i j then Pixel.RGBA.white else Pixel.RGBA.black)
+      set_pixel_rgba img i j (if Bitmap.get_pixel bmp i j then fg else bg)
     done
   done;
   img

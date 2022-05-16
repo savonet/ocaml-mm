@@ -274,6 +274,24 @@ let () =
   test "font" (fun () ->
       let img = I.Bitmap.Font.render ~size:30 "Hello, world!\nHow are you?" in
       write "hello-world.bmp" (I.YUV420.to_BMP (I.YUV420.of_bitmap img))
+    );
+  test "sliding font" (fun () ->
+      let width = 640 in
+      let height = 480 in
+      let fps = 24 in
+      let duration = 5 in
+      let txt = I.Bitmap.Font.render ~size:30 "Hello, world!\nHow are you?" in
+      let txt = I.YUV420.of_bitmap txt in
+      let fname = "out/hello-world.avi" in
+      let oc = open_out fname in
+      output_string oc (Video.AVI.Writer.header ~width ~height ~framerate:fps ());
+      for i = 0 to duration * fps do
+        let img = I.YUV420.create width height in
+        I.YUV420.fill img (I.Pixel.yuv_of_rgb (2*i,0,0xff));
+        I.YUV420.add txt ~x:(3*i) ~y:(2*i) img;
+        output_string oc (Video.AVI.Writer.Chunk.video_yuv420 img)
+      done;
+      close_out oc
     )
 
 let () = Gc.full_major ()

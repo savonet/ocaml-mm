@@ -309,6 +309,8 @@ type buffer = t
 val create : int -> int -> t
 
 val make : int -> int -> float -> t
+
+(** Length in samples. *)
 val length : t -> int
 
 (** Create a buffer with the same number of channels and duration as the given
