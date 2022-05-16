@@ -113,6 +113,14 @@ let () =
       done;
       assert (dst.(1).(len - 1) = 1.)
     );
+  test "s16le with offset" (fun () ->
+      let chans = 2 in
+      let src = A.create chans len in
+      let off = 21 in
+      let buf = Bytes.create (off + A.S16LE.size chans len) in
+      A.S16LE.of_audio src 5 buf off (len-5);
+      A.S16LE.to_audio (Bytes.unsafe_to_string buf) off src 0 len
+    );
   Printf.printf "\n"
 
 module I = Image

@@ -247,18 +247,18 @@ CAMLprim value caml_mm_audio_to_s16(value _le, value _src, value _src_offs,
   int16_t *dst = (int16_t *)Bytes_val(_dst);
   int c, i;
 
-  if (caml_string_length(_dst) < 2 * nc * (dst_offs + len))
+  if (caml_string_length(_dst) < dst_offs + 2 * nc * len)
     caml_invalid_argument("pcm_to_s16: destination buffer too short");
 
-  dst = dst + nc * dst_offs;
+  dst = (void*)dst + dst_offs;
 
   if (little_endian == 1)
     for (c = 0; c < nc; c++) {
       src = Field(_src, c);
       for (i = 0; i < len; i++) {
-        dst[i * nc + c + dst_offs] = s16_clip(Double_field(src, i + src_offs));
+        dst[i * nc + c] = s16_clip(Double_field(src, i + src_offs));
 #ifdef BIGENDIAN
-        dst[i * nc + c + dst_offs] = bswap_16(dst[i * nc + c + dst_offs]);
+        dst[i * nc + c] = bswap_16(dst[i * nc + c]);
 #endif
       }
     }
@@ -266,9 +266,9 @@ CAMLprim value caml_mm_audio_to_s16(value _le, value _src, value _src_offs,
     for (c = 0; c < nc; c++) {
       src = Field(_src, c);
       for (i = 0; i < len; i++) {
-        dst[i * nc + c + dst_offs] = s16_clip(Double_field(src, i + src_offs));
+        dst[i * nc + c] = s16_clip(Double_field(src, i + src_offs));
 #ifndef BIGENDIAN
-        dst[i * nc + c + dst_offs] = bswap_16(dst[i * nc + c + dst_offs]);
+        dst[i * nc + c] = bswap_16(dst[i * nc + c]);
 #endif
       }
     }
@@ -296,7 +296,7 @@ CAMLprim value caml_mm_audio_convert_s16(value _le, value _src, value _src_offs,
   int len = Int_val(_len);
   int i, c;
 
-  if ((src_offs + len) * nc * 2 > caml_string_length(_src))
+  if (src_offs + len * nc * 2 > caml_string_length(_src))
     caml_invalid_argument("convert_native: output buffer too small");
 
   if (little_endian == 1)
