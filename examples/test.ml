@@ -300,6 +300,39 @@ let () =
         output_string oc (Video.AVI.Writer.Chunk.video_yuv420 img)
       done;
       close_out oc
+    );
+  test "increasing saw" (fun () ->
+      let width = 640 in
+      let height = 480 in
+      let fps = 24 in
+      let fname = "out/saw.avi" in
+      let channels = 2 in
+      let samplerate = 44100 in
+      let oc = open_out fname in
+      output_string oc (Video.AVI.Writer.header ~width ~height ~framerate:fps ~channels ~samplerate ());
+      let f = ref 20. in
+      let df = ref 1. in
+      let buf = Audio.create channels (samplerate / fps) in
+      let osc = ref (-1.) in
+      while !f <= 20000. do
+        let txt = I.Bitmap.Font.render ~size:50 (Printf.sprintf "%01f Hz" !f) in
+        let txt = I.YUV420.of_bitmap txt in
+        let img = I.YUV420.create width height in
+        I.YUV420.blank img;
+        I.YUV420.add txt img;
+        output_string oc (Video.AVI.Writer.Chunk.video_yuv420 img);
+        for i = 0 to Audio.length buf - 1 do
+          for c = 0 to Audio.channels buf - 1 do
+            buf.(c).(i) <- !osc
+          done;
+          osc := !osc +. 2. *. !f /. float samplerate;
+          while !osc > 1. do osc := !osc -. 1.; done
+        done;
+        output_string oc (Video.AVI.Writer.Chunk.audio_s16le buf);
+        f := !f +. !df;
+        df := 1.1 *. !df
+      done;
+      close_out oc
     )
 
 let () = Gc.full_major ()
