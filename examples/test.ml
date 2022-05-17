@@ -301,7 +301,7 @@ let () =
       done;
       close_out oc
     );
-  test "increasing saw" (fun () ->
+  time "increasing saw" (fun () ->
       let width = 640 in
       let height = 480 in
       let fps = 24 in
@@ -310,12 +310,18 @@ let () =
       let samplerate = 44100 in
       let oc = open_out fname in
       output_string oc (Video.AVI.Writer.header ~width ~height ~framerate:fps ~channels ~samplerate ());
-      let f = ref 20. in
-      let df = ref 1. in
+      let fmin = 20. in
+      let fmax = 20000. in
+      let duration = 20. in
+      let t = ref 0. in
+      let dt = 1. /. float samplerate in
+      (* fmin + 2^(duration/a) = fmax => a = duration / log2 (fmax - fmin) *)
+      let a = duration /. (log (fmax -. fmin) /. log 2.) in
       let buf = Audio.create channels (samplerate / fps) in
       let osc = ref (-1.) in
-      while !f <= 20000. do
-        let txt = I.Bitmap.Font.render ~size:50 (Printf.sprintf "%01f Hz" !f) in
+      while !t <= duration do
+        let f = fmin +. 2. ** (!t /. a) in
+        let txt = I.Bitmap.Font.render ~size:50 (Printf.sprintf "%01f Hz" f) in
         let txt = I.YUV420.of_bitmap txt in
         let img = I.YUV420.create width height in
         I.YUV420.blank img;
@@ -325,12 +331,11 @@ let () =
           for c = 0 to Audio.channels buf - 1 do
             buf.(c).(i) <- !osc
           done;
-          osc := !osc +. 2. *. !f /. float samplerate;
-          while !osc > 1. do osc := !osc -. 1.; done
+          osc := !osc +. 2. *. f /. float samplerate;
+          while !osc > 1. do osc := !osc -. 1.; done;
+          t := !t +. dt
         done;
-        output_string oc (Video.AVI.Writer.Chunk.audio_s16le buf);
-        f := !f +. !df;
-        df := 1.1 *. !df
+        output_string oc (Video.AVI.Writer.Chunk.audio_s16le buf)
       done;
       close_out oc
     )
