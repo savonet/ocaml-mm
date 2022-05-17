@@ -2,6 +2,7 @@
 =====
 - Add support for bitmaps and bitmap fonts.
 - Working AVI video output.
+- Compile with OCaml 5.
 
 0.8.0 (13-03-2022)
 =====

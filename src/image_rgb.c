@@ -65,21 +65,6 @@
 #include <mmintrin.h>
 #endif
 
-// For OCaml < 3.10
-#ifndef caml_ba_array
-#define caml_ba_array caml_bigarray
-
-#ifndef Caml_ba_array_val
-#define Caml_ba_array_val(v) ((struct caml_ba_array *)Data_custom_val(v))
-#endif
-
-#define Caml_ba_data_val(v) (Caml_ba_array_val(v)->data)
-#define caml_ba_alloc alloc_bigarray
-#define CAML_BA_C_LAYOUT BIGARRAY_C_LAYOUT
-#define CAML_BA_UINT8 BIGARRAY_UINT8
-#define CAML_BA_MANAGED BIGARRAY_MANAGED
-#endif
-
 #ifndef WIN32
 #define max(a, b) (a > b) ? a : b
 #define min(a, b) (a < b) ? a : b
@@ -260,7 +245,7 @@ CAMLprim value caml_mm_RGBA8_to_Gray8(value _rgb, value _gray) {
   CAMLparam2(_rgb, _gray);
   frame rgb;
   frame_of_value(_rgb, &rgb);
-  uint8 *gray = Caml_ba_data_val(_gray);
+  uint8_t *gray = Caml_ba_data_val(_gray);
   int i, j;
 
   caml_enter_blocking_section();
@@ -1092,7 +1077,7 @@ CAMLprim value caml_rgb_blur_alpha(value _rgb) {
   CAMLreturn(Val_unit);
 }
 
-static inline int compare_images(int width, int height, uint8 *old, uint8 *new,
+static inline int compare_images(int width, int height, uint8_t *old, uint8_t *new,
                                  int dx, int dy) {
   int s = 0;
   int i, j;
@@ -1113,8 +1098,8 @@ CAMLprim value caml_mm_Gray8_motion_compute(value _bs, value _width, value _old,
   int bs = Int_val(_bs);
   // Previous and current image
   int len = Caml_ba_array_val(_new)->dim[0];
-  uint8 *old = Caml_ba_data_val(_old);
-  uint8 *new = Caml_ba_data_val(_new);
+  uint8_t *old = Caml_ba_data_val(_old);
+  uint8_t *new = Caml_ba_data_val(_new);
   // Dimensions of the image
   int w = Int_val(_width);
   int h = len / w;
@@ -1176,7 +1161,7 @@ CAMLprim value caml_mm_Gray8_motion_compute(value _bs, value _width, value _old,
   CAMLreturn(ans);
 }
 
-static inline int compare_blocks(int width, int height, uint8 *old, uint8 *new,
+static inline int compare_blocks(int width, int height, uint8_t *old, uint8_t *new,
                                  int bs, int x, int y, int dx, int dy) {
   int s = 0;
   int i, j;
@@ -1205,10 +1190,10 @@ CAMLprim value caml_mm_RGBA8_draw_line(value _img, value c, value src,
   int sy = Int_val(Field(src, 1));
   int dx = Int_val(Field(dst, 0));
   int dy = Int_val(Field(dst, 1));
-  uint8 cr = Int_val(Field(c, 0));
-  uint8 cg = Int_val(Field(c, 1));
-  uint8 cb = Int_val(Field(c, 2));
-  uint8 ca = Int_val(Field(c, 3));
+  uint8_t cr = Int_val(Field(c, 0));
+  uint8_t cg = Int_val(Field(c, 1));
+  uint8_t cb = Int_val(Field(c, 2));
+  uint8_t ca = Int_val(Field(c, 3));
 
   int i, j;
 
@@ -1258,8 +1243,8 @@ CAMLprim value caml_mm_Gray8_motion_multi_compute(value _bs, value _width,
   int bs = Int_val(_bs);
   // Previous and current image
   int len = Caml_ba_array_val(_new)->dim[0];
-  uint8 *old = Caml_ba_data_val(_old);
-  uint8 *new = Caml_ba_data_val(_new);
+  uint8_t *old = Caml_ba_data_val(_old);
+  uint8_t *new = Caml_ba_data_val(_new);
   // Iterators over blocks
   int i, j;
   // Dimensions of the image

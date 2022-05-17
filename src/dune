@@ -9,7 +9,7 @@
 (library
  (name mm_audio)
  (public_name mm.audio)
- (libraries bigarray mm.base)
+ (libraries mm.base)
  (modules audio)
  (foreign_stubs
   (extra_deps config.h)
@@ -21,7 +21,7 @@
 (library
  (name mm_image)
  (public_name mm.image)
- (libraries bigarray)
+ (libraries unix)
  (modules
   imageBase
   imageBitmap
