@@ -303,7 +303,8 @@ let () =
     );
   time "increasing saw" (fun () ->
       let width = 640 in
-      let height = 480 in
+      let height = 360 in
+      let fontsize = 70 in
       let fps = 24 in
       let fname = "out/saw.avi" in
       let channels = 2 in
@@ -321,11 +322,11 @@ let () =
       let osc = ref (-1.) in
       while !t <= duration do
         let f = fmin +. 2. ** (!t /. a) in
-        let txt = I.Bitmap.Font.render ~size:50 (Printf.sprintf "%01f Hz" f) in
+        let txt = I.Bitmap.Font.render ~size:fontsize (Printf.sprintf "%.2f Hz" f) in
         let txt = I.YUV420.of_bitmap txt in
         let img = I.YUV420.create width height in
         I.YUV420.blank img;
-        I.YUV420.add txt img;
+        I.YUV420.add txt ~y:((height-fontsize)/2) img;
         output_string oc (Video.AVI.Writer.Chunk.video_yuv420 img);
         for i = 0 to Audio.length buf - 1 do
           for c = 0 to Audio.channels buf - 1 do
