@@ -301,6 +301,9 @@ let () =
       done;
       close_out oc
     );
+  test "empty text" (fun () ->
+      ignore (I.Bitmap.Font.render ~size:20 "")
+    );
   time "increasing saw" (fun () ->
       let width = 640 in
       let height = 360 in

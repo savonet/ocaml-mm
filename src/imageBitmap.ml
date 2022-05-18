@@ -181,9 +181,11 @@ module Font = struct
       !h, !max
     in
     let img =
-      create
-        (text_width * font.width + (text_width-1) * font.char_space)
-        (text_height * font.height + (text_height-1) * font.line_space)
+      let width = text_width * font.width + (text_width-1) * font.char_space in
+      let height = text_height * font.height + (text_height-1) * font.line_space in
+      let width = max width 0 in
+      let height = max height 0 in
+      create width height
     in
     let xoff = ref 0 in
     let yoff = ref 0 in
