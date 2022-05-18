@@ -194,7 +194,7 @@ module Font = struct
       if c = '\n' then (xoff := 0; yoff := !yoff + font.height + font.line_space)
       else
         let c = if font.uppercase then Char.uppercase_ascii c else c in
-        let c = CharMap.find c (Lazy.force font.map) in
+        let c = match CharMap.find_opt c (Lazy.force font.map) with Some c -> c | None -> font.default in
         blit c ~x:!xoff ~y:!yoff img;
         xoff := !xoff + font.width + font.char_space
     done;
