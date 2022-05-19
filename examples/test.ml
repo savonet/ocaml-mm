@@ -283,11 +283,11 @@ let () =
       let img = I.Bitmap.Font.render ~size:30 "Hello, world!\nHow are you?" in
       write "hello-world.bmp" (I.YUV420.to_BMP (I.YUV420.of_bitmap img))
     );
-  test "sliding font" (fun () ->
-      let width = 640 in
-      let height = 480 in
+  time "sliding font" (fun () ->
+      let width = 1280 in
+      let height = 720 in
       let fps = 24 in
-      let duration = 5 in
+      let duration = 10 in
       let txt = I.Bitmap.Font.render ~size:30 "Hello, world!\nHow are you?" in
       let txt = I.YUV420.of_bitmap txt in
       let fname = "out/hello-world.avi" in
