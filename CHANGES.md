@@ -3,6 +3,7 @@
 - Add support for bitmaps and bitmap fonts.
 - Working AVI video output.
 - Compile with OCaml 5.
+- Clarify license by switching to plain LGPL 2.1 (#16).
 
 0.8.0 (13-03-2022)
 =====
