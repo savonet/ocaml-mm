@@ -194,6 +194,23 @@ let () =
       let img = I.CanvasYUV420.make ~x:150 ~y:200 ~width:600 ~height:600 r in
       let img = I.CanvasYUV420.render img in
       write "canvas.bmp" (I.YUV420.to_BMP img));
+  test "scale grid proportionally" (fun () ->
+      let d = 100 in
+      let s = 10 in
+      let img = I.YUV420.create d d in
+      for j = 0 to d - 1 do
+        for i = 0 to d - 1 do
+          let c = if ((i / s) + (j / s)) mod 2 = 0 then (0xff,0xff,0xff,0xff) else (0x00,0x00,0x00,0xff) in
+          I.YUV420.set_pixel_rgba img i j c
+        done
+      done;
+      let img =
+        I.CanvasYUV420.make img
+        |> I.CanvasYUV420.resize 640 360
+        |> I.CanvasYUV420.render
+      in
+      write "scale-grid.bmp" (I.YUV420.to_BMP img)
+    );
   test "scale canvas" (fun () ->
       let img = I.YUV420.create 1000 1000 in
       I.YUV420.gradient_uv img (0, 0) (0xff, 0) (0, 0xff);
