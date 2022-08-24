@@ -165,8 +165,8 @@ module Canvas (I : CanvasImage) = struct
       else ((w', w), (h', h))
     in
     let x, y =
-      if proportional then (0, 0)
-      else ((w' - (w * nx / dx)) / 2, (h' - (h * ny / dy)) / 2)
+      if proportional then ((w' - (w * nx / dx)) / 2, (h' - (h * ny / dy)) / 2)
+      else (0, 0)
     in
     scale ?scaler (nx, dx) (ny, dy) img |> translate x y |> viewport w' h'
 
