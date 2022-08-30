@@ -206,7 +206,7 @@ let () =
       done;
       let img =
         I.CanvasYUV420.make img
-        |> I.CanvasYUV420.resize 640 360
+        |> I.CanvasYUV420.resize 640 362
         |> I.CanvasYUV420.render
       in
       write "scale-grid.bmp" (I.YUV420.to_BMP img)

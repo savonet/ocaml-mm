@@ -164,8 +164,8 @@ CAMLprim value caml_yuv420_scale(value _src, value _dst) {
     }
   for (j = 0; j < dst.height / 2; j++)
     for (i = 0; i < dst.width / 2; i++) {
-      is = i * src.width / dst.width;
-      js = j * src.height / dst.height;
+      is = i * (src.width / 2) / (dst.width / 2);
+      js = j * (src.height / 2) / (dst.height / 2);
       U2(dst, i, j) = U2(src, is, js);
       V2(dst, i, j) = V2(src, is, js);
     }
