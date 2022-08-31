@@ -98,8 +98,8 @@ include Make (Image)
 
 (* Canvas are not in place so that we have to make a slightly different
    implementation. *)
-module Canvas = struct
-  module Image = Mm_image.Image.Canvas (Image)
+module MakeCanvas(BaseImage : Mm_image.Image.CanvasImage) = struct
+  module Image = Mm_image.Image.Canvas(Image)
 
   type image = Image.t
   type t = Image.t array
@@ -145,6 +145,8 @@ module Canvas = struct
       buf.(i) <- Image.iter f buf.(i)
     done
 end
+
+module Canvas = MakeCanvas(Image)
 
 (*
 module RE = struct

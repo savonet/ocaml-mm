@@ -115,8 +115,8 @@ val blank : t -> int -> int -> unit
 val randomize : t -> int -> int -> unit
 
 (** Videos with canvas images. *)
-module Canvas : sig
-  module Image : module type of Mm_image.Image.Canvas (Image)
+module MakeCanvas(BaseImage : Mm_image.Image.CanvasImage) : sig
+  module Image : module type of Mm_image.Image.Canvas(Image)
 
   (** An image. *)
   type image = Image.t
@@ -172,6 +172,8 @@ module Canvas : sig
   (** Iterate a function on the rendering of the images of the video. *)
   val iter : (Mm_image.Image.YUV420.t -> unit) -> t -> int -> int -> unit
 end
+
+module Canvas : module type of MakeCanvas(Image)
 
 (* module Ringbuffer_ext : Ringbuffer.R with type elt = frame *)
 
