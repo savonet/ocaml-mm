@@ -153,7 +153,7 @@ module MakeCanvas(BaseImage : Mm_image.Image.CanvasImage) : sig
   val map_image : (image -> image) -> t -> int -> unit
 
   (** Render the nth image of the video. *)
-  val render : t -> int -> Mm_image.Image.YUV420.t
+  val render : ?transparent:bool -> t -> int -> Mm_image.Image.YUV420.t
 
   (** Change the contents of the nth image of the video (like [set] but takes an
       image instead of a canvas as argument). *)
