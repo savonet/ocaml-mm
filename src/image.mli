@@ -375,6 +375,7 @@ module YUV420 : sig
   val get_pixel_y : t -> int -> int -> int
   val get_pixel_u : t -> int -> int -> int
   val get_pixel_v : t -> int -> int -> int
+  val get_pixel_a : t -> int -> int -> int
   val get_pixel_rgba : t -> int -> int -> Pixel.rgba
   val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
 

@@ -229,6 +229,10 @@ let set_pixel_rgba img i j ((_, _, _, a) as p) =
 let get_pixel_y img i j = Data.get img.y ((j * img.y_stride) + i)
 let get_pixel_u img i j = Data.get img.u ((j / 2 * img.uv_stride) + (i / 2))
 let get_pixel_v img i j = Data.get img.v ((j / 2 * img.uv_stride) + (i / 2))
+let get_pixel_a img i j =
+  match img.alpha with
+  | Some alpha -> Data.get alpha (j * img.y_stride + i)
+  | None -> 0xff
 
 external get_pixel_rgba : t -> int -> int -> Pixel.rgba
   = "caml_yuv420_get_pixel_rgba"
