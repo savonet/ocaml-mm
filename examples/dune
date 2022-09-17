@@ -59,6 +59,12 @@
  (libraries graphics mm))
 
 (executable
+ (name replaygain)
+ (modules replaygain)
+ (optional)
+ (libraries mm.audio))
+
+(executable
  (name test)
  (modules test)
  (optional)

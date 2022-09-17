@@ -1,3 +1,7 @@
+0.8.2 (unreleased)
+=====
+- Add ReplayGain computation.
+
 0.8.1 (24-05-2022)
 =====
 - Add support for bitmaps and bitmap fonts.

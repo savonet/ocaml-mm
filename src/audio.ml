@@ -117,6 +117,34 @@ module Sample = struct
     let x = max (-1.) x in
     let x = min 1. x in
     x
+
+  let iir a b =
+    let na = Array.length a in
+    let nb = Array.length b in
+    assert (a.(0) = 1.);
+    let x = Array.make nb 0. in
+    let y = Array.make na 0. in
+    let ka = ref 0 in
+    let kb = ref 0 in
+    fun x0 ->
+      let y0 = ref 0. in
+      x.(!kb) <- x0;
+      for i = 0 to nb - 1 do
+        y0 := !y0 +. b.(i) *. x.((!kb+i) mod nb)
+      done;
+      for i = 1 to na - 1 do
+        y0 := !y0 -. a.(i) *. y.((!ka+i) mod na)
+      done;
+      if na > 0 then y.(!ka) <- !y0;
+      let decr n k =
+        decr k;
+        if !k < 0 then k := !k + n;
+      in
+      decr na ka;
+      decr nb kb;
+      !y0
+
+  let fir b = iir [||] b
 end
 
 module Mono = struct
@@ -1178,6 +1206,94 @@ end
 module Analyze = struct
   let rms buf ofs len =
     Array.init (channels buf) (fun i -> Mono.Analyze.rms buf.(i) ofs len)
+
+  (** Replaygain computations. *)
+  (* See https://github.com/FFmpeg/FFmpeg/blob/master/libavfilter/af_replaygain.c *)
+  (* See https://wiki.hydrogenaud.io/index.php?title=ReplayGain_specification *)
+  module ReplayGain = struct
+    type t =
+      {
+        channels : int;
+        mutable frame_pos : int;
+        frame_length : int;
+        prefilter : float array -> float array;
+        mutable peak : float;
+        mutable rms : float;
+        histogram : int array;
+      }
+
+    exception Not_supported
+
+    let histogram_slots = 12000
+
+    (** Create internal state. *)
+    let create =
+      let coeffs =
+      [
+        44100,
+        (
+          [|1.00000000000000; -3.47845948550071;  6.36317777566148; -8.54751527471874;  9.47693607801280; -8.81498681370155; 6.85401540936998; -4.39470996079559;  2.19611684890774; -0.75104302451432;  0.13149317958808|],
+          [|0.05418656406430; -0.02911007808948; -0.00848709379851; -0.00851165645469; -0.00834990904936;  0.02245293253339; -0.02596338512915;  0.01624864962975; -0.00240879051584; 0.00674613682247; -0.00187763777362 |],
+          [|1.00000000000000; -1.96977855582618;  0.97022847566350|],
+          [|0.98500175787242; -1.97000351574484;  0.98500175787242 |]
+        )
+      ]
+    in
+    fun ~channels ~samplerate ->
+      (* Frame length in samples (a frame is 50 ms). *)
+      let frame_length = samplerate * 50 / 1000 in
+      (* Coefficients of the Yulewalk and Butterworth filters. *)
+      let yule_a, yule_b, butter_a, butter_b =
+        match List.assoc_opt samplerate coeffs with
+        | Some c -> c
+        | None -> failwith "Unhandled samplerate"
+      in
+      let yulewalk = Array.init channels (fun _ -> Sample.iir yule_a yule_b) in
+      let butterworth = Array.init channels (fun _ -> Sample.iir butter_a butter_b) in
+      let prefilter x = Array.mapi (fun i x -> x |> yulewalk.(i) |> butterworth.(i)) x in
+      { channels; frame_pos = 0; frame_length; prefilter; peak = 0.; rms = 0.; histogram = Array.make histogram_slots 0 }
+
+    (** Process a sample. *)
+    let process_sample rg x =
+      Array.iter (fun x -> let x = abs_float x in if x > rg.peak then rg.peak <- x) x;
+      let x = rg.prefilter x in
+      Array.iter (fun x -> rg.rms <- rg.rms +. x *. x) x;
+      rg.frame_pos <- rg.frame_pos + 1;
+      if rg.frame_pos >= rg.frame_length then
+        (
+          (* Minimum value is about -100 dB for digital silence. The 90 dB
+             offset is to compensate for the normalized float range and 3 dB is
+             for stereo samples. *)
+          let rms = 10. *. log10 (rg.rms /. (float (rg.frame_length * rg.channels))) +. 90. in
+          let level = int_of_float (100. *. rms) |> max 0 |> min (histogram_slots - 1) in
+          rg.histogram.(level) <- rg.histogram.(level) + 1;
+          rg.rms <- 0.;
+          rg.frame_pos <- 0;
+        )
+
+    (** Process a buffer. *)
+    let process rg buf off len =
+      assert (channels buf = rg.channels);
+      for i = off to off + len - 1 do
+        let x = Array.init rg.channels (fun c -> buf.(c).(i)) in
+        process_sample rg x
+      done
+
+    (** Computed peak. *)
+    let peak rg = rg.peak
+
+    (** Compute gain. *)
+    let gain rg =
+      let windows = Array.fold_left (+) 0 rg.histogram in
+      let i = ref (histogram_slots - 1) in
+      let loud_count = ref 0 in
+      (* Find i below the top 5% *)
+      while !i > 0 && !loud_count * 20 < windows do
+        loud_count := !loud_count + rg.histogram.(!i);
+        decr i
+      done;
+      (64.54 -. (float !i /. 100.)) |> max (-24.) |> min 64.
+  end
 end
 
 module Effect = struct

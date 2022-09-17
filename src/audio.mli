@@ -54,6 +54,12 @@ module Sample : sig
 
   (** Clip a sample (ie ensure that it is between [-1.] and [1.]. *)
   val clip : t -> t
+
+  (** An IIR filter with given b coefficients. *)
+  val fir : float array -> t -> t
+
+  (** An IIR filter with given a and b coefficients. *)
+  val iir : float array -> float array -> t -> t
 end
 
 (** Operations on notes. *)
@@ -462,6 +468,25 @@ end
 
 module Analyze : sig
   val rms : t -> int -> int -> float array
+
+  module ReplayGain : sig
+    type t
+
+    exception Not_supported
+
+    (** Create internal state for computing ReplayGain. Raises [Not_supported]
+        if the samplerate is not supported. *)
+    val create : channels:int -> samplerate:int -> t
+
+    (** Process a buffer. *)
+    val process : t -> buffer -> int -> int -> unit
+
+    (** Peak of processed samples. *)
+    val peak : t -> float
+
+    (** Replaygain for processed samples. *)
+    val gain : t -> float
+  end
 end
 
 (** Audio effects. *)
