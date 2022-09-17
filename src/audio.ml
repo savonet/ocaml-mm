@@ -1229,29 +1229,29 @@ module Analyze = struct
     (** Create internal state. *)
     let create =
       let coeffs =
-      [
-        44100,
-        (
-          [|1.00000000000000; -3.47845948550071;  6.36317777566148; -8.54751527471874;  9.47693607801280; -8.81498681370155; 6.85401540936998; -4.39470996079559;  2.19611684890774; -0.75104302451432;  0.13149317958808|],
-          [|0.05418656406430; -0.02911007808948; -0.00848709379851; -0.00851165645469; -0.00834990904936;  0.02245293253339; -0.02596338512915;  0.01624864962975; -0.00240879051584; 0.00674613682247; -0.00187763777362 |],
-          [|1.00000000000000; -1.96977855582618;  0.97022847566350|],
-          [|0.98500175787242; -1.97000351574484;  0.98500175787242 |]
-        )
-      ]
-    in
-    fun ~channels ~samplerate ->
-      (* Frame length in samples (a frame is 50 ms). *)
-      let frame_length = samplerate * 50 / 1000 in
-      (* Coefficients of the Yulewalk and Butterworth filters. *)
-      let yule_a, yule_b, butter_a, butter_b =
-        match List.assoc_opt samplerate coeffs with
-        | Some c -> c
-        | None -> failwith "Unhandled samplerate"
+        [
+          44100,
+          (
+            [|1.00000000000000; -3.47845948550071;  6.36317777566148; -8.54751527471874;  9.47693607801280; -8.81498681370155; 6.85401540936998; -4.39470996079559;  2.19611684890774; -0.75104302451432;  0.13149317958808|],
+            [|0.05418656406430; -0.02911007808948; -0.00848709379851; -0.00851165645469; -0.00834990904936;  0.02245293253339; -0.02596338512915;  0.01624864962975; -0.00240879051584; 0.00674613682247; -0.00187763777362 |],
+            [|1.00000000000000; -1.96977855582618;  0.97022847566350|],
+            [|0.98500175787242; -1.97000351574484;  0.98500175787242 |]
+          )
+        ]
       in
-      let yulewalk = Array.init channels (fun _ -> Sample.iir yule_a yule_b) in
-      let butterworth = Array.init channels (fun _ -> Sample.iir butter_a butter_b) in
-      let prefilter x = Array.mapi (fun i x -> x |> yulewalk.(i) |> butterworth.(i)) x in
-      { channels; frame_pos = 0; frame_length; prefilter; peak = 0.; rms = 0.; histogram = Array.make histogram_slots 0 }
+      fun ~channels ~samplerate ->
+        (* Frame length in samples (a frame is 50 ms). *)
+        let frame_length = samplerate * 50 / 1000 in
+        (* Coefficients of the Yulewalk and Butterworth filters. *)
+        let yule_a, yule_b, butter_a, butter_b =
+          match List.assoc_opt samplerate coeffs with
+          | Some c -> c
+          | None -> failwith "Unhandled samplerate"
+        in
+        let yulewalk = Array.init channels (fun _ -> Sample.iir yule_a yule_b) in
+        let butterworth = Array.init channels (fun _ -> Sample.iir butter_a butter_b) in
+        let prefilter x = Array.mapi (fun i x -> x |> yulewalk.(i) |> butterworth.(i)) x in
+        { channels; frame_pos = 0; frame_length; prefilter; peak = 0.; rms = 0.; histogram = Array.make histogram_slots 0 }
 
     (** Process a sample. *)
     let process_sample rg x =
