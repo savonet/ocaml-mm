@@ -9,8 +9,9 @@ let () =
     (fun _ -> ())
     "test [options]"
 
+let () = if not (Sys.file_exists "out") then Sys.mkdir "out" 0o755
+
 let write fname s =
-  if not (Sys.file_exists "out") then Sys.mkdir "out" 0o755;
   let fname = "out/" ^ fname in
   let oc = open_out fname in
   output_string oc s;
