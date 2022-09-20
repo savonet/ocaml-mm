@@ -121,7 +121,39 @@ let () =
       A.S16LE.of_audio src 5 buf off (len-5);
       A.S16LE.to_audio (Bytes.unsafe_to_string buf) off src 0 len
     );
-  Printf.printf "\n"
+  test "generate sine" (fun () ->
+      let chans = 2 in
+      let samplerate = 44100 in
+      let sl = new A.Mono.Generator.sine samplerate 440. in
+      let sr = new A.Mono.Generator.sine samplerate 880. in
+      let len = samplerate in
+      let buf = A.create chans len in
+      let f = new A.IO.Writer.to_wav_file chans samplerate "out/sine.wav" in
+      for _ = 0 to 9 do
+        sl#fill buf.(0) 0 len;
+        sr#fill buf.(1) 0 len;
+        f#write buf 0 len
+      done;
+      f#close
+    );
+  time "compute replaygain" (fun () ->
+      let f = new A.IO.Reader.of_wav_file "out/sine.wav" in
+      let channels = f#channels in
+      let rg = A.Analyze.ReplayGain.create ~channels ~samplerate:f#sample_rate in
+      let loop = ref true in
+      let len = 1024 in
+      let buf = A.create channels len in
+      while !loop do
+        let n = f#read buf 0 len in
+        if n = 0 then loop := false
+        else A.Analyze.ReplayGain.process rg buf 0 len
+      done;
+      let gain = A.Analyze.ReplayGain.gain rg in
+      (* Printf.printf "[%.02f dB] %!" gain; *)
+      assert (abs_float (gain -. (-14.56)) < 0.05)
+    )
+
+let () = Printf.printf "\n"
 
 module I = Image
 
