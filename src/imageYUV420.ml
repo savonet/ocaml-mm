@@ -291,9 +291,13 @@ let alpha_to_y img =
 external scale_alpha : t -> float -> unit = "caml_yuv_scale_alpha"
 
 let scale_alpha img a =
-  if a <> 1. then (
-    ensure_alpha img;
-    scale_alpha img a)
+  if a <> 1. then
+    if a = 0. then fill_alpha img 0
+    else
+      (
+        ensure_alpha img;
+        scale_alpha img a
+      )
 
 external disk_alpha : t -> int -> int -> int -> unit = "caml_yuv_disk_alpha"
 
