@@ -440,17 +440,34 @@ module Ringbuffer : sig
   (** Create a ringbuffer of given number of channels and size (in samples). *)
   val create : int -> int -> t
 
+  (** Number of channels of the ringbuffr. *)
   val channels : t -> int
+
+  (** Number of samples available for reading. *)
   val read_space : t -> int
+
+  (** Number of samples available for writing. *)
   val write_space : t -> int
+
+  (** Advance the read pointer.*)
   val read_advance : t -> int -> unit
+
+  (** Advance the write pointer. *)
   val write_advance : t -> int -> unit
+
+  (** Fill in a buffer without changing read pointer. *)
   val peek : t -> buffer -> unit
+
+  (** Fill in a buffer and advance read pointer. *)
   val read : t -> buffer -> unit
+
+  (** Write a buffer into the ringbuffer. *)
   val write : t -> buffer -> unit
+
   val transmit : t -> (buffer -> int) -> int
 end
 
+(** Extensible ringbuffers.*)
 module Ringbuffer_ext : sig
   type t
 
