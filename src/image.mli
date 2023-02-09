@@ -120,6 +120,8 @@ module RGB8 : sig
 
     (** Decode a color stored as RGB. *)
     val of_int : int -> t
+
+    val to_int : t -> int
   end
 end
 
