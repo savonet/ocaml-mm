@@ -32,25 +32,19 @@
  *)
 
 type t = bool array array
-
 type bitmap = t
 
 let create c width height : t = Array.init height (fun _ -> Array.make width c)
-
 let create_white = create true
-
 let create = create false
-
 let make data : t = data
 
-let init width height f = make (Array.init height (fun j -> Array.init width (fun i -> f i j)))
+let init width height f =
+  make (Array.init height (fun j -> Array.init width (fun i -> f i j)))
 
 let width (img : t) = if Array.length img = 0 then 0 else Array.length img.(0)
-
 let height (img : t) = Array.length img
-
 let get_pixel img i j = img.(j).(i)
-
 let set_pixel img i j c = img.(j).(i) <- c
 
 let fill img f =
@@ -72,7 +66,7 @@ let rescale p q img =
   scale img img2;
   img2
 
-let blit src ?(x=0) ?(y=0) dst =
+let blit src ?(x = 0) ?(y = 0) dst =
   let width = min (width src) (width dst - x) in
   let height = min (height src) (height dst - y) in
   for j = 0 to height - 1 do
@@ -83,19 +77,22 @@ let blit src ?(x=0) ?(y=0) dst =
 
 (** Bitmap fonts. *)
 module Font = struct
-  module CharMap = Map.Make(struct type t = char let compare (c:t) (d:t) = Stdlib.compare c d end)
+  module CharMap = Map.Make (struct
+    type t = char
+
+    let compare (c : t) (d : t) = Stdlib.compare c d
+  end)
 
   (** A fixed-size font. *)
-  type nonrec t =
-    {
-      map : t CharMap.t Lazy.t;
-      width : int; (** width of a char in pixels *)
-      height : int; (** height of a char in pixels *)
-      default : t; (** default displayed character when not supported *)
-      uppercase : bool; (** whether only uppercase caracters are supported *)
-      char_space : int;
-      line_space : int;
-    }
+  type nonrec t = {
+    map : t CharMap.t Lazy.t;
+    width : int;  (** width of a char in pixels *)
+    height : int;  (** height of a char in pixels *)
+    default : t;  (** default displayed character when not supported *)
+    uppercase : bool;  (** whether only uppercase caracters are supported *)
+    char_space : int;
+    line_space : int;
+  }
 
   let height font = font.height
 
@@ -155,34 +152,47 @@ module Font = struct
     let width = 3 in
     let height = 5 in
     let map =
-      Lazy.from_fun
-        (fun () ->
-           List.fold_left
-             (fun f (c, b) ->
-                let bmp = init width height (fun i j -> b.(j).[i] <> ' ') in
-                CharMap.add c bmp f
-             ) CharMap.empty prebitmap
-        )
+      Lazy.from_fun (fun () ->
+          List.fold_left
+            (fun f (c, b) ->
+              let bmp = init width height (fun i j -> b.(j).[i] <> ' ') in
+              CharMap.add c bmp f)
+            CharMap.empty prebitmap)
     in
     let default = create_white width height in
-    { map; width; height; default; uppercase = true; char_space = 1; line_space = 2 }
+    {
+      map;
+      width;
+      height;
+      default;
+      uppercase = true;
+      char_space = 1;
+      line_space = 2;
+    }
 
-  let render ?(font=native) ?size text =
+  let render ?(font = native) ?size text =
     let height = Option.value ~default:font.height size in
     let text_height, text_width =
       let h = ref 1 in
       let max = ref 0 in
       let cur = ref 0 in
       for i = 0 to String.length text - 1 do
-        if text.[i] = '\n' then (max := Stdlib.max !max !cur; cur := 0; incr h)
+        if text.[i] = '\n' then (
+          max := Stdlib.max !max !cur;
+          cur := 0;
+          incr h)
         else incr cur
       done;
       max := Stdlib.max !max !cur;
-      !h, !max
+      (!h, !max)
     in
     let img =
-      let width = text_width * font.width + (text_width-1) * font.char_space in
-      let height = text_height * font.height + (text_height-1) * font.line_space in
+      let width =
+        (text_width * font.width) + ((text_width - 1) * font.char_space)
+      in
+      let height =
+        (text_height * font.height) + ((text_height - 1) * font.line_space)
+      in
       let width = max width 0 in
       let height = max height 0 in
       create width height
@@ -191,12 +201,18 @@ module Font = struct
     let yoff = ref 0 in
     for i = 0 to String.length text - 1 do
       let c = text.[i] in
-      if c = '\n' then (xoff := 0; yoff := !yoff + font.height + font.line_space)
-      else
+      if c = '\n' then (
+        xoff := 0;
+        yoff := !yoff + font.height + font.line_space)
+      else (
         let c = if font.uppercase then Char.uppercase_ascii c else c in
-        let c = match CharMap.find_opt c (Lazy.force font.map) with Some c -> c | None -> font.default in
+        let c =
+          match CharMap.find_opt c (Lazy.force font.map) with
+            | Some c -> c
+            | None -> font.default
+        in
         blit c ~x:!xoff ~y:!yoff img;
-        xoff := !xoff + font.width + font.char_space
+        xoff := !xoff + font.width + font.char_space)
     done;
     rescale height font.height img
 end

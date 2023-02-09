@@ -35,7 +35,6 @@
 
 open Mm_audio
 open Mm_image
-
 module YUV420 = Image.YUV420
 
 (** Images of videos. *)
@@ -115,8 +114,8 @@ val blank : t -> int -> int -> unit
 val randomize : t -> int -> int -> unit
 
 (** Videos with canvas images. *)
-module MakeCanvas(BaseImage : Mm_image.Image.CanvasImage) : sig
-  module Image : module type of Mm_image.Image.Canvas(Image)
+module MakeCanvas (_ : Mm_image.Image.CanvasImage) : sig
+  module Image : module type of Mm_image.Image.Canvas (Image)
 
   (** An image. *)
   type image = Image.t
@@ -173,7 +172,7 @@ module MakeCanvas(BaseImage : Mm_image.Image.CanvasImage) : sig
   val iter : (Mm_image.Image.YUV420.t -> unit) -> t -> int -> int -> unit
 end
 
-module Canvas : module type of MakeCanvas(Image)
+module Canvas : module type of MakeCanvas (Image)
 
 (* module Ringbuffer_ext : Ringbuffer.R with type elt = frame *)
 
@@ -192,12 +191,20 @@ module AVI : sig
   (** Writing AVI files. *)
   module Writer : sig
     (** Generate a header for the AVI file. *)
-    val header : ?format:[> `YUV420 ] -> width:int -> height:int -> framerate:int -> ?channels:int -> ?samplerate:int -> ?vendor:string -> unit -> string
+    val header :
+      ?format:[> `YUV420 ] ->
+      width:int ->
+      height:int ->
+      framerate:int ->
+      ?channels:int ->
+      ?samplerate:int ->
+      ?vendor:string ->
+      unit ->
+      string
 
     (** Operations on chunks, which are blocks of (audio / video) data. *)
     module Chunk : sig
       val audio_s16le : Audio.t -> string
-
       val video_yuv420 : YUV420.t -> string
     end
   end

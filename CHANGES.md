@@ -1,4 +1,4 @@
-0.8.2 (unreleased)
+0.8.2 (2023-02-08)
 =====
 - Add ReplayGain computation.
 

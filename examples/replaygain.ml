@@ -17,7 +17,7 @@ let () =
     processed := !processed + n;
     Printf.printf "\rProcessing: %d%%%!" (!processed * 100 / total);
     if n = 0 then loop := false;
-    RG.process rg buf 0 n;
+    RG.process rg buf 0 n
   done;
   Printf.printf "\rProcessing done.\n%!";
   f#close;

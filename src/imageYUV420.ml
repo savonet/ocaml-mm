@@ -229,15 +229,16 @@ let set_pixel_rgba img i j ((_, _, _, a) as p) =
 let get_pixel_y img i j = Data.get img.y ((j * img.y_stride) + i)
 let get_pixel_u img i j = Data.get img.u ((j / 2 * img.uv_stride) + (i / 2))
 let get_pixel_v img i j = Data.get img.v ((j / 2 * img.uv_stride) + (i / 2))
+
 let get_pixel_a img i j =
   match img.alpha with
-  | Some alpha -> Data.get alpha (j * img.y_stride + i)
-  | None -> 0xff
+    | Some alpha -> Data.get alpha ((j * img.y_stride) + i)
+    | None -> 0xff
 
 external get_pixel_rgba : t -> int -> int -> Pixel.rgba
   = "caml_yuv420_get_pixel_rgba"
 
-let of_bitmap ?(fg=Pixel.RGBA.white) ?(bg=Pixel.RGBA.transparent) bmp =
+let of_bitmap ?(fg = Pixel.RGBA.white) ?(bg = Pixel.RGBA.transparent) bmp =
   let width = Bitmap.width bmp in
   let height = Bitmap.height bmp in
   let img = create width height in
@@ -291,12 +292,9 @@ let alpha_to_y img =
 external scale_alpha : t -> float -> unit = "caml_yuv_scale_alpha"
 
 let scale_alpha img a =
-  if a <> 1. then
-    (
-      ensure_alpha img;
-      if a = 0. then fill_alpha img 0
-      else scale_alpha img a
-    )
+  if a <> 1. then (
+    ensure_alpha img;
+    if a = 0. then fill_alpha img 0 else scale_alpha img a)
 
 external disk_alpha : t -> int -> int -> int -> unit = "caml_yuv_disk_alpha"
 

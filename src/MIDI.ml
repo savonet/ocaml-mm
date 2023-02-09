@@ -38,9 +38,12 @@ type division = Ticks_per_quarter of int | SMPTE of int * int
 
 type event =
   | Note_off of Audio.Note.t * float
-  | Note_on of Audio.Note.t * float (* Note on: note number (A4 = 69), velocity (between 0 and 1). *)
+  | Note_on of
+      Audio.Note.t
+      * float (* Note on: note number (A4 = 69), velocity (between 0 and 1). *)
   | Aftertouch of int * float
-  | Control_change of int * int (* TODO: specific type for common control changes *)
+  | Control_change of
+      int * int (* TODO: specific type for common control changes *)
   | Patch of int
   | Channel_aftertouch of int
   | Pitch of int

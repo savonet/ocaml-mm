@@ -21,8 +21,7 @@ let () =
     oss#write buf blen n;
     for o = 0 to fft_times_per_buf - 1 do
       let c =
-        FFT.complex_create
-          (Audio.to_mono buf 0 blen)
+        FFT.complex_create (Audio.to_mono buf 0 blen)
           (o * blen / fft_times_per_buf)
           blen
       in

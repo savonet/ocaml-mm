@@ -55,7 +55,7 @@ let () =
   let buf = Audio.append bd 0 blen sd 0 blen in
   while true do
     (* wav#write buf 0 blen; *)
-    oss#write buf 0 (2*blen)
+    oss#write buf 0 (2 * blen)
   done;
   (* wav#close; *)
   oss#close

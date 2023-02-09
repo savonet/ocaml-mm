@@ -69,8 +69,7 @@ let () =
         A.U8.of_audio src 0 buf 0 len;
         A.U8.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
       done;
-      assert (dst.(1).(len - 1) = 1.)
-    );
+      assert (dst.(1).(len - 1) = 1.));
   let src = A.make 2 len 1. in
   let buf = Bytes.create (A.S16LE.size 2 len) in
   let dst = A.create 2 len in
@@ -80,8 +79,7 @@ let () =
         A.S16LE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
       done;
       assert (dst.(1).(len - 1) = 1.);
-      assert (dst.(1).(len - 1) = 1.)
-    );
+      assert (dst.(1).(len - 1) = 1.));
   let src = A.make 2 len 1. in
   let buf = Bytes.create (A.S16BE.size 2 len) in
   let dst = A.create 2 len in
@@ -91,8 +89,7 @@ let () =
         A.S16BE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
       done;
       assert (dst.(1).(len - 1) = 1.);
-      assert (dst.(1).(len - 1) = 1.)
-    );
+      assert (dst.(1).(len - 1) = 1.));
   let src = A.make 2 len 1. in
   let buf = Bytes.create (A.S24LE.size 2 len) in
   let dst = A.create 2 len in
@@ -102,8 +99,7 @@ let () =
         A.S24LE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
       done;
       assert (dst.(1).(len - 1) = 1.);
-      assert (dst.(1).(len - 1) = 1.)
-    );
+      assert (dst.(1).(len - 1) = 1.));
   let src = A.make 2 len 1. in
   let buf = Bytes.create (A.S32LE.size 2 len) in
   let dst = A.create 2 len in
@@ -112,16 +108,14 @@ let () =
         A.S32LE.of_audio src 0 buf 0 len;
         A.S32LE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
       done;
-      assert (dst.(1).(len - 1) = 1.)
-    );
+      assert (dst.(1).(len - 1) = 1.));
   test "s16le with offset" (fun () ->
       let chans = 2 in
       let src = A.create chans len in
       let off = 21 in
       let buf = Bytes.create (off + A.S16LE.size chans len) in
-      A.S16LE.of_audio src 5 buf off (len-5);
-      A.S16LE.to_audio (Bytes.unsafe_to_string buf) off src 0 len
-    );
+      A.S16LE.of_audio src 5 buf off (len - 5);
+      A.S16LE.to_audio (Bytes.unsafe_to_string buf) off src 0 len);
   test "generate sine" (fun () ->
       let chans = 2 in
       let samplerate = 44100 in
@@ -135,12 +129,13 @@ let () =
         sr#fill buf.(1) 0 len;
         f#write buf 0 len
       done;
-      f#close
-    );
+      f#close);
   time "compute replaygain" (fun () ->
       let f = new A.IO.Reader.of_wav_file "out/sine.wav" in
       let channels = f#channels in
-      let rg = A.Analyze.ReplayGain.create ~channels ~samplerate:f#sample_rate in
+      let rg =
+        A.Analyze.ReplayGain.create ~channels ~samplerate:f#sample_rate
+      in
       let loop = ref true in
       let len = 1024 in
       let buf = A.create channels len in
@@ -151,8 +146,7 @@ let () =
       done;
       let gain = A.Analyze.ReplayGain.gain rg in
       (* Printf.printf "[%.02f dB] %!" gain; *)
-      assert (abs_float (gain -. (-14.56)) < 0.05)
-    )
+      assert (abs_float (gain -. -14.56) < 0.05))
 
 let () = Printf.printf "\n"
 
@@ -233,7 +227,10 @@ let () =
       let img = I.YUV420.create d d in
       for j = 0 to d - 1 do
         for i = 0 to d - 1 do
-          let c = if ((i / s) + (j / s)) mod 2 = 0 then (0xff,0xff,0xff,0xff) else (0x00,0x00,0x00,0xff) in
+          let c =
+            if ((i / s) + (j / s)) mod 2 = 0 then (0xff, 0xff, 0xff, 0xff)
+            else (0x00, 0x00, 0x00, 0xff)
+          in
           I.YUV420.set_pixel_rgba img i j c
         done
       done;
@@ -242,8 +239,7 @@ let () =
         |> I.CanvasYUV420.resize 640 362
         |> I.CanvasYUV420.render
       in
-      write "scale-grid.bmp" (I.YUV420.to_BMP img)
-    );
+      write "scale-grid.bmp" (I.YUV420.to_BMP img));
   test "scale canvas" (fun () ->
       let img = I.YUV420.create 1000 1000 in
       I.YUV420.gradient_uv img (0, 0) (0xff, 0) (0, 0xff);
@@ -331,8 +327,7 @@ let () =
       write "scale.bmp" (I.YUV420.to_BMP img2));
   test "font" (fun () ->
       let img = I.Bitmap.Font.render ~size:30 "Hello, world!\nHow are you?" in
-      write "hello-world.bmp" (I.YUV420.to_BMP (I.YUV420.of_bitmap img))
-    );
+      write "hello-world.bmp" (I.YUV420.to_BMP (I.YUV420.of_bitmap img)));
   time "sliding font" (fun () ->
       let width = 1280 in
       let height = 720 in
@@ -342,18 +337,16 @@ let () =
       let txt = I.YUV420.of_bitmap txt in
       let fname = "out/hello-world.avi" in
       let oc = open_out fname in
-      output_string oc (Video.AVI.Writer.header ~width ~height ~framerate:fps ());
+      output_string oc
+        (Video.AVI.Writer.header ~width ~height ~framerate:fps ());
       for i = 0 to duration * fps do
         let img = I.YUV420.create width height in
-        I.YUV420.fill img (I.Pixel.yuv_of_rgb (2*i,0,0xff));
-        I.YUV420.add txt ~x:(3*i) ~y:(2*i) img;
+        I.YUV420.fill img (I.Pixel.yuv_of_rgb (2 * i, 0, 0xff));
+        I.YUV420.add txt ~x:(3 * i) ~y:(2 * i) img;
         output_string oc (Video.AVI.Writer.Chunk.video_yuv420 img)
       done;
-      close_out oc
-    );
-  test "empty text" (fun () ->
-      ignore (I.Bitmap.Font.render ~size:20 "")
-    );
+      close_out oc);
+  test "empty text" (fun () -> ignore (I.Bitmap.Font.render ~size:20 ""));
   time "increasing saw" (fun () ->
       let width = 640 in
       let height = 360 in
@@ -363,7 +356,9 @@ let () =
       let channels = 2 in
       let samplerate = 44100 in
       let oc = open_out fname in
-      output_string oc (Video.AVI.Writer.header ~width ~height ~framerate:fps ~channels ~samplerate ());
+      output_string oc
+        (Video.AVI.Writer.header ~width ~height ~framerate:fps ~channels
+           ~samplerate ());
       let fmin = 20. in
       let fmax = 20000. in
       let duration = 20. in
@@ -374,24 +369,27 @@ let () =
       let buf = Audio.create channels (samplerate / fps) in
       let osc = ref (-1.) in
       while !t <= duration do
-        let f = fmin +. 2. ** (!t /. a) in
-        let txt = I.Bitmap.Font.render ~size:fontsize (Printf.sprintf "%.2f Hz" f) in
+        let f = fmin +. (2. ** (!t /. a)) in
+        let txt =
+          I.Bitmap.Font.render ~size:fontsize (Printf.sprintf "%.2f Hz" f)
+        in
         let txt = I.YUV420.of_bitmap txt in
         let img = I.YUV420.create width height in
         I.YUV420.blank img;
-        I.YUV420.add txt ~y:((height-fontsize)/2) img;
+        I.YUV420.add txt ~y:((height - fontsize) / 2) img;
         output_string oc (Video.AVI.Writer.Chunk.video_yuv420 img);
         for i = 0 to Audio.length buf - 1 do
           for c = 0 to Audio.channels buf - 1 do
             buf.(c).(i) <- !osc
           done;
-          osc := !osc +. 2. *. f /. float samplerate;
-          while !osc > 1. do osc := !osc -. 1.; done;
+          osc := !osc +. (2. *. f /. float samplerate);
+          while !osc > 1. do
+            osc := !osc -. 1.
+          done;
           t := !t +. dt
         done;
         output_string oc (Video.AVI.Writer.Chunk.audio_s16le buf)
       done;
-      close_out oc
-    )
+      close_out oc)
 
 let () = Gc.full_major ()

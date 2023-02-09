@@ -192,9 +192,9 @@ class writer_to_screen w h =
         let rgb = buf.(ofs + len - 1) in
         begin
           match Sdlvideo.surface_bpp surface with
-          (* | 16 -> to_16 rgb surface *)
-          | 32 -> to_32 rgb surface
-          | i -> failwith (Printf.sprintf "Unsupported format %dbpp" i)
+            (* | 16 -> to_16 rgb surface *)
+            | 32 -> to_32 rgb surface
+            | i -> failwith (Printf.sprintf "Unsupported format %dbpp" i)
         end;
         Sdlvideo.flip surface)
 

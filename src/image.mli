@@ -88,15 +88,10 @@ module Bitmap : sig
   type bitmap = t
 
   val create : int -> int -> t
-
   val width : t -> int
-
   val height : t -> int
-
   val get_pixel : t -> int -> int -> bool
-
   val set_pixel : t -> int -> int -> bool -> unit
-
   val scale : t -> t -> unit
 
   (** Operations on bitmap fonts. *)

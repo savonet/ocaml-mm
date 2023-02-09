@@ -40,8 +40,10 @@ module Pixel = struct
   type rgb_format =
     | RGB24 (* 24 bit RGB. Each color is an uint8_t. Color order is RGBRGB *)
     | BGR24 (* 24 bit BGR. Each color is an uint8_t. Color order is BGRBGR *)
-    | RGB32 (* 32 bit RGB. Each color is an uint8_t. Color order is RGBXRGBX, where X is unused *)
-    | BGR32 (* 32 bit BGR. Each color is an uint8_t. Color order is BGRXBGRX, where X is unused *)
+    | RGB32
+      (* 32 bit RGB. Each color is an uint8_t. Color order is RGBXRGBX, where X is unused *)
+    | BGR32
+      (* 32 bit BGR. Each color is an uint8_t. Color order is BGRXBGRX, where X is unused *)
     | RGBA32
 
   (* 32 bit RGBA. Each color is an uint8_t. Color order is RGBARGBA *)
@@ -51,10 +53,12 @@ module Pixel = struct
     | YUV444 (* Planar YCbCr 4:4:4. Each component is an uint8_t *)
     | YUV411 (* Planar YCbCr 4:1:1. Each component is an uint8_t *)
     | YUV410 (* Planar YCbCr 4:1:0. Each component is an uint8_t *)
-    | YUVJ420 (* Planar YCbCr 4:2:0. Each component is an uint8_t,
-               * luma and chroma values are full range (0x00 .. 0xff) *)
-    | YUVJ422 (* Planar YCbCr 4:2:2. Each component is an uint8_t,
-               * luma and chroma values are full range (0x00 .. 0xff) *)
+    | YUVJ420
+      (* Planar YCbCr 4:2:0. Each component is an uint8_t,
+       * luma and chroma values are full range (0x00 .. 0xff) *)
+    | YUVJ422
+      (* Planar YCbCr 4:2:2. Each component is an uint8_t,
+       * luma and chroma values are full range (0x00 .. 0xff) *)
     | YUVJ444
 
   (* Planar YCbCr 4:4:4. Each component is an uint8_t, luma and

@@ -92,11 +92,9 @@ module Pixel = struct
   module RGBA = struct
     type t = RGBA
 
-    let black = (0,0,0,0xff)
-
-    let white = (0xff,0xff,0xff,0xff)
-
-    let transparent = (0,0,0,0)
+    let black = (0, 0, 0, 0xff)
+    let white = (0xff, 0xff, 0xff, 0xff)
+    let transparent = (0, 0, 0, 0)
   end
 
   external yuv_of_rgb : rgb -> yuv = "caml_yuv_of_rgb"

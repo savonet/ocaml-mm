@@ -32,9 +32,9 @@
  *)
 
 open Mm_base
+
 (* open Mm_image *)
 open Mm_audio
-
 module YUV420 = Mm_image.Image.YUV420
 
 (** Images from which are made videos. *)
@@ -98,8 +98,8 @@ include Make (Image)
 
 (* Canvas are not in place so that we have to make a slightly different
    implementation. *)
-module MakeCanvas(BaseImage : Mm_image.Image.CanvasImage) = struct
-  module Image = Mm_image.Image.Canvas(Image)
+module MakeCanvas (BaseImage : Mm_image.Image.CanvasImage) = struct
+  module Image = Mm_image.Image.Canvas (Image)
 
   type image = Image.t
   type t = Image.t array
@@ -146,7 +146,7 @@ module MakeCanvas(BaseImage : Mm_image.Image.CanvasImage) = struct
     done
 end
 
-module Canvas = MakeCanvas(Image)
+module Canvas = MakeCanvas (Image)
 
 (*
 module RE = struct
@@ -223,7 +223,9 @@ module AVI = struct
         let v = Image.Data.to_string v in
         let y_stride = Image.YUV420.y_stride img in
         let uv_stride = Image.YUV420.uv_stride img in
-        let s = create "00db" (width * height + 2 * (width / 2) * (height / 2)) in
+        let s =
+          create "00db" ((width * height) + (2 * (width / 2) * (height / 2)))
+        in
         let o = ref 8 in
         let add_sub data off len =
           Bytes.blit_string data off s !o len;
@@ -250,114 +252,102 @@ module AVI = struct
       let list = make "LIST"
     end
 
-    let header ?(format=`YUV420) ~width ~height ~framerate ?channels ?samplerate ?vendor () =
+    let header ?(format = `YUV420) ~width ~height ~framerate ?channels
+        ?samplerate ?vendor () =
       ignore format;
       let has_audio = channels <> None in
       let channels = Option.value ~default:0 channels in
       let samplerate = Option.value ~default:0 samplerate in
-      assert (not has_audio || samplerate > 0);
+      assert ((not has_audio) || samplerate > 0);
       (* Writing in two steps because 0xffffffff cannot be represented on 32 bits
          architectures. *)
       let dword_max () = word 0xffff ^ word 0xffff in
       let avi_header =
         Chunk.make "avih"
           (dword (1000000 / framerate) (* microsec per frame *)
-           ^ dword 0 (* maximum bytes per second *)
-           ^ dword 0 (* reserved *)
-           ^ dword 0x0100 (* flags (interleaved) *)
-           ^ dword_max () (* number of frames *)
-           ^ dword 0 (* initial frame *)
-           ^ dword (1 + if has_audio then 1 else 0) (* number of streams *)
-           ^ dword 0 (* suggested buffer size *)
-           ^ dword width (* width *)
-           ^ dword height (* height *)
-           ^ dword 0 (* reserved *)
-           ^ dword 0 (* reserved *)
-           ^ dword 0 (* reserved *)
-           ^ dword 0 (* reserved *)
-          )
+          ^ dword 0 (* maximum bytes per second *)
+          ^ dword 0 (* reserved *)
+          ^ dword 0x0100 (* flags (interleaved) *)
+          ^ dword_max () (* number of frames *)
+          ^ dword 0 (* initial frame *)
+          ^ dword (1 + if has_audio then 1 else 0) (* number of streams *)
+          ^ dword 0 (* suggested buffer size *)
+          ^ dword width (* width *) ^ dword height (* height *)
+          ^ dword 0 (* reserved *) ^ dword 0 (* reserved *)
+          ^ dword 0 (* reserved *) ^ dword 0 (* reserved *))
       in
       let video_header =
         let stream_header =
           Chunk.make "strh"
-            ("vids" (* stream type *)
-             ^ "I420" (* fourcc (codec) *)
-             ^ dword 0 (* flags *)
-             ^ word 0 (* priority *)
-             ^ word 0 (* language *)
-             ^ dword 0 (* initial frames *)
-             ^ dword 1 (* scale *)
-             ^ dword framerate (* rate *)
-             ^ dword 0 (* start time *)
-             ^ dword_max () (* stream length *)
-             ^ dword 0 (* suggested buffer size *)
-             ^ dword_max () (* quality *)
-             ^ dword 0 (* sample size *)
-             ^ word 0 (* left *)
-             ^ word 0 (* top *)
-             ^ word width (* right *)
-             ^ word height (* bottom *)
-            )
+            ("vids" (* stream type *) ^ "I420" (* fourcc (codec) *)
+            ^ dword 0 (* flags *) ^ word 0
+            (* priority *) ^ word 0 (* language *)
+            ^ dword 0 (* initial frames *)
+            ^ dword 1 (* scale *) ^ dword framerate (* rate *)
+            ^ dword 0 (* start time *)
+            ^ dword_max () (* stream length *)
+            ^ dword 0 (* suggested buffer size *)
+            ^ dword_max () (* quality *) ^ dword 0 (* sample size *)
+            ^ word 0 (* left *) ^ word 0
+            (* top *) ^ word width (* right *)
+            ^ word height (* bottom *))
         in
         let stream_format =
           (* see BITMAPINFO *)
           Chunk.make "strf"
             (dword 40 (* size of this structure *)
-             ^ dword width (* width *)
-             ^ dword height (* height *)
-             ^ word 1 (* panes *)
-             ^ word 12 (* depth *)
-             ^ "I420" (* codec *)
-             ^ dword (width * height * 6 / 4) (* image size *)
-             ^ dword 0 (* pixels / x meter *)
-             ^ dword 0 (* pixels / y meter *)
-             ^ dword 0 (* colors used *)
-             ^ dword 0 (* important colors *)
-            )
+            ^ dword width (* width *) ^ dword height (* height *)
+            ^ word 1 (* panes *) ^ word 12
+            (* depth *) ^ "I420" (* codec *)
+            ^ dword (width * height * 6 / 4) (* image size *)
+            ^ dword 0 (* pixels / x meter *)
+            ^ dword 0 (* pixels / y meter *)
+            ^ dword 0 (* colors used *)
+            ^ dword 0 (* important colors *))
         in
         Chunk.list ("strl" ^ stream_header ^ stream_format)
       in
       let audio_header =
-        if not has_audio then "" else
+        if not has_audio then ""
+        else (
           let stream_header =
             Chunk.make "strh"
-              ("auds" (* stream type *)
-               ^ dword 0 (* stream *)
-               ^ dword 0 (* flags *)
-               ^ word 0 (* priority *)
-               ^ word 0 (* language *)
-               ^ dword 0 (* initial frames *)
-               ^ dword 1 (* scale *)
-               ^ dword samplerate (* rate *)
-               ^ dword 0 (* start time *)
-               ^ dword_max () (* stream length *)
-               ^ dword 0 (* suggested buffer size *)
-               ^ dword_max () (* quality *)
-               ^ dword (2 * channels) (* sample size *)
-               ^ word 0 (* left *)
-               ^ word 0 (* top *)
-               ^ word 0 (* right *)
-               ^ word 0 (* bottom *))
+              ("auds" (* stream type *) ^ dword 0 (* stream *)
+              ^ dword 0 (* flags *) ^ word 0 (* priority *)
+              ^ word 0 (* language *)
+              ^ dword 0 (* initial frames *)
+              ^ dword 1 (* scale *)
+              ^ dword samplerate (* rate *)
+              ^ dword 0 (* start time *)
+              ^ dword_max () (* stream length *)
+              ^ dword 0 (* suggested buffer size *)
+              ^ dword_max () (* quality *)
+              ^ dword (2 * channels) (* sample size *)
+              ^ word 0 (* left *) ^ word 0
+              (* top *) ^ word 0 (* right *)
+              ^ word 0 (* bottom *))
           in
           let stream_format =
             Chunk.make "strf"
               (word 1 (* stream type (PCM) *)
-               ^ word channels (* channels *)
-               ^ dword samplerate (* rate *)
-               ^ dword (2 * channels * samplerate) (* byte rate *)
-               ^ word (2 * channels) (* block align *)
-               ^ word 16 (* bits per sample *)
-               ^ word 0 (* size of extra information *))
+              ^ word channels (* channels *)
+              ^ dword samplerate (* rate *)
+              ^ dword (2 * channels * samplerate) (* byte rate *)
+              ^ word (2 * channels) (* block align *)
+              ^ word 16 (* bits per sample *)
+              ^ word 0 (* size of extra information *))
           in
-          Chunk.list ("strl" ^ stream_header ^ stream_format)
+          Chunk.list ("strl" ^ stream_header ^ stream_format))
       in
-      let headers = Chunk.list ("hdrl" ^ avi_header ^ video_header ^ audio_header) in
+      let headers =
+        Chunk.list ("hdrl" ^ avi_header ^ video_header ^ audio_header)
+      in
       let info =
         match vendor with
-        | Some vendor ->
-          let producer = Chunk.make "ISFT" vendor in
-          Chunk.list ("INFO" ^ producer)
-        | None -> ""
+          | Some vendor ->
+              let producer = Chunk.make "ISFT" vendor in
+              Chunk.list ("INFO" ^ producer)
+          | None -> ""
       in
       "RIFF"
       ^ dword_max () (* file size *)
@@ -404,34 +394,57 @@ module IO = struct
 
         initializer
         self#output "RIFF";
-        self#output_int 0; (* TOFILL: file size *)
-        self#output "AVI "; (* file type *)
+        self#output_int 0;
+        (* TOFILL: file size *)
+        self#output "AVI ";
+
+        (* file type *)
 
         (* Headers *)
         self#output "LIST";
-        self#output_int 192; (* size of the list *)
+        self#output_int 192;
+        (* size of the list *)
         self#output "hdrl";
 
         (* AVI header *)
         self#output "avih";
-        self#output_int 56; (* AVI header size *)
-        self#output_int (int_of_float (1000000. /. frame_rate)); (* microseconds per frame *)
-        self#output_int 0;  (* max bytes per sec *)
-        self#output_int 0; (* pad to multiples of this size *)
-        self#output_byte 0; (* flags *)
-        self#output_byte 1; (* flags (interleaved) *)
-        self#output_byte 0; (* flags *)
-        self#output_byte 0; (* flags *)
-        self#output_int 0; (* TOFILL: total number of frames *)
-        self#output_int 0; (* initial frame *)
-        self#output_int 1; (* number of streams (TODO: change if audio) *)
-        self#output_int 0; (* suggested buffer size *)
-        self#output_int w; (* width *)
-        self#output_int h; (* height *)
-        self#output_int 0; (* scale *)
-        self#output_int 0; (* rate *)
-        self#output_int 0; (* start *)
-        self#output_int 0; (* length *)
+        self#output_int 56;
+        (* AVI header size *)
+        self#output_int (int_of_float (1000000. /. frame_rate));
+        (* microseconds per frame *)
+        self#output_int 0;
+        (* max bytes per sec *)
+        self#output_int 0;
+        (* pad to multiples of this size *)
+        self#output_byte 0;
+        (* flags *)
+        self#output_byte 1;
+        (* flags (interleaved) *)
+        self#output_byte 0;
+        (* flags *)
+        self#output_byte 0;
+        (* flags *)
+        self#output_int 0;
+        (* TOFILL: total number of frames *)
+        self#output_int 0;
+        (* initial frame *)
+        self#output_int 1;
+        (* number of streams (TODO: change if audio) *)
+        self#output_int 0;
+        (* suggested buffer size *)
+        self#output_int w;
+        (* width *)
+        self#output_int h;
+        (* height *)
+        self#output_int 0;
+        (* scale *)
+        self#output_int 0;
+        (* rate *)
+        self#output_int 0;
+        (* start *)
+        self#output_int 0;
+
+        (* length *)
 
         (* Stream headers *)
         self#output "LIST";
@@ -442,42 +455,69 @@ module IO = struct
         self#output "strh";
         self#output_int 56;
         self#output "vids";
-        self#output "RGB "; (* codec *)
-        self#output_int 0; (* flags *)
-        self#output_int 0; (* stream priority and language *)
-        self#output_int 0; (* initial frames *)
-        self#output_int 10; (* scale : rate / scale = frames / second or samples / second *)
-        self#output_int (int_of_float (frame_rate *. 10.)); (* rate *)
-        self#output_int 0; (* stream start time (in frames). *)
-        self#output_int 0; (* TOFILL: stream length (= number of frames) *)
-        self#output_int (frames_per_chunk * frame_size); (* suggested buffer size *)
-        self#output_int 0; (* stream quality *)
-        self#output_int 0; (* size of samples *)
-        self#output_short 0; (* destination rectangle: left *)
-        self#output_short 0; (* top *)
-        self#output_short w; (* right *)
-        self#output_short h; (* bottom *)
+        self#output "RGB ";
+        (* codec *)
+        self#output_int 0;
+        (* flags *)
+        self#output_int 0;
+        (* stream priority and language *)
+        self#output_int 0;
+        (* initial frames *)
+        self#output_int 10;
+        (* scale : rate / scale = frames / second or samples / second *)
+        self#output_int (int_of_float (frame_rate *. 10.));
+        (* rate *)
+        self#output_int 0;
+        (* stream start time (in frames). *)
+        self#output_int 0;
+        (* TOFILL: stream length (= number of frames) *)
+        self#output_int (frames_per_chunk * frame_size);
+        (* suggested buffer size *)
+        self#output_int 0;
+        (* stream quality *)
+        self#output_int 0;
+        (* size of samples *)
+        self#output_short 0;
+        (* destination rectangle: left *)
+        self#output_short 0;
+        (* top *)
+        self#output_short w;
+        (* right *)
+        self#output_short h;
+
+        (* bottom *)
 
         (* Stream format *)
         self#output "strf";
         self#output_int 40;
-        self#output_int 40; (* video size (????) *)
-        self#output_int w; (* width *)
-        self#output_int h; (* height *)
-        self#output_short 1; (* panes *)
-        self#output_short 24; (* color depth *)
-        self#output_int 0; (* tag1 (????) *)
-        self#output_int frame_size; (* image size *)
-        self#output_int 0; (* X pixels per meter *)
-        self#output_int 0; (* Y pixels per meter *)
-        self#output_int 0; (* colors used *)
+        self#output_int 40;
+        (* video size (????) *)
+        self#output_int w;
+        (* width *)
+        self#output_int h;
+        (* height *)
+        self#output_short 1;
+        (* panes *)
+        self#output_short 24;
+        (* color depth *)
+        self#output_int 0;
+        (* tag1 (????) *)
+        self#output_int frame_size;
+        (* image size *)
+        self#output_int 0;
+        (* X pixels per meter *)
+        self#output_int 0;
+        (* Y pixels per meter *)
+        self#output_int 0;
+        (* colors used *)
         self#output_int 0;
 
         (* Important colors *)
 
         (* movie data *)
         self#output "LIST";
-        self#output_int 0; (* TOFILL: movie size *)
+        self#output_int 0;
+        (* TOFILL: movie size *)
         self#output "movi";
 
         (* video chunks follow *)

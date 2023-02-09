@@ -130,15 +130,15 @@ module Sample = struct
       let y0 = ref 0. in
       x.(!kb) <- x0;
       for i = 0 to nb - 1 do
-        y0 := !y0 +. b.(i) *. x.((!kb+i) mod nb)
+        y0 := !y0 +. (b.(i) *. x.((!kb + i) mod nb))
       done;
       for i = 1 to na - 1 do
-        y0 := !y0 -. a.(i) *. y.((!ka+i) mod na)
+        y0 := !y0 -. (a.(i) *. y.((!ka + i) mod na))
       done;
       if na > 0 then y.(!ka) <- !y0;
       let decr n k =
         decr k;
-        if !k < 0 then k := !k + n;
+        if !k < 0 then k := !k + n
       in
       decr na ka;
       decr nb kb;
@@ -1207,20 +1207,20 @@ module Analyze = struct
   let rms buf ofs len =
     Array.init (channels buf) (fun i -> Mono.Analyze.rms buf.(i) ofs len)
 
-  (** Replaygain computations. *)
   (* See https://github.com/FFmpeg/FFmpeg/blob/master/libavfilter/af_replaygain.c *)
   (* See https://wiki.hydrogenaud.io/index.php?title=ReplayGain_specification *)
+
+  (** Replaygain computations. *)
   module ReplayGain = struct
-    type t =
-      {
-        channels : int;
-        mutable frame_pos : int;
-        frame_length : int;
-        prefilter : float array -> float array;
-        mutable peak : float;
-        mutable rms : float;
-        histogram : int array;
-      }
+    type t = {
+      channels : int;
+      mutable frame_pos : int;
+      frame_length : int;
+      prefilter : float array -> float array;
+      mutable peak : float;
+      mutable rms : float;
+      histogram : int array;
+    }
 
     exception Not_supported
 
@@ -1230,27 +1230,93 @@ module Analyze = struct
     let create =
       let coeffs =
         [
-          48000,
-          (
-            [|1.00000000000000; -3.84664617118067;  7.81501653005538; -11.34170355132042; 13.05504219327545;-12.28759895145294; 9.48293806319790; -5.87257861775999;  2.75465861874613; -0.86984376593551;  0.13919314567432|],
-            [|0.03857599435200; -0.02160367184185; -0.00123395316851; -0.00009291677959; -0.01655260341619;  0.02161526843274; -0.02074045215285;  0.00594298065125;  0.00306428023191; 0.00012025322027;  0.00288463683916|],
-            [|1.00000000000000; -1.97223372919527;  0.97261396931306|],
-            [|0.98621192462708; -1.97242384925416;  0.98621192462708|]
-          );
-          44100,
-          (
-            [|1.00000000000000; -3.47845948550071;  6.36317777566148; -8.54751527471874;  9.47693607801280; -8.81498681370155; 6.85401540936998; -4.39470996079559;  2.19611684890774; -0.75104302451432;  0.13149317958808|],
-            [|0.05418656406430; -0.02911007808948; -0.00848709379851; -0.00851165645469; -0.00834990904936;  0.02245293253339; -0.02596338512915;  0.01624864962975; -0.00240879051584; 0.00674613682247; -0.00187763777362 |],
-            [|1.00000000000000; -1.96977855582618;  0.97022847566350|],
-            [|0.98500175787242; -1.97000351574484;  0.98500175787242 |]
-          );
-          22050,
-          (
-            [|1.00000000000000; -1.49858979367799;  0.87350271418188; 0.12205022308084; -0.80774944671438;  0.47854794562326; -0.12453458140019; -0.04067510197014;  0.08333755284107; -0.04237348025746;  0.02977207319925|],
-            [|0.33642304856132; -0.25572241425570; -0.11828570177555; 0.11921148675203; -0.07834489609479; -0.00469977914380; -0.00589500224440;  0.05724228140351;  0.00832043980773; -0.01635381384540; -0.01760176568150|],
-            [|1.00000000000000; -1.94561023566527;  0.94705070426118|],
-            [|0.97316523498161; -1.94633046996323;  0.97316523498161|]
-      )
+          ( 48000,
+            ( [|
+                1.00000000000000;
+                -3.84664617118067;
+                7.81501653005538;
+                -11.34170355132042;
+                13.05504219327545;
+                -12.28759895145294;
+                9.48293806319790;
+                -5.87257861775999;
+                2.75465861874613;
+                -0.86984376593551;
+                0.13919314567432;
+              |],
+              [|
+                0.03857599435200;
+                -0.02160367184185;
+                -0.00123395316851;
+                -0.00009291677959;
+                -0.01655260341619;
+                0.02161526843274;
+                -0.02074045215285;
+                0.00594298065125;
+                0.00306428023191;
+                0.00012025322027;
+                0.00288463683916;
+              |],
+              [| 1.00000000000000; -1.97223372919527; 0.97261396931306 |],
+              [| 0.98621192462708; -1.97242384925416; 0.98621192462708 |] ) );
+          ( 44100,
+            ( [|
+                1.00000000000000;
+                -3.47845948550071;
+                6.36317777566148;
+                -8.54751527471874;
+                9.47693607801280;
+                -8.81498681370155;
+                6.85401540936998;
+                -4.39470996079559;
+                2.19611684890774;
+                -0.75104302451432;
+                0.13149317958808;
+              |],
+              [|
+                0.05418656406430;
+                -0.02911007808948;
+                -0.00848709379851;
+                -0.00851165645469;
+                -0.00834990904936;
+                0.02245293253339;
+                -0.02596338512915;
+                0.01624864962975;
+                -0.00240879051584;
+                0.00674613682247;
+                -0.00187763777362;
+              |],
+              [| 1.00000000000000; -1.96977855582618; 0.97022847566350 |],
+              [| 0.98500175787242; -1.97000351574484; 0.98500175787242 |] ) );
+          ( 22050,
+            ( [|
+                1.00000000000000;
+                -1.49858979367799;
+                0.87350271418188;
+                0.12205022308084;
+                -0.80774944671438;
+                0.47854794562326;
+                -0.12453458140019;
+                -0.04067510197014;
+                0.08333755284107;
+                -0.04237348025746;
+                0.02977207319925;
+              |],
+              [|
+                0.33642304856132;
+                -0.25572241425570;
+                -0.11828570177555;
+                0.11921148675203;
+                -0.07834489609479;
+                -0.00469977914380;
+                -0.00589500224440;
+                0.05724228140351;
+                0.00832043980773;
+                -0.01635381384540;
+                -0.01760176568150;
+              |],
+              [| 1.00000000000000; -1.94561023566527; 0.94705070426118 |],
+              [| 0.97316523498161; -1.94633046996323; 0.97316523498161 |] ) );
         ]
       in
       fun ~channels ~samplerate ->
@@ -1259,31 +1325,52 @@ module Analyze = struct
         (* Coefficients of the Yulewalk and Butterworth filters. *)
         let yule_a, yule_b, butter_a, butter_b =
           match List.assoc_opt samplerate coeffs with
-          | Some c -> c
-          | None -> raise Not_supported
+            | Some c -> c
+            | None -> raise Not_supported
         in
-        let yulewalk = Array.init channels (fun _ -> Sample.iir yule_a yule_b) in
-        let butterworth = Array.init channels (fun _ -> Sample.iir butter_a butter_b) in
-        let prefilter x = Array.mapi (fun i x -> x |> yulewalk.(i) |> butterworth.(i)) x in
-        { channels; frame_pos = 0; frame_length; prefilter; peak = 0.; rms = 0.; histogram = Array.make histogram_slots 0 }
+        let yulewalk =
+          Array.init channels (fun _ -> Sample.iir yule_a yule_b)
+        in
+        let butterworth =
+          Array.init channels (fun _ -> Sample.iir butter_a butter_b)
+        in
+        let prefilter x =
+          Array.mapi (fun i x -> x |> yulewalk.(i) |> butterworth.(i)) x
+        in
+        {
+          channels;
+          frame_pos = 0;
+          frame_length;
+          prefilter;
+          peak = 0.;
+          rms = 0.;
+          histogram = Array.make histogram_slots 0;
+        }
 
     (** Process a sample. *)
     let process_sample rg x =
-      Array.iter (fun x -> let x = abs_float x in if x > rg.peak then rg.peak <- x) x;
+      Array.iter
+        (fun x ->
+          let x = abs_float x in
+          if x > rg.peak then rg.peak <- x)
+        x;
       let x = rg.prefilter x in
-      Array.iter (fun x -> rg.rms <- rg.rms +. x *. x) x;
+      Array.iter (fun x -> rg.rms <- rg.rms +. (x *. x)) x;
       rg.frame_pos <- rg.frame_pos + 1;
-      if rg.frame_pos >= rg.frame_length then
-        (
-          (* Minimum value is about -100 dB for digital silence. The 90 dB
-             offset is to compensate for the normalized float range and 3 dB is
-             for stereo samples. *)
-          let rms = 10. *. log10 (rg.rms /. (float (rg.frame_length * rg.channels))) +. 90. in
-          let level = int_of_float (100. *. rms) |> max 0 |> min (histogram_slots - 1) in
-          rg.histogram.(level) <- rg.histogram.(level) + 1;
-          rg.rms <- 0.;
-          rg.frame_pos <- 0;
-        )
+      if rg.frame_pos >= rg.frame_length then (
+        (* Minimum value is about -100 dB for digital silence. The 90 dB
+           offset is to compensate for the normalized float range and 3 dB is
+           for stereo samples. *)
+        let rms =
+          (10. *. log10 (rg.rms /. float (rg.frame_length * rg.channels)))
+          +. 90.
+        in
+        let level =
+          int_of_float (100. *. rms) |> max 0 |> min (histogram_slots - 1)
+        in
+        rg.histogram.(level) <- rg.histogram.(level) + 1;
+        rg.rms <- 0.;
+        rg.frame_pos <- 0)
 
     (** Process a buffer. *)
     let process rg buf off len =
@@ -1298,7 +1385,7 @@ module Analyze = struct
 
     (** Compute gain. *)
     let gain rg =
-      let windows = Array.fold_left (+) 0 rg.histogram in
+      let windows = Array.fold_left ( + ) 0 rg.histogram in
       let i = ref (histogram_slots - 1) in
       let loud_count = ref 0 in
       (* Find i below the top 5% *)
@@ -1306,7 +1393,7 @@ module Analyze = struct
         loud_count := !loud_count + rg.histogram.(!i);
         decr i
       done;
-      (64.54 -. (float !i /. 100.)) |> max (-24.) |> min 64.
+      64.54 -. (float !i /. 100.) |> max (-24.) |> min 64.
   end
 end
 
@@ -1762,9 +1849,9 @@ module IO = struct
           let len = sbuflen / (channels * 2) in
           begin
             match sample_size with
-            | 16 -> S16LE.to_audio sbuf 0 buf ofs len
-            | 8 -> U8.to_audio sbuf 0 buf ofs len
-            | _ -> assert false
+              | 16 -> S16LE.to_audio sbuf 0 buf ofs len
+              | 8 -> U8.to_audio sbuf 0 buf ofs len
+              | _ -> assert false
           end;
           len
 

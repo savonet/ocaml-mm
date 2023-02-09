@@ -1,3 +1,8 @@
+(env
+ (dev
+  (flags
+   (:standard -w -69))))
+
 (library
  (name mm_base)
  (public_name mm.base)
