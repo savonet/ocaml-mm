@@ -1,3 +1,8 @@
+0.8.3 (unreleased)
+=====
+- Add `Image.RGB8.Color.to_int`.
+- Add `Image.Canvas.planes`.
+
 0.8.2 (2023-02-08)
 =====
 - Add ReplayGain computation.

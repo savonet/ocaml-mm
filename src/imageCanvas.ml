@@ -70,6 +70,7 @@ module Canvas (I : CanvasImage) = struct
   let width c = c.width
   let height c = c.height
   let size c = List.fold_left (fun n e -> n + E.size e) 0 c.elements
+  let planes c = List.length c.elements
 
   let make ?width ?height ?(x = 0) ?(y = 0) image =
     let width = Option.value ~default:(I.width image) width in

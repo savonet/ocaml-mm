@@ -548,6 +548,9 @@ module Canvas (I : CanvasImage) : sig
   (** Size of a canvas in bytes. *)
   val size : t -> int
 
+  (** Number of planes in the image. *)
+  val planes : t -> int
+
   (** Add two canvas. The first one is on top of the second one. *)
   val add : t -> t -> t
 
