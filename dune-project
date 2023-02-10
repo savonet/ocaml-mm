@@ -2,7 +2,7 @@
 (version 0.8.2)
 (name mm)
 (source (github savonet/ocaml-mm))
-(license LGPL-2.1)
+(license LGPL-2.1-or-later)
 (authors "Samuel Mimram <smimram@gmail.com>")
 (maintainers "The Savonet Team <savonet-users@lists.sourceforge.net>")
 
