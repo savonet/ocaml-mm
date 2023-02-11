@@ -281,6 +281,13 @@ let () =
       assert (not (I.YUV420.is_opaque img));
       I.YUV420.set_pixel_rgba img 10 10 (0, 0, 0, 0xff);
       assert (I.YUV420.is_opaque img));
+  test "add" (fun () ->
+      let a = I.YUV420.create 1280 480 in
+      let b = I.YUV420.create 640 480 in
+      let x = 1280 in
+      let y = 0 in
+      I.YUV420.add a ~x ~y b
+    );
   time "many adds" (fun () ->
       let r = I.YUV420.create 500 500 in
       I.YUV420.fill r (I.Pixel.yuv_of_rgb (0xff, 0, 0));
