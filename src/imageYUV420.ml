@@ -199,7 +199,9 @@ let blit src dst = blit_all src dst
 external randomize : t -> unit = "caml_yuv_randomize"
 external add : t -> int -> int -> t -> unit = "caml_yuv420_add"
 
-let add src ?(x = 0) ?(y = 0) dst = add src x y dst
+let add src ?(x = 0) ?(y = 0) dst =
+  (* Printf.printf "add %dx%d with %dx%d at %d,%d\n%!" (width src) (height src) (width dst) (height dst) x y; *)
+  add src x y dst
 
 external set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
   = "caml_yuv420_set_pixel_rgba"
