@@ -172,8 +172,8 @@ let copy img =
   dst
 
 let blit_all src dst =
-  assert (src.width = dst.width);
-  assert (src.height = dst.height);
+  if src.width <> dst.width then raise Invalid_dimensions;
+  if src.height <> dst.height then raise Invalid_dimensions;
   if src.y_stride = dst.y_stride && src.uv_stride = dst.uv_stride then (
     Data.blit src.y 0 dst.y 0 (dst.height * dst.y_stride);
     Data.blit src.u 0 dst.u 0 (dst.height / 2 * dst.uv_stride);
@@ -206,7 +206,7 @@ external set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
 
 (* [@@noalloc] *)
 let set_pixel_rgba img i j ((_, _, _, a) as p) =
-  assert (0 <= i && i < img.width && 0 <= j && j < img.height);
+  if not (0 <= i && i < img.width && 0 <= j && j < img.height) then raise Invalid_position;
   if a <> 0xff then ensure_alpha img;
   set_pixel_rgba img i j p
 

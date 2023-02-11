@@ -31,6 +31,9 @@
  *
  *)
 
+exception Invalid_position
+exception Invalid_dimensions
+
 module List = struct
   include List
 

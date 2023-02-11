@@ -33,6 +33,12 @@
 
 (** Operations on images. *)
 
+(** Trying to access a pixel outside the boundaries of the image. *)
+exception Invalid_position
+
+(** The image does not have the expected dimensions. *)
+exception Invalid_dimensions
+
 module Data : sig
   type t =
     (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
