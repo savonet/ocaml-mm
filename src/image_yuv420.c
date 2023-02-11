@@ -235,6 +235,8 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
   int ja = max(y, 0);
   int jb = min(y + src.height, dst.height);
 
+  if (!(ia < ib)) CAMLreturn(Val_unit);
+
   caml_enter_blocking_section();
   if (src.alpha == NULL) {
     int il = ib - ia;
