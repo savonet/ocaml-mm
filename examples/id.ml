@@ -21,7 +21,7 @@ let () =
     FFT.Window.cosine c;
     FFT.fft fft c;
     let c = Array.map (fun c -> c.Complex.re) c in
-    let buf = Array.make read#channels c in
+    let buf = Float.Array.make read#channels c in
     write#write buf 0 (Audio.length buf)
   done;
   write#close;

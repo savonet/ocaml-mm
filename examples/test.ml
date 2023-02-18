@@ -69,7 +69,7 @@ let () =
         A.U8.of_audio src 0 buf 0 len;
         A.U8.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
       done;
-      assert (dst.(1).(len - 1) = 1.));
+      assert (dst.(1).!(len - 1) = 1.));
   let src = A.make 2 len 1. in
   let buf = Bytes.create (A.S16LE.size 2 len) in
   let dst = A.create 2 len in
@@ -78,8 +78,8 @@ let () =
         A.S16LE.of_audio src 0 buf 0 len;
         A.S16LE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
       done;
-      assert (dst.(1).(len - 1) = 1.);
-      assert (dst.(1).(len - 1) = 1.));
+      assert (dst.(1).!(len - 1) = 1.);
+      assert (dst.(1).!(len - 1) = 1.));
   let src = A.make 2 len 1. in
   let buf = Bytes.create (A.S16BE.size 2 len) in
   let dst = A.create 2 len in
@@ -88,8 +88,8 @@ let () =
         A.S16BE.of_audio src 0 buf 0 len;
         A.S16BE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
       done;
-      assert (dst.(1).(len - 1) = 1.);
-      assert (dst.(1).(len - 1) = 1.));
+      assert (dst.(1).!(len - 1) = 1.);
+      assert (dst.(1).!(len - 1) = 1.));
   let src = A.make 2 len 1. in
   let buf = Bytes.create (A.S24LE.size 2 len) in
   let dst = A.create 2 len in
@@ -98,8 +98,8 @@ let () =
         A.S24LE.of_audio src 0 buf 0 len;
         A.S24LE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
       done;
-      assert (dst.(1).(len - 1) = 1.);
-      assert (dst.(1).(len - 1) = 1.));
+      assert (dst.(1).!(len - 1) = 1.);
+      assert (dst.(1).!(len - 1) = 1.));
   let src = A.make 2 len 1. in
   let buf = Bytes.create (A.S32LE.size 2 len) in
   let dst = A.create 2 len in
@@ -108,7 +108,7 @@ let () =
         A.S32LE.of_audio src 0 buf 0 len;
         A.S32LE.to_audio (Bytes.unsafe_to_string buf) 0 dst 0 len
       done;
-      assert (dst.(1).(len - 1) = 1.));
+      assert (dst.(1).!(len - 1) = 1.));
   test "s16le with offset" (fun () ->
       let chans = 2 in
       let src = A.create chans len in
@@ -286,8 +286,7 @@ let () =
       let b = I.YUV420.create 640 480 in
       let x = 1280 in
       let y = 0 in
-      I.YUV420.add a ~x ~y b
-    );
+      I.YUV420.add a ~x ~y b);
   time "many adds" (fun () ->
       let r = I.YUV420.create 500 500 in
       I.YUV420.fill r (I.Pixel.yuv_of_rgb (0xff, 0, 0));
@@ -387,7 +386,7 @@ let () =
         output_string oc (Video.AVI.Writer.Chunk.video_yuv420 img);
         for i = 0 to Audio.length buf - 1 do
           for c = 0 to Audio.channels buf - 1 do
-            buf.(c).(i) <- !osc
+            buf.(c).!(i) <- !osc
           done;
           osc := !osc +. (2. *. f /. float samplerate);
           while !osc > 1. do

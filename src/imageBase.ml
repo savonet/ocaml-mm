@@ -171,8 +171,7 @@ module RGB8 = struct
       if n > 0xffffff then raise (Invalid_argument "Not a color");
       ((n lsr 16) land 0xff, (n lsr 8) land 0xff, n land 0xff)
 
-    let to_int (r,g,b) =
-      r lsl 16 + g lsl 8 + b
+    let to_int (r, g, b) = (r lsl 16) + (g lsl 8) + b
   end
 end
 
