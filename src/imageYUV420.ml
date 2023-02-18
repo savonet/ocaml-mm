@@ -208,7 +208,8 @@ external set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
 
 (* [@@noalloc] *)
 let set_pixel_rgba img i j ((_, _, _, a) as p) =
-  if not (0 <= i && i < img.width && 0 <= j && j < img.height) then raise Invalid_position;
+  if not (0 <= i && i < img.width && 0 <= j && j < img.height) then
+    raise Invalid_position;
   if a <> 0xff then ensure_alpha img;
   set_pixel_rgba img i j p
 

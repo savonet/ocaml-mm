@@ -39,8 +39,8 @@
 
 open Mm_base
 
-let (.!()) = Float.Array.get
-let (.!()<-) = Float.Array.set
+let ( .!() ) = Float.Array.get
+let ( .!()<- ) = Float.Array.set
 
 let list_filter_ctxt f l =
   let rec aux b = function
@@ -205,7 +205,8 @@ module Mono = struct
     assert (length b2 - ofs2 >= len);
     for i = 0 to len - 1 do
       Float.Array.unsafe_set b1 (ofs1 + i)
-        (Float.Array.unsafe_get b1 (ofs1 + i) +. Float.Array.unsafe_get b2 (ofs2 + i))
+        (Float.Array.unsafe_get b1 (ofs1 + i)
+        +. Float.Array.unsafe_get b2 (ofs2 + i))
     done
 
   let add_coeff b1 ofs1 k b2 ofs2 len =
@@ -213,7 +214,8 @@ module Mono = struct
     assert (length b2 - ofs2 >= len);
     for i = 0 to len - 1 do
       Float.Array.unsafe_set b1 (ofs1 + i)
-        (Float.Array.unsafe_get b1 (ofs1 + i) +. (k *. Float.Array.unsafe_get b2 (ofs2 + i)))
+        (Float.Array.unsafe_get b1 (ofs1 + i)
+        +. (k *. Float.Array.unsafe_get b2 (ofs2 + i)))
     done
 
   let add_coeff b1 ofs1 k b2 ofs2 len =
@@ -226,13 +228,15 @@ module Mono = struct
     assert (length b2 - ofs2 >= len);
     for i = 0 to len - 1 do
       Float.Array.unsafe_set b1 (ofs1 + i)
-        (Float.Array.unsafe_get b1 (ofs1 + i) *. Float.Array.unsafe_get b2 (ofs2 + i))
+        (Float.Array.unsafe_get b1 (ofs1 + i)
+        *. Float.Array.unsafe_get b2 (ofs2 + i))
     done
 
   let amplify c b ofs len =
     assert (length b - ofs >= len);
     for i = 0 to len - 1 do
-      Float.Array.unsafe_set b (ofs + i) (Float.Array.unsafe_get b (ofs + i) *. c)
+      Float.Array.unsafe_set b (ofs + i)
+        (Float.Array.unsafe_get b (ofs + i) *. c)
     done
 
   let clip b ofs len =
@@ -269,7 +273,8 @@ module Mono = struct
       let outbuf = create outlen in
       for i = 0 to outlen - 1 do
         let pos = min (int_of_float ((float i /. ratio) +. 0.5)) (len - 1) in
-        Float.Array.unsafe_set outbuf i (Float.Array.unsafe_get inbuf (ofs + pos))
+        Float.Array.unsafe_set outbuf i
+          (Float.Array.unsafe_get inbuf (ofs + pos))
       done;
       outbuf)
     else (
@@ -279,7 +284,8 @@ module Mono = struct
         let ir = float i /. ratio in
         let pos = min (int_of_float ir) (len - 1) in
         if pos = len - 1 then
-          Float.Array.unsafe_set outbuf i (Float.Array.unsafe_get inbuf (ofs + pos))
+          Float.Array.unsafe_set outbuf i
+            (Float.Array.unsafe_get inbuf (ofs + pos))
         else (
           let a = ir -. float pos in
           Float.Array.unsafe_set outbuf i

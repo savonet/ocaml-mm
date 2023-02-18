@@ -31,6 +31,9 @@
  *
  *)
 
+val ( .!() ) : floatarray -> int -> float
+val ( .!()<- ) : floatarray -> int -> float -> unit
+
 include module type of Mm_audio
 include module type of Mm_image
 include module type of Mm_video

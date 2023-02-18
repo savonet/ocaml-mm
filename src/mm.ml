@@ -35,3 +35,6 @@ include Mm_audio
 include Mm_image
 include Mm_video
 include Mm_midi
+
+let ( .!() ) = Mm_audio.Audio.( .!() )
+let ( .!()<- ) = Mm_audio.Audio.( .!()<- )

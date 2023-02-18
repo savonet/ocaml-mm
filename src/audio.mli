@@ -35,6 +35,9 @@ open Mm_base
 
 (** Operations on audio data. *)
 
+val ( .!() ) : floatarray -> int -> float
+val ( .!()<- ) : floatarray -> int -> float -> unit
+
 (** At given sample rate, number of samples in given amount of time. *)
 val samples_of_seconds : int -> float -> int
 
