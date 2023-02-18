@@ -85,7 +85,7 @@ end
 (** Operations on mono buffers (with only one channel). *)
 module Mono : sig
   (** A mono buffer. *)
-  type t = float array
+  type t = floatarray
 
   type buffer = t
 
@@ -306,7 +306,7 @@ module Mono : sig
 end
 
 (** An audio buffer. *)
-type t = float array array
+type t = floatarray array
 
 type buffer = t
 

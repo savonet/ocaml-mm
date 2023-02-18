@@ -45,6 +45,6 @@ class writer client_name stream_name channels rate =
       in
       Simple.create ~client_name ~dir:Dir_playback ~stream_name ~sample ()
 
-    method write = Simple.write dev
+    method write = Simple.write_floatarray dev
     method close = Simple.free dev
   end

@@ -60,7 +60,7 @@ class virtual reader =
     channels <- c;
     rb <- Audio.Ringbuffer_ext.create channels 0
 
-    method private decode = Mad.decode_frame_float self#mf
+    method private decode = Mad.decode_frame_floatarray self#mf
     method close = self#stream_close
 
     method read buf ofs len =

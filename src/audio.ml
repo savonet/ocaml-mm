@@ -39,6 +39,9 @@
 
 open Mm_base
 
+let (.!()) = Float.Array.get
+let (.!()<-) = Float.Array.set
+
 let list_filter_ctxt f l =
   let rec aux b = function
     | [] -> []
@@ -148,16 +151,16 @@ module Sample = struct
 end
 
 module Mono = struct
-  type t = float array
+  type t = floatarray
   type buffer = t
 
-  let create = Array.create_float
-  let length = Array.length
+  let create = Float.Array.create
+  let length = Float.Array.length
   let buffer_length = length
-  let clear data ofs len = Array.fill data ofs len 0.
-  let make n (x : float) = Array.make n x
-  let sub = Array.sub
-  let blit = Array.blit
+  let clear data ofs len = Float.Array.fill data ofs len 0.
+  let make n (x : float) = Float.Array.make n x
+  let sub = Float.Array.sub
+  let blit = Float.Array.blit
 
   let copy src ofs len =
     let dst = create len in
@@ -166,13 +169,13 @@ module Mono = struct
 
   external copy_from_ba :
     (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t ->
-    float array ->
+    floatarray ->
     int ->
     int ->
     unit = "caml_mm_audio_copy_from_ba"
 
   external copy_to_ba :
-    float array ->
+    floatarray ->
     int ->
     int ->
     (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t ->
@@ -180,7 +183,7 @@ module Mono = struct
 
   let of_ba buf =
     let len = Bigarray.Array1.dim buf in
-    let dst = Array.create_float len in
+    let dst = Float.Array.create len in
     copy_from_ba buf dst 0 len;
     dst
 
@@ -192,25 +195,25 @@ module Mono = struct
   let append b1 ofs1 len1 b2 ofs2 len2 =
     assert (length b1 - ofs1 >= len1);
     assert (length b2 - ofs2 >= len2);
-    let data = Array.create_float (len1 + len2) in
-    Array.blit b1 ofs1 data 0 len1;
-    Array.blit b2 ofs2 data len1 len2;
+    let data = Float.Array.create (len1 + len2) in
+    Float.Array.blit b1 ofs1 data 0 len1;
+    Float.Array.blit b2 ofs2 data len1 len2;
     data
 
   let add b1 ofs1 b2 ofs2 len =
     assert (length b1 - ofs1 >= len);
     assert (length b2 - ofs2 >= len);
     for i = 0 to len - 1 do
-      Array.unsafe_set b1 (ofs1 + i)
-        (Array.unsafe_get b1 (ofs1 + i) +. Array.unsafe_get b2 (ofs2 + i))
+      Float.Array.unsafe_set b1 (ofs1 + i)
+        (Float.Array.unsafe_get b1 (ofs1 + i) +. Float.Array.unsafe_get b2 (ofs2 + i))
     done
 
   let add_coeff b1 ofs1 k b2 ofs2 len =
     assert (length b1 - ofs1 >= len);
     assert (length b2 - ofs2 >= len);
     for i = 0 to len - 1 do
-      Array.unsafe_set b1 (ofs1 + i)
-        (Array.unsafe_get b1 (ofs1 + i) +. (k *. Array.unsafe_get b2 (ofs2 + i)))
+      Float.Array.unsafe_set b1 (ofs1 + i)
+        (Float.Array.unsafe_get b1 (ofs1 + i) +. (k *. Float.Array.unsafe_get b2 (ofs2 + i)))
     done
 
   let add_coeff b1 ofs1 k b2 ofs2 len =
@@ -222,21 +225,21 @@ module Mono = struct
     assert (length b1 - ofs1 >= len);
     assert (length b2 - ofs2 >= len);
     for i = 0 to len - 1 do
-      Array.unsafe_set b1 (ofs1 + i)
-        (Array.unsafe_get b1 (ofs1 + i) *. Array.unsafe_get b2 (ofs2 + i))
+      Float.Array.unsafe_set b1 (ofs1 + i)
+        (Float.Array.unsafe_get b1 (ofs1 + i) *. Float.Array.unsafe_get b2 (ofs2 + i))
     done
 
   let amplify c b ofs len =
     assert (length b - ofs >= len);
     for i = 0 to len - 1 do
-      Array.unsafe_set b (ofs + i) (Array.unsafe_get b (ofs + i) *. c)
+      Float.Array.unsafe_set b (ofs + i) (Float.Array.unsafe_get b (ofs + i) *. c)
     done
 
   let clip b ofs len =
     assert (length b - ofs >= len);
     for i = 0 to len - 1 do
-      let s = Array.unsafe_get b (ofs + i) in
-      Array.unsafe_set b (ofs + i)
+      let s = Float.Array.unsafe_get b (ofs + i) in
+      Float.Array.unsafe_set b (ofs + i)
         (if Float.is_nan s then 0.
         else if s < -1. then -1.
         else if 1. < s then 1.
@@ -247,7 +250,7 @@ module Mono = struct
     assert (length b - ofs >= len);
     let ret = ref 0. in
     for i = 0 to len - 1 do
-      let s = Array.unsafe_get b (ofs + i) in
+      let s = Float.Array.unsafe_get b (ofs + i) in
       ret := !ret +. (s *. s)
     done;
     !ret
@@ -255,7 +258,7 @@ module Mono = struct
   let noise b ofs len =
     assert (length b - ofs >= len);
     for i = 0 to len - 1 do
-      Array.unsafe_set b (ofs + i) (Random.float 2. -. 1.)
+      Float.Array.unsafe_set b (ofs + i) (Random.float 2. -. 1.)
     done
 
   let resample ?(mode = `Linear) ratio inbuf ofs len =
@@ -266,7 +269,7 @@ module Mono = struct
       let outbuf = create outlen in
       for i = 0 to outlen - 1 do
         let pos = min (int_of_float ((float i /. ratio) +. 0.5)) (len - 1) in
-        Array.unsafe_set outbuf i (Array.unsafe_get inbuf (ofs + pos))
+        Float.Array.unsafe_set outbuf i (Float.Array.unsafe_get inbuf (ofs + pos))
       done;
       outbuf)
     else (
@@ -276,12 +279,12 @@ module Mono = struct
         let ir = float i /. ratio in
         let pos = min (int_of_float ir) (len - 1) in
         if pos = len - 1 then
-          Array.unsafe_set outbuf i (Array.unsafe_get inbuf (ofs + pos))
+          Float.Array.unsafe_set outbuf i (Float.Array.unsafe_get inbuf (ofs + pos))
         else (
           let a = ir -. float pos in
-          Array.unsafe_set outbuf i
-            ((Array.unsafe_get inbuf (ofs + pos) *. (1. -. a))
-            +. (Array.unsafe_get inbuf (ofs + pos + 1) *. a)))
+          Float.Array.unsafe_set outbuf i
+            ((Float.Array.unsafe_get inbuf (ofs + pos) *. (1. -. a))
+            +. (Float.Array.unsafe_get inbuf (ofs + pos + 1) *. a)))
       done;
       outbuf)
 
@@ -316,7 +319,7 @@ module Mono = struct
     let rms buf ofs len =
       let r = ref 0. in
       for i = 0 to len - 1 do
-        let x = buf.(i + ofs) in
+        let x = buf.!(i + ofs) in
         r := !r +. (x *. x)
       done;
       sqrt (!r /. float len)
@@ -346,7 +349,7 @@ module Mono = struct
 
       let complex_create buf ofs len =
         Array.init len (fun i ->
-            { Complex.re = buf.(ofs + i); Complex.im = 0. })
+            { Complex.re = buf.!(ofs + i); Complex.im = 0. })
 
       let ccoef k c =
         { Complex.re = k *. c.Complex.re; Complex.im = k *. c.Complex.im }
@@ -504,9 +507,9 @@ module Mono = struct
   module Effect = struct
     let compand_mu_law mu buf ofs len =
       for i = 0 to len - 1 do
-        let bufi = buf.(i + ofs) in
+        let bufi = buf.!(i + ofs) in
         let sign = if bufi < 0. then -1. else 1. in
-        buf.(i + ofs) <-
+        buf.!(i + ofs) <-
           sign *. log (1. +. (mu *. abs_float bufi)) /. log (1. +. mu)
       done
 
@@ -524,8 +527,8 @@ module Mono = struct
       object
         method process buf ofs len =
           for i = 0 to len - 1 do
-            Array.unsafe_set buf (i + ofs)
-              (max (-.c) (min c (Array.unsafe_get buf (i + ofs))))
+            Float.Array.unsafe_set buf (i + ofs)
+              (max (-.c) (min c (Float.Array.unsafe_get buf (i + ofs))))
           done
       end
 
@@ -615,11 +618,11 @@ module Mono = struct
 
         method process (buf : buffer) ofs len =
           for i = 0 to len - 1 do
-            let x0 = buf.(i + ofs) in
+            let x0 = buf.!(i + ofs) in
             let y0 =
               (p0 *. x0) +. (p1 *. x1) +. (p2 *. x2) -. (q1 *. y1) -. (q2 *. y2)
             in
-            buf.(i + ofs) <- y0;
+            buf.!(i + ofs) <- y0;
             x2 <- x1;
             x1 <- x0;
             y2 <- y1;
@@ -651,7 +654,7 @@ module Mono = struct
           | 0 ->
               let fa = float a in
               for i = 0 to min len (a - state_pos) - 1 do
-                buf.(i + ofs) <- float (state_pos + i) /. fa *. buf.(i + ofs)
+                buf.!(i + ofs) <- float (state_pos + i) /. fa *. buf.!(i + ofs)
               done;
               if len < a - state_pos then (0, state_pos + len)
               else
@@ -661,9 +664,9 @@ module Mono = struct
           | 1 ->
               let fd = float d in
               for i = 0 to min len (d - state_pos) - 1 do
-                buf.(i + ofs) <-
+                buf.!(i + ofs) <-
                   (1. -. (float (state_pos + i) /. fd *. (1. -. s)))
-                  *. buf.(i + ofs)
+                  *. buf.!(i + ofs)
               done;
               if len < d - state_pos then (1, state_pos + len)
               else if (* Negative sustain means release immediately. *)
@@ -682,8 +685,8 @@ module Mono = struct
           | 3 ->
               let fr = float r in
               for i = 0 to min len (r - state_pos) - 1 do
-                buf.(i + ofs) <-
-                  s *. (1. -. (float (state_pos + i) /. fr)) *. buf.(i + ofs)
+                buf.!(i + ofs) <-
+                  s *. (1. -. (float (state_pos + i) /. fr)) *. buf.!(i + ofs)
               done;
               if len < r - state_pos then (3, state_pos + len)
               else
@@ -741,7 +744,7 @@ module Mono = struct
         method fill buf ofs len =
           let volume = self#volume in
           for i = 0 to len - 1 do
-            buf.(i + ofs) <- volume *. (Random.float 2. -. 1.)
+            buf.!(i + ofs) <- volume *. (Random.float 2. -. 1.)
           done
       end
 
@@ -755,7 +758,7 @@ module Mono = struct
           let omega = 2. *. pi *. freq /. sr in
           let volume = self#volume in
           for i = 0 to len - 1 do
-            buf.(i + ofs) <- volume *. sin ((float i *. omega) +. phase)
+            buf.!(i + ofs) <- volume *. sin ((float i *. omega) +. phase)
           done;
           phase <- mod_float (phase +. (float len *. omega)) (2. *. pi)
       end
@@ -771,7 +774,7 @@ module Mono = struct
           let omega = freq /. sr in
           for i = 0 to len - 1 do
             let t = fracf ((float i *. omega) +. phase) in
-            buf.(i + ofs) <- (if t < 0.5 then volume else -.volume)
+            buf.!(i + ofs) <- (if t < 0.5 then volume else -.volume)
           done;
           phase <- mod_float (phase +. (float len *. omega)) 1.
       end
@@ -787,7 +790,7 @@ module Mono = struct
           let omega = freq /. sr in
           for i = 0 to len - 1 do
             let t = fracf ((float i *. omega) +. phase) in
-            buf.(i + ofs) <- volume *. ((2. *. t) -. 1.)
+            buf.!(i + ofs) <- volume *. ((2. *. t) -. 1.)
           done;
           phase <- mod_float (phase +. (float len *. omega)) 1.
       end
@@ -803,7 +806,7 @@ module Mono = struct
           let omega = freq /. sr in
           for i = 0 to len - 1 do
             let t = fracf ((float i *. omega) +. phase +. 0.25) in
-            buf.(i + ofs) <-
+            buf.!(i + ofs) <-
               (volume
               *. if t < 0.5 then (4. *. t) -. 1. else (4. *. (1. -. t)) -. 1.)
           done;
@@ -909,7 +912,7 @@ let iter f data offset length = Array.iter (fun b -> f b offset length) data
 let create chans n = Array.init chans (fun _ -> Mono.create n)
 let make chans n x = Array.init chans (fun _ -> Mono.make n x)
 let channels data = Array.length data
-let length = function [||] -> 0 | a -> Array.length a.(0)
+let length = function [||] -> 0 | a -> Float.Array.length a.(0)
 let create_same buf = create (channels buf) (length buf)
 
 (* TODO: in C *)
@@ -919,7 +922,7 @@ let interleave data length offset =
   for c = 0 to chans - 1 do
     let bufc = data.(c) in
     for i = 0 to length - 1 do
-      ibuf.((chans * i) + c) <- bufc.(offset + i)
+      ibuf.!((chans * i) + c) <- bufc.!(offset + i)
     done
   done;
   ibuf
@@ -931,7 +934,7 @@ let deinterleave chans ibuf ofs len =
   for c = 0 to chans - 1 do
     let bufc = buf.(c) in
     for i = 0 to len - 1 do
-      bufc.(i) <- ibuf.((chans * i) + c + ofs)
+      bufc.!(i) <- ibuf.!((chans * i) + c + ofs)
     done
   done;
   buf
@@ -949,7 +952,7 @@ let copy b ofs len =
 let blit b1 ofs1 b2 ofs2 len =
   Array.iteri (fun i b -> Mono.blit b ofs1 b2.(i) ofs2 len) b1
 
-let sub b ofs len = Array.map (fun b -> Array.sub b ofs len) b
+let sub b ofs len = Array.map (fun b -> Float.Array.sub b ofs len) b
 
 let squares data offset length =
   Array.fold_left
@@ -958,16 +961,16 @@ let squares data offset length =
 
 let to_mono b ofs len =
   let channels = channels b in
-  if channels = 1 then Array.sub b.(0) ofs len
+  if channels = 1 then Float.Array.sub b.(0) ofs len
   else (
     let chans = float channels in
     let ans = Mono.create len in
     Mono.clear ans 0 len;
     for i = 0 to len - 1 do
       for c = 0 to channels - 1 do
-        ans.(i) <- ans.(i) +. b.(c).(i + ofs)
+        ans.!(i) <- ans.!(i) +. b.(c).!(i + ofs)
       done;
-      ans.(i) <- ans.(i) /. chans
+      ans.!(i) <- ans.!(i) /. chans
     done;
     ans)
 
@@ -1081,7 +1084,7 @@ module Buffer_ext = struct
           buf.buffer <- newbuf;
           newbuf
       | _ ->
-          if length buf.buffer >= len then sub buf.buffer 0 len
+          if Array.length buf.buffer >= len then Array.sub buf.buffer 0 len
           else (
             (* TODO: optionally blit the old buffer onto the new one. *)
             let oldbuf = buf.buffer in
@@ -1161,7 +1164,7 @@ module Ringbuffer = struct
       let len0 =
         if t.wpos >= t.rpos then t.wpos - t.rpos else t.size - t.rpos
       in
-      let len = f (sub t.buffer t.rpos len0) in
+      let len = f (Array.sub t.buffer t.rpos len0) in
       assert (len <= len0);
       read_advance t len;
       len)
@@ -1216,7 +1219,7 @@ module Analyze = struct
       channels : int;
       mutable frame_pos : int;
       frame_length : int;
-      prefilter : float array -> float array;
+      prefilter : floatarray -> floatarray;
       mutable peak : float;
       mutable rms : float;
       histogram : int array;
@@ -1335,7 +1338,7 @@ module Analyze = struct
           Array.init channels (fun _ -> Sample.iir butter_a butter_b)
         in
         let prefilter x =
-          Array.mapi (fun i x -> x |> yulewalk.(i) |> butterworth.(i)) x
+          Float.Array.mapi (fun i x -> x |> yulewalk.(i) |> butterworth.(i)) x
         in
         {
           channels;
@@ -1349,13 +1352,13 @@ module Analyze = struct
 
     (** Process a sample. *)
     let process_sample rg x =
-      Array.iter
+      Float.Array.iter
         (fun x ->
           let x = abs_float x in
           if x > rg.peak then rg.peak <- x)
         x;
       let x = rg.prefilter x in
-      Array.iter (fun x -> rg.rms <- rg.rms +. (x *. x)) x;
+      Float.Array.iter (fun x -> rg.rms <- rg.rms +. (x *. x)) x;
       rg.frame_pos <- rg.frame_pos + 1;
       if rg.frame_pos >= rg.frame_length then (
         (* Minimum value is about -100 dB for digital silence. The 90 dB
@@ -1376,7 +1379,7 @@ module Analyze = struct
     let process rg buf off len =
       assert (channels buf = rg.channels);
       for i = off to off + len - 1 do
-        let x = Array.init rg.channels (fun c -> buf.(c).(i)) in
+        let x = Float.Array.init rg.channels (fun c -> buf.(c).!(i)) in
         process_sample rg x
       done
 
@@ -1561,7 +1564,7 @@ module Effect = struct
           let lev_in =
             let ans = ref 0. in
             for c = 0 to chans - 1 do
-              let x = buf.(c).(i + ofs) *. gain in
+              let x = buf.(c).!(i + ofs) *. gain in
               ans := !ans +. (x *. x)
             done;
             !ans /. float chans
@@ -1598,7 +1601,7 @@ module Effect = struct
           (* Apply the gain. *)
           let g = g *. gain in
           for c = 0 to chans - 1 do
-            buf.(c).(i + ofs) <- buf.(c).(i + ofs) *. g
+            buf.(c).!(i + ofs) <- buf.(c).!(i + ofs) *. g
           done
           (*
       (* Debug messages. *)
@@ -1653,7 +1656,7 @@ module Effect = struct
         for c = 0 to channels - 1 do
           let bufc = buf.(c) in
           for i = 0 to len - 1 do
-            let bufci = bufc.(ofs + i) in
+            let bufci = bufc.!(ofs + i) in
             if rms_collected >= rms_len then (
               let rms_cur =
                 let ans = ref 0. in
@@ -1675,7 +1678,7 @@ module Effect = struct
             rms.(c) <- rms.(c) +. (bufci *. bufci);
             rms_collected <- rms_collected + 1;
             (* Affine transition between vol_old and vol. *)
-            bufc.(i) <-
+            bufc.!(i) <-
               (vol_old +. (float rms_collected /. rms_lenf *. (vol -. vol_old)))
               *. bufci
           done
