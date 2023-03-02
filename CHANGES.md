@@ -1,4 +1,4 @@
-0.8.3 (unreleased)
+0.8.3 (2023-03-01)
 =====
 - Add `Image.RGB8.Color.to_int`.
 - Add `Image.Canvas.planes`.
