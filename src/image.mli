@@ -131,6 +131,14 @@ module RGB8 : sig
   end
 end
 
+module ARGB8 : sig
+  module Color : sig
+    type t = int * RGB8.Color.t
+
+    val of_int : int -> t
+  end
+end
+
 module BGRA : sig
   type t
 

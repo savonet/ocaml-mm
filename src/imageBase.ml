@@ -176,6 +176,15 @@ module RGB8 = struct
   end
 end
 
+module ARGB8 = struct
+  module Color = struct
+    type t = int * RGB8.Color.t
+
+    let of_int n : t =
+      (n lsr 24), RGB8.Color.of_int (n land 0xffffff)
+  end
+end
+
 module Gray8 = struct
   (* TODO: stride ? *)
   type t = { data : Data.t; width : int }
