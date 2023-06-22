@@ -42,6 +42,11 @@ let () =
   Printf.printf "- word size: %d\n%!" Sys.word_size;
   Printf.printf "\n%!"
 
+let () =
+  Printf.printf "## Testing basic functions\n\n%!";
+  assert (try ignore (Image.RGB8.Color.of_int 0xff00ff); true with _ -> false);
+  assert (try ignore (Image.RGB8.Color.of_int 0xaaff00ff); false with _ -> true)
+
 module A = Audio
 
 let () =
