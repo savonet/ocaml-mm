@@ -393,136 +393,136 @@ module IO = struct
         method virtual private stream_close : unit
 
         initializer
-        self#output "RIFF";
-        self#output_int 0;
-        (* TOFILL: file size *)
-        self#output "AVI ";
+          self#output "RIFF";
+          self#output_int 0;
+          (* TOFILL: file size *)
+          self#output "AVI ";
 
-        (* file type *)
+          (* file type *)
 
-        (* Headers *)
-        self#output "LIST";
-        self#output_int 192;
-        (* size of the list *)
-        self#output "hdrl";
+          (* Headers *)
+          self#output "LIST";
+          self#output_int 192;
+          (* size of the list *)
+          self#output "hdrl";
 
-        (* AVI header *)
-        self#output "avih";
-        self#output_int 56;
-        (* AVI header size *)
-        self#output_int (int_of_float (1000000. /. frame_rate));
-        (* microseconds per frame *)
-        self#output_int 0;
-        (* max bytes per sec *)
-        self#output_int 0;
-        (* pad to multiples of this size *)
-        self#output_byte 0;
-        (* flags *)
-        self#output_byte 1;
-        (* flags (interleaved) *)
-        self#output_byte 0;
-        (* flags *)
-        self#output_byte 0;
-        (* flags *)
-        self#output_int 0;
-        (* TOFILL: total number of frames *)
-        self#output_int 0;
-        (* initial frame *)
-        self#output_int 1;
-        (* number of streams (TODO: change if audio) *)
-        self#output_int 0;
-        (* suggested buffer size *)
-        self#output_int w;
-        (* width *)
-        self#output_int h;
-        (* height *)
-        self#output_int 0;
-        (* scale *)
-        self#output_int 0;
-        (* rate *)
-        self#output_int 0;
-        (* start *)
-        self#output_int 0;
+          (* AVI header *)
+          self#output "avih";
+          self#output_int 56;
+          (* AVI header size *)
+          self#output_int (int_of_float (1000000. /. frame_rate));
+          (* microseconds per frame *)
+          self#output_int 0;
+          (* max bytes per sec *)
+          self#output_int 0;
+          (* pad to multiples of this size *)
+          self#output_byte 0;
+          (* flags *)
+          self#output_byte 1;
+          (* flags (interleaved) *)
+          self#output_byte 0;
+          (* flags *)
+          self#output_byte 0;
+          (* flags *)
+          self#output_int 0;
+          (* TOFILL: total number of frames *)
+          self#output_int 0;
+          (* initial frame *)
+          self#output_int 1;
+          (* number of streams (TODO: change if audio) *)
+          self#output_int 0;
+          (* suggested buffer size *)
+          self#output_int w;
+          (* width *)
+          self#output_int h;
+          (* height *)
+          self#output_int 0;
+          (* scale *)
+          self#output_int 0;
+          (* rate *)
+          self#output_int 0;
+          (* start *)
+          self#output_int 0;
 
-        (* length *)
+          (* length *)
 
-        (* Stream headers *)
-        self#output "LIST";
-        self#output_int 116;
-        self#output "strl";
+          (* Stream headers *)
+          self#output "LIST";
+          self#output_int 116;
+          self#output "strl";
 
-        (* Stream header *)
-        self#output "strh";
-        self#output_int 56;
-        self#output "vids";
-        self#output "RGB ";
-        (* codec *)
-        self#output_int 0;
-        (* flags *)
-        self#output_int 0;
-        (* stream priority and language *)
-        self#output_int 0;
-        (* initial frames *)
-        self#output_int 10;
-        (* scale : rate / scale = frames / second or samples / second *)
-        self#output_int (int_of_float (frame_rate *. 10.));
-        (* rate *)
-        self#output_int 0;
-        (* stream start time (in frames). *)
-        self#output_int 0;
-        (* TOFILL: stream length (= number of frames) *)
-        self#output_int (frames_per_chunk * frame_size);
-        (* suggested buffer size *)
-        self#output_int 0;
-        (* stream quality *)
-        self#output_int 0;
-        (* size of samples *)
-        self#output_short 0;
-        (* destination rectangle: left *)
-        self#output_short 0;
-        (* top *)
-        self#output_short w;
-        (* right *)
-        self#output_short h;
+          (* Stream header *)
+          self#output "strh";
+          self#output_int 56;
+          self#output "vids";
+          self#output "RGB ";
+          (* codec *)
+          self#output_int 0;
+          (* flags *)
+          self#output_int 0;
+          (* stream priority and language *)
+          self#output_int 0;
+          (* initial frames *)
+          self#output_int 10;
+          (* scale : rate / scale = frames / second or samples / second *)
+          self#output_int (int_of_float (frame_rate *. 10.));
+          (* rate *)
+          self#output_int 0;
+          (* stream start time (in frames). *)
+          self#output_int 0;
+          (* TOFILL: stream length (= number of frames) *)
+          self#output_int (frames_per_chunk * frame_size);
+          (* suggested buffer size *)
+          self#output_int 0;
+          (* stream quality *)
+          self#output_int 0;
+          (* size of samples *)
+          self#output_short 0;
+          (* destination rectangle: left *)
+          self#output_short 0;
+          (* top *)
+          self#output_short w;
+          (* right *)
+          self#output_short h;
 
-        (* bottom *)
+          (* bottom *)
 
-        (* Stream format *)
-        self#output "strf";
-        self#output_int 40;
-        self#output_int 40;
-        (* video size (????) *)
-        self#output_int w;
-        (* width *)
-        self#output_int h;
-        (* height *)
-        self#output_short 1;
-        (* panes *)
-        self#output_short 24;
-        (* color depth *)
-        self#output_int 0;
-        (* tag1 (????) *)
-        self#output_int frame_size;
-        (* image size *)
-        self#output_int 0;
-        (* X pixels per meter *)
-        self#output_int 0;
-        (* Y pixels per meter *)
-        self#output_int 0;
-        (* colors used *)
-        self#output_int 0;
+          (* Stream format *)
+          self#output "strf";
+          self#output_int 40;
+          self#output_int 40;
+          (* video size (????) *)
+          self#output_int w;
+          (* width *)
+          self#output_int h;
+          (* height *)
+          self#output_short 1;
+          (* panes *)
+          self#output_short 24;
+          (* color depth *)
+          self#output_int 0;
+          (* tag1 (????) *)
+          self#output_int frame_size;
+          (* image size *)
+          self#output_int 0;
+          (* X pixels per meter *)
+          self#output_int 0;
+          (* Y pixels per meter *)
+          self#output_int 0;
+          (* colors used *)
+          self#output_int 0;
 
-        (* Important colors *)
+          (* Important colors *)
 
-        (* movie data *)
-        self#output "LIST";
-        self#output_int 0;
-        (* TOFILL: movie size *)
-        self#output "movi";
+          (* movie data *)
+          self#output "LIST";
+          self#output_int 0;
+          (* TOFILL: movie size *)
+          self#output "movi";
 
-        (* video chunks follow *)
-        self#output "00dc";
-        self#output_int 0
+          (* video chunks follow *)
+          self#output "00dc";
+          self#output_int 0
 
         (* TOFILL: size *)
         val mutable datalen = 0

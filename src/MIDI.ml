@@ -399,41 +399,41 @@ module IO = struct
         val mutable tempo = 500000
 
         initializer
-        (* Read header. *)
-        self#read_header;
-        (* Read all tracks. *)
-        let tracks = Array.init tracks (fun _ -> self#read_track) in
-        (* Merge all tracks. *)
-        let trk =
-          let find_min () =
-            let ans = ref None in
-            for c = 0 to Array.length tracks - 1 do
-              match tracks.(c) with
-                | [] -> ()
-                | (d, _) :: _ -> (
-                    match !ans with
-                      | None -> ans := Some (d, c)
-                      | Some (d', _) -> if d < d' then ans := Some (d, c))
-            done;
-            match !ans with Some (d, c) -> (d, c) | None -> raise Not_found
+          (* Read header. *)
+          self#read_header;
+          (* Read all tracks. *)
+          let tracks = Array.init tracks (fun _ -> self#read_track) in
+          (* Merge all tracks. *)
+          let trk =
+            let find_min () =
+              let ans = ref None in
+              for c = 0 to Array.length tracks - 1 do
+                match tracks.(c) with
+                  | [] -> ()
+                  | (d, _) :: _ -> (
+                      match !ans with
+                        | None -> ans := Some (d, c)
+                        | Some (d', _) -> if d < d' then ans := Some (d, c))
+              done;
+              match !ans with Some (d, c) -> (d, c) | None -> raise Not_found
+            in
+            let ans = ref [] in
+            try
+              while true do
+                let d, c = find_min () in
+                ans := List.hd tracks.(c) :: !ans;
+                tracks.(c) <- List.tl tracks.(c);
+                Array.iteri
+                  (fun n t ->
+                    if n <> c && t <> [] then (
+                      let d', e = List.hd t in
+                      tracks.(n) <- (d' - d, e) :: List.tl t))
+                  tracks
+              done;
+              assert false
+            with Not_found -> List.rev !ans
           in
-          let ans = ref [] in
-          try
-            while true do
-              let d, c = find_min () in
-              ans := List.hd tracks.(c) :: !ans;
-              tracks.(c) <- List.tl tracks.(c);
-              Array.iteri
-                (fun n t ->
-                  if n <> c && t <> [] then (
-                    let d', e = List.hd t in
-                    tracks.(n) <- (d' - d, e) :: List.tl t))
-                tracks
-            done;
-            assert false
-          with Not_found -> List.rev !ans
-        in
-        track <- trk
+          track <- trk
 
         (* We store here the track with delta-times in samples. TODO: this way of
            doing things is messy but simpler to implement *)
@@ -518,23 +518,23 @@ module IO = struct
         method! private output_short = self#output_short_be
 
         initializer
-        self#output "MThd";
-        self#output_int 6;
-        (* format *)
-        self#output_short 0;
-        (* tracks *)
-        self#output_short 1;
-        (* time division *)
-        self#output_short ((((fps - 1) lxor 0xff) lsl 8) + tpf);
-        (* Printf.printf "%dx%d: %x\n%!" fps tpf ((((fps-1) lxor 0xff) lsl 8) + tpf); *)
-        (*
+          self#output "MThd";
+          self#output_int 6;
+          (* format *)
+          self#output_short 0;
+          (* tracks *)
+          self#output_short 1;
+          (* time division *)
+          self#output_short ((((fps - 1) lxor 0xff) lsl 8) + tpf);
+          (* Printf.printf "%dx%d: %x\n%!" fps tpf ((((fps-1) lxor 0xff) lsl 8) + tpf); *)
+          (*
           self#output_byte (128 + fps);
           self#output_byte tpf;
         *)
-        (* fist track *)
-        self#output "MTrk";
-        (* track length *)
-        self#output_int 0
+          (* fist track *)
+          self#output "MTrk";
+          (* track length *)
+          self#output_int 0
 
         method put chan e =
           let d = delta curdelta in

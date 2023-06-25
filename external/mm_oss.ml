@@ -49,9 +49,9 @@ class writer ?(device = "/dev/dsp") channels sample_rate =
     inherit IO.Unix.rw ~write:true device
 
     initializer
-    assert (OSS.set_format fd 16 = 16);
-    assert (OSS.set_channels fd channels = channels);
-    assert (OSS.set_rate fd sample_rate = sample_rate)
+      assert (OSS.set_format fd 16 = 16);
+      assert (OSS.set_channels fd channels = channels);
+      assert (OSS.set_rate fd sample_rate = sample_rate)
 
     method private stream_really_write buf ofs len =
       let w = ref 0 in
@@ -71,9 +71,9 @@ class reader ?(device = "/dev/dsp") channels sample_rate =
     inherit IO.Unix.rw ~read:true device
 
     initializer
-    assert (OSS.set_format fd 16 = 16);
-    assert (OSS.set_channels fd channels = channels);
-    assert (OSS.set_rate fd sample_rate = sample_rate)
+      assert (OSS.set_format fd 16 = 16);
+      assert (OSS.set_channels fd channels = channels);
+      assert (OSS.set_rate fd sample_rate = sample_rate)
 
     method channels = channels
     method sample_rate = sample_rate

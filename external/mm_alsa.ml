@@ -51,16 +51,16 @@ let rw channels samplerate ?(device = "default") ?(playback = false)
     val mutable buffer_size = buffer_size
 
     initializer
-    let params = Alsa.Pcm.get_params dev in
-    Alsa.Pcm.set_access dev params Alsa.Pcm.Access_rw_noninterleaved;
-    Alsa.Pcm.set_format dev params Alsa.Pcm.Format_float;
-    Alsa.Pcm.set_channels dev params channels;
-    Alsa.Pcm.set_periods dev params periods Alsa.Dir_eq;
-    assert (
-      Alsa.Pcm.set_rate_near dev params samplerate Alsa.Dir_eq = samplerate);
-    buffer_size <- Alsa.Pcm.set_buffer_size_near dev params buffer_size;
-    Alsa.Pcm.set_params dev params;
-    Alsa.Pcm.set_nonblock dev (not blocking)
+      let params = Alsa.Pcm.get_params dev in
+      Alsa.Pcm.set_access dev params Alsa.Pcm.Access_rw_noninterleaved;
+      Alsa.Pcm.set_format dev params Alsa.Pcm.Format_float;
+      Alsa.Pcm.set_channels dev params channels;
+      Alsa.Pcm.set_periods dev params periods Alsa.Dir_eq;
+      assert (
+        Alsa.Pcm.set_rate_near dev params samplerate Alsa.Dir_eq = samplerate);
+      buffer_size <- Alsa.Pcm.set_buffer_size_near dev params buffer_size;
+      Alsa.Pcm.set_params dev params;
+      Alsa.Pcm.set_nonblock dev (not blocking)
 
     method read = Alsa.Pcm.readn_float dev
     method write = Alsa.Pcm.writen_float dev

@@ -238,9 +238,9 @@ module Mono = struct
       let s = Array.unsafe_get b (ofs + i) in
       Array.unsafe_set b (ofs + i)
         (if Float.is_nan s then 0.
-        else if s < -1. then -1.
-        else if 1. < s then 1.
-        else s)
+         else if s < -1. then -1.
+         else if 1. < s then 1.
+         else s)
     done
 
   let squares b ofs len =
@@ -1812,35 +1812,35 @@ module IO = struct
         method length = length
 
         initializer
-        if self#input 4 <> "RIFF" then
-          (* failwith "Bad header: \"RIFF\" not found"; *)
-          raise Invalid_file;
-        (* Ignore the file size *)
-        ignore (self#input 4);
-        if self#input 8 <> "WAVEfmt " then
-          (* failwith "Bad header: \"WAVEfmt \" not found"; *)
-          raise Invalid_file;
-        (* Now we always have the following uninteresting bytes:
-         * 0x10 0x00 0x00 0x00 0x01 0x00 *)
-        ignore (self#really_input 6);
-        channels <- self#input_short;
-        sample_rate <- self#input_int;
-        (* byt_per_sec *) ignore self#input_int;
-        (* byt_per_samp *) ignore self#input_short;
-        sample_size <- self#input_short;
-
-        let section = self#really_input 4 in
-        if section <> "data" then (
-          if section = "INFO" then
-            (* failwith "Valid wav file but unread"; *)
+          if self#input 4 <> "RIFF" then
+            (* failwith "Bad header: \"RIFF\" not found"; *)
             raise Invalid_file;
-          (* failwith "Bad header : string \"data\" not found" *)
-          raise Invalid_file);
+          (* Ignore the file size *)
+          ignore (self#input 4);
+          if self#input 8 <> "WAVEfmt " then
+            (* failwith "Bad header: \"WAVEfmt \" not found"; *)
+            raise Invalid_file;
+          (* Now we always have the following uninteresting bytes:
+           * 0x10 0x00 0x00 0x00 0x01 0x00 *)
+          ignore (self#really_input 6);
+          channels <- self#input_short;
+          sample_rate <- self#input_int;
+          (* byt_per_sec *) ignore self#input_int;
+          (* byt_per_samp *) ignore self#input_short;
+          sample_size <- self#input_short;
 
-        let len_dat = self#input_int in
-        data_offset <- self#stream_cur_pos;
-        bytes_per_sample <- sample_size / 8 * channels;
-        length <- len_dat / bytes_per_sample
+          let section = self#really_input 4 in
+          if section <> "data" then (
+            if section = "INFO" then
+              (* failwith "Valid wav file but unread"; *)
+              raise Invalid_file;
+            (* failwith "Bad header : string \"data\" not found" *)
+            raise Invalid_file);
+
+          let len_dat = self#input_int in
+          data_offset <- self#stream_cur_pos;
+          bytes_per_sample <- sample_size / 8 * channels;
+          length <- len_dat / bytes_per_sample
 
         method read (buf : buffer) ofs len =
           let sbuflen = len * channels * 2 in
@@ -1893,27 +1893,28 @@ module IO = struct
         method virtual private sample_rate : int
 
         initializer
-        let bits_per_sample = 16 in
-        (* RIFF *)
-        self#output "RIFF";
-        self#output_int 0;
-        self#output "WAVE";
+          let bits_per_sample = 16 in
+          (* RIFF *)
+          self#output "RIFF";
+          self#output_int 0;
+          self#output "WAVE";
 
-        (* Format *)
-        self#output "fmt ";
-        self#output_int 16;
-        self#output_short 1;
-        self#output_short self#channels;
-        self#output_int self#sample_rate;
-        self#output_int (self#sample_rate * self#channels * bits_per_sample / 8);
-        self#output_short (self#channels * bits_per_sample / 8);
-        self#output_short bits_per_sample;
+          (* Format *)
+          self#output "fmt ";
+          self#output_int 16;
+          self#output_short 1;
+          self#output_short self#channels;
+          self#output_int self#sample_rate;
+          self#output_int
+            (self#sample_rate * self#channels * bits_per_sample / 8);
+          self#output_short (self#channels * bits_per_sample / 8);
+          self#output_short bits_per_sample;
 
-        (* Data *)
-        self#output "data";
-        (* size of the data, to be updated afterwards *)
-        self#output_short 0xffff;
-        self#output_short 0xffff
+          (* Data *)
+          self#output "data";
+          (* size of the data, to be updated afterwards *)
+          self#output_short 0xffff;
+          self#output_short 0xffff
 
         val mutable datalen = 0
 
@@ -1953,8 +1954,8 @@ module IO = struct
         method virtual io_write : buffer -> unit
 
         initializer
-        assert (fill_duration <= max_duration);
-        assert (drop_duration <= max_duration)
+          assert (fill_duration <= max_duration);
+          assert (drop_duration <= max_duration)
 
         val rb = Ringbuffer.create channels max_duration
 

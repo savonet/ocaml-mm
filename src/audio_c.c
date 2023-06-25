@@ -250,7 +250,7 @@ CAMLprim value caml_mm_audio_to_s16(value _le, value _src, value _src_offs,
   if (caml_string_length(_dst) < dst_offs + 2 * nc * len)
     caml_invalid_argument("pcm_to_s16: destination buffer too short");
 
-  dst = (void*)dst + dst_offs;
+  dst = (void *)dst + dst_offs;
 
   if (little_endian == 1)
     for (c = 0; c < nc; c++) {

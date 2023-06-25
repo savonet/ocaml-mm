@@ -171,8 +171,7 @@ module RGB8 = struct
       if n land (lnot 0xffffff) <> 0 then raise (Invalid_argument "Not a color");
       ((n lsr 16) land 0xff, (n lsr 8) land 0xff, n land 0xff)
 
-    let to_int (r,g,b) =
-      r lsl 16 + g lsl 8 + b
+    let to_int (r, g, b) = (r lsl 16) + (g lsl 8) + b
   end
 end
 
@@ -180,8 +179,7 @@ module ARGB8 = struct
   module Color = struct
     type t = int * RGB8.Color.t
 
-    let of_int n : t =
-      (n lsr 24), RGB8.Color.of_int (n land 0xffffff)
+    let of_int n : t = (n lsr 24, RGB8.Color.of_int (n land 0xffffff))
   end
 end
 

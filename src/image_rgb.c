@@ -1077,8 +1077,8 @@ CAMLprim value caml_rgb_blur_alpha(value _rgb) {
   CAMLreturn(Val_unit);
 }
 
-static inline int compare_images(int width, int height, uint8_t *old, uint8_t *new,
-                                 int dx, int dy) {
+static inline int compare_images(int width, int height, uint8_t *old,
+                                 uint8_t *new, int dx, int dy) {
   int s = 0;
   int i, j;
   int adx = abs(dx);
@@ -1161,8 +1161,9 @@ CAMLprim value caml_mm_Gray8_motion_compute(value _bs, value _width, value _old,
   CAMLreturn(ans);
 }
 
-static inline int compare_blocks(int width, int height, uint8_t *old, uint8_t *new,
-                                 int bs, int x, int y, int dx, int dy) {
+static inline int compare_blocks(int width, int height, uint8_t *old,
+                                 uint8_t *new, int bs, int x, int y, int dx,
+                                 int dy) {
   int s = 0;
   int i, j;
 

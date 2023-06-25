@@ -179,10 +179,10 @@ let from_32 surface =
 class writer_to_screen w h =
   object
     initializer
-    Sdlevent.enable_events Sdlevent.quit_mask;
-    (* Try to get 32bpp because it's faster (twice as fast here), but accept
-     * other formats too. *)
-    ignore (Sdlvideo.set_video_mode ~w ~h ~bpp:32 [`ANYFORMAT; `DOUBLEBUF])
+      Sdlevent.enable_events Sdlevent.quit_mask;
+      (* Try to get 32bpp because it's faster (twice as fast here), but accept
+       * other formats too. *)
+      ignore (Sdlvideo.set_video_mode ~w ~h ~bpp:32 [`ANYFORMAT; `DOUBLEBUF])
 
     method write buf ofs len =
       if Sdlevent.poll () = Some Sdlevent.QUIT then Sdl.quit ()
@@ -259,12 +259,12 @@ class midi_keyboard : MIDI.IO.Reader.t =
   in
   object
     initializer
-    Sdl.init [`EVENTTHREAD; `VIDEO];
-    Sdlevent.disable_events Sdlevent.all_events_mask;
-    Sdlevent.enable_events
-      (Sdlevent.make_mask
-         [Sdlevent.KEYDOWN_EVENT; Sdlevent.KEYUP_EVENT; Sdlevent.QUIT_EVENT]);
-    ignore (Sdlvideo.set_video_mode ~w:640 ~h:480 ~bpp:16 [])
+      Sdl.init [`EVENTTHREAD; `VIDEO];
+      Sdlevent.disable_events Sdlevent.all_events_mask;
+      Sdlevent.enable_events
+        (Sdlevent.make_mask
+           [Sdlevent.KEYDOWN_EVENT; Sdlevent.KEYUP_EVENT; Sdlevent.QUIT_EVENT]);
+      ignore (Sdlvideo.set_video_mode ~w:640 ~h:480 ~bpp:16 [])
 
     val mutable velocity = 1.
     val channel = 0

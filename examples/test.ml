@@ -291,8 +291,7 @@ let () =
       let b = I.YUV420.create 640 480 in
       let x = 1280 in
       let y = 0 in
-      I.YUV420.add a ~x ~y b
-    );
+      I.YUV420.add a ~x ~y b);
   time "many adds" (fun () ->
       let r = I.YUV420.create 500 500 in
       I.YUV420.fill r (I.Pixel.yuv_of_rgb (0xff, 0, 0));

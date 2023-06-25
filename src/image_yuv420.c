@@ -235,7 +235,8 @@ CAMLprim value caml_yuv420_add(value _src, value _x, value _y, value _dst) {
   int ja = max(y, 0);
   int jb = min(y + src.height, dst.height);
 
-  if (!(ia < ib)) CAMLreturn(Val_unit);
+  if (!(ia < ib))
+    CAMLreturn(Val_unit);
 
   caml_enter_blocking_section();
   if (src.alpha == NULL) {
@@ -420,16 +421,15 @@ CAMLprim value caml_yuv_scale_alpha(value img, value _c) {
 
   caml_enter_blocking_section();
   for (j = 0; j < yuv.height; j++)
-    for (i = 0; i < yuv.width; i++)
-      {
-        int a = A(yuv, i, j);
-        if (a != 0) {
-          if (a == 0xff)
-            A(yuv, i, j) = amax;
-          else
-            A(yuv, i, j) = CLIP(a * c / PIXEL_PRECISON);
-        }
+    for (i = 0; i < yuv.width; i++) {
+      int a = A(yuv, i, j);
+      if (a != 0) {
+        if (a == 0xff)
+          A(yuv, i, j) = amax;
+        else
+          A(yuv, i, j) = CLIP(a * c / PIXEL_PRECISON);
       }
+    }
   caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);
