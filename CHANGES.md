@@ -1,6 +1,7 @@
 0.8.4 (unreleased)
 =====
 - Add `Image.ARGB8.*`.
+- Add conversion functions to/from int16 big arrays.
 
 0.8.3 (2023-03-01)
 =====

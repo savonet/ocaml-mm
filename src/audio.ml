@@ -189,6 +189,33 @@ module Mono = struct
     copy_to_ba buf ofs len ba;
     ba
 
+  external copy_from_int16_ba :
+    (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+    float array ->
+    int ->
+    int ->
+    unit = "caml_mm_audio_copy_from_int16_ba"
+
+  external copy_to_int16_ba :
+    float array ->
+    int ->
+    int ->
+    (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+    unit = "caml_mm_audio_copy_to_int16_ba"
+
+  let of_int16_ba buf =
+    let len = Bigarray.Array1.dim buf in
+    let dst = Array.create_float len in
+    copy_from_int16_ba buf dst 0 len;
+    dst
+
+  let to_int16_ba buf ofs len =
+    let ba =
+      Bigarray.Array1.create Bigarray.int16_signed Bigarray.c_layout len
+    in
+    copy_to_int16_ba buf ofs len ba;
+    ba
+
   let append b1 ofs1 len1 b2 ofs2 len2 =
     assert (length b1 - ofs1 >= len1);
     assert (length b2 - ofs2 >= len2);
@@ -984,6 +1011,17 @@ let copy_to_ba buf ofs len ba =
 
 let of_ba = Array.map Mono.of_ba
 let to_ba buf ofs len = Array.map (fun b -> Mono.to_ba b ofs len) buf
+
+let copy_from_int16_ba ba buf ofs len =
+  Array.iteri (fun i b -> Mono.copy_from_int16_ba ba.(i) b ofs len) buf
+
+let copy_to_int16_ba buf ofs len ba =
+  Array.iteri (fun i b -> Mono.copy_to_int16_ba buf.(i) ofs len b) ba
+
+let of_int16_ba = Array.map Mono.of_int16_ba
+
+let to_int16_ba buf ofs len =
+  Array.map (fun b -> Mono.to_int16_ba b ofs len) buf
 
 module U8 = struct
   let size channels samples = channels * samples

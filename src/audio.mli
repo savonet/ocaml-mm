@@ -118,6 +118,29 @@ module Mono : sig
     int ->
     (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t
 
+  val copy_to_int16_ba :
+    t ->
+    int ->
+    int ->
+    (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+    unit
+
+  val copy_from_int16_ba :
+    (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+    t ->
+    int ->
+    int ->
+    unit
+
+  val of_int16_ba :
+    (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Array1.t -> t
+
+  val to_int16_ba :
+    t ->
+    int ->
+    int ->
+    (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Array1.t
+
   (** Length in samples. *)
   val length : t -> int
 
@@ -405,6 +428,30 @@ val to_ba :
   int ->
   int ->
   (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t array
+
+val copy_to_int16_ba :
+  t ->
+  int ->
+  int ->
+  (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Array1.t array ->
+  unit
+
+val copy_from_int16_ba :
+  (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Array1.t array ->
+  t ->
+  int ->
+  int ->
+  unit
+
+val of_int16_ba :
+  (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Array1.t array ->
+  t
+
+val to_int16_ba :
+  t ->
+  int ->
+  int ->
+  (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Array1.t array
 
 (** Amplify a portion of the buffer by a given coefficient. *)
 val amplify : float -> t -> int -> int -> unit

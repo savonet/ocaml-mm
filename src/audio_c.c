@@ -456,3 +456,32 @@ CAMLprim value caml_mm_audio_copy_to_ba(value _src, value _ofs, value _len,
   }
   CAMLreturn(Val_unit);
 }
+
+CAMLprim value caml_mm_audio_copy_from_int16_ba(value _src, value _dst,
+                                                value _ofs, value _len) {
+  CAMLparam2(_src, _dst);
+  int16_t *src = Caml_ba_data_val(_src);
+  int ofs = Int_val(_ofs);
+  int len = Int_val(_len);
+  int i;
+
+  for (i = 0; i < len; i++) {
+    Store_double_field(_dst, i + ofs, ((double)src[i]) / INT16_MAX);
+  }
+
+  CAMLreturn(_dst);
+}
+
+CAMLprim value caml_mm_audio_copy_to_int16_ba(value _src, value _ofs,
+                                              value _len, value _dst) {
+  CAMLparam2(_src, _dst);
+  int16_t *dst = Caml_ba_data_val(_dst);
+  int len = Int_val(_len);
+  int ofs = Int_val(_ofs);
+  long i;
+
+  for (i = 0; i < len; i++) {
+    dst[i] = Double_field(_src, i + ofs) * INT16_MAX;
+  }
+  CAMLreturn(Val_unit);
+}
