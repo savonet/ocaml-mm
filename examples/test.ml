@@ -44,8 +44,18 @@ let () =
 
 let () =
   Printf.printf "## Testing basic functions\n\n%!";
-  assert (try ignore (Image.RGB8.Color.of_int 0xff00ff); true with _ -> false);
-  assert (try ignore (Image.RGB8.Color.of_int 0xaaff00ff); false with _ -> true)
+  assert (
+    try
+      ignore (Image.RGB8.Color.of_int 0xff00ff);
+      true
+    with _ -> false);
+  assert (
+    try
+      ignore
+        (Image.RGB8.Color.of_int
+           (Option.get (Int32.unsigned_to_int 0xaaff00ffl)));
+      false
+    with _ -> true)
 
 module A = Audio
 
