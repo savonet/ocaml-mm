@@ -1,4 +1,4 @@
-(lang dune 3.6)
+(lang dune 3.7)
 (version 0.8.4)
 (name mm)
 (source (github savonet/ocaml-mm))
