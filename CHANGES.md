@@ -1,3 +1,8 @@
+0.8.5 (unreleased)
+=====
+
+- Fix note names (#18).
+
 0.8.4 (2023-07-01)
 =====
 - Add `Image.ARGB8.*`.

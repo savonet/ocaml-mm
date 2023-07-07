@@ -44,6 +44,8 @@ let () =
 
 let () =
   Printf.printf "## Testing basic functions\n\n%!";
+  assert (Audio.Note.to_string Audio.Note.a4 = "A 4");
+  assert (Audio.Note.to_string Audio.Note.c5 = "C 5");
   assert (
     try
       ignore (Image.RGB8.Color.of_int 0xff00ff);
