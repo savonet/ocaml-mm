@@ -77,34 +77,6 @@ CAMLexport value caml_mm_ba_alloc_dims(int flags, int num_dims, void *data,
 }
 #endif
 
-CAMLprim value caml_data_aligned(value _alignment, value _len) {
-  CAMLparam2(_alignment, _len);
-  CAMLlocal1(ans);
-  int alignment = Int_val(_alignment);
-  int len = Int_val(_len);
-  unsigned char *data;
-
-  if (alignment < ALIGNMENT_BYTES) {
-    alignment = ALIGNMENT_BYTES;
-  }
-
-#ifdef HAS_CAML_INTERNALS
-  ALIGNED_ALLOC(data, alignment, len);
-
-  ans = caml_mm_ba_alloc_dims(
-      CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_UINT8, 1, data, len);
-#else
-  ans = caml_mm_ba_alloc_dims(
-      CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_UINT8, 1, NULL, len);
-
-  ALIGNED_ALLOC(data, alignment, len);
-  free(Caml_ba_data_val(ans));
-  Caml_ba_array_val(ans)->data = data;
-#endif
-
-  CAMLreturn(ans);
-}
-
 CAMLprim value caml_data_of_string(value s) {
   CAMLparam1(s);
   CAMLlocal1(ans);

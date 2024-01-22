@@ -48,23 +48,18 @@ module Data = struct
   type t =
     (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
-  (* Creates an 16-bytes aligned plane. Returns (stride*plane). *)
-  (* external create_rounded_plane : int -> int -> int * t = "caml_data_aligned_plane" *)
-
   let alloc n =
     Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.C_layout n
 
   (** [round n k] rounds [n] to the nearest upper multiple of [k]. *)
   let round k n = (n + (k - 1)) / k * k
 
-  (** [aligned k n] allocates [n] bytes at a multiple of [k]. *)
-  external aligned : int -> int -> t = "caml_data_aligned"
-
   (* Creates an 16-bytes aligned plane. Returns (stride*plane). *)
   let rounded_plane width height =
     let align = 16 in
     let stride = round 16 width in
-    let data = aligned align (height * stride) in
+    ignore(align);
+    let data = alloc (height * stride) in
     (stride, data)
 
   external to_string : t -> string = "caml_data_to_string"
