@@ -56,9 +56,7 @@ module Data = struct
 
   (* Creates an 16-bytes aligned plane. Returns (stride*plane). *)
   let rounded_plane width height =
-    let align = 16 in
     let stride = round 16 width in
-    ignore(align);
     let data = alloc (height * stride) in
     (stride, data)
 

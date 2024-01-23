@@ -13,68 +13,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "image_data.h"
-
 #ifndef Bytes_val
 #define Bytes_val String_val
-#endif
-
-// See: https://github.com/ocaml/ocaml/pull/10788
-#ifdef HAS_CAML_INTERNALS
-CAMLexport value caml_mm_ba_alloc(int flags, int num_dims, void *data,
-                                  intnat *dim) {
-  uintnat num_elts, asize, size;
-  int i;
-  value res;
-  struct caml_ba_array *b;
-  intnat dimcopy[CAML_BA_MAX_NUM_DIMS];
-
-  CAMLassert(num_dims >= 0 && num_dims <= CAML_BA_MAX_NUM_DIMS);
-  CAMLassert((flags & CAML_BA_KIND_MASK) <= CAML_BA_CHAR);
-  for (i = 0; i < num_dims; i++)
-    dimcopy[i] = dim[i];
-  size = 0;
-  num_elts = 1;
-  for (i = 0; i < num_dims; i++) {
-    if (caml_umul_overflow(num_elts, dimcopy[i], &num_elts))
-      caml_raise_out_of_memory();
-  }
-  if (caml_umul_overflow(
-          num_elts, caml_ba_element_size[flags & CAML_BA_KIND_MASK], &size))
-    caml_raise_out_of_memory();
-  if (data == NULL) {
-    data = malloc(size);
-    if (data == NULL && size != 0)
-      caml_raise_out_of_memory();
-    flags |= CAML_BA_MANAGED;
-  }
-  asize = SIZEOF_BA_ARRAY + num_dims * sizeof(intnat);
-  res = caml_alloc_custom_mem(&caml_ba_ops, asize, size);
-  b = Caml_ba_array_val(res);
-  b->data = data;
-  b->num_dims = num_dims;
-  b->flags = flags;
-  b->proxy = NULL;
-  for (i = 0; i < num_dims; i++)
-    b->dim[i] = dimcopy[i];
-  return res;
-}
-
-CAMLexport value caml_mm_ba_alloc_dims(int flags, int num_dims, void *data,
-                                       ...) {
-  va_list ap;
-  intnat dim[CAML_BA_MAX_NUM_DIMS];
-  int i;
-  value res;
-
-  CAMLassert(num_dims <= CAML_BA_MAX_NUM_DIMS);
-  va_start(ap, data);
-  for (i = 0; i < num_dims; i++)
-    dim[i] = va_arg(ap, intnat);
-  va_end(ap);
-  res = caml_mm_ba_alloc(flags, num_dims, data, dim);
-  return res;
-}
 #endif
 
 CAMLprim value caml_data_of_string(value s) {
@@ -85,8 +25,8 @@ CAMLprim value caml_data_of_string(value s) {
   if (data == NULL)
     caml_raise_out_of_memory();
   memcpy(data, String_val(s), len);
-  ans = caml_mm_ba_alloc_dims(
-      CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_UINT8, 1, data, len);
+  ans = caml_ba_alloc_dims(CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_UINT8,
+                           1, data, len);
   CAMLreturn(ans);
 }
 
@@ -109,8 +49,8 @@ CAMLprim value caml_data_copy(value _src) {
   if (dst == NULL)
     caml_raise_out_of_memory();
   memcpy(dst, src, len);
-  ans = caml_mm_ba_alloc_dims(
-      CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_UINT8, 1, dst, len);
+  ans = caml_ba_alloc_dims(CAML_BA_MANAGED | CAML_BA_C_LAYOUT | CAML_BA_UINT8,
+                           1, dst, len);
   CAMLreturn(ans);
 }
 

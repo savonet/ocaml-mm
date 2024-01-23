@@ -1,12 +1,4 @@
 (executable
- (name discover)
- (modules discover)
- (foreign_stubs
-  (language c)
-  (names endianess))
- (libraries dune.configurator))
-
-(executable
  (name setup)
  (modules
   setup

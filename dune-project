@@ -1,5 +1,5 @@
 (lang dune 3.7)
-(version 0.8.4)
+(version 0.8.5)
 (name mm)
 (source (github savonet/ocaml-mm))
 (license LGPL-2.1-or-later)
@@ -14,8 +14,7 @@
  (depends
   (ocaml (>= 4.08))
   (ocaml (and :with-test (>= 4.12))) 
-  dune
-  dune-configurator)
+  dune)
  (depopts
   alsa
   ao

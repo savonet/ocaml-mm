@@ -64,19 +64,17 @@ static inline int32_t int32_of_int24(int24_t x) {
 }
 
 #define bswap_16(x)                                                            \
-  ((int16_t)((((int16_t)(x)&0xff00) >> 8) | (((int16_t)(x)&0x00ff) << 8)))
+  ((int16_t)((((int16_t)(x) & 0xff00) >> 8) | (((int16_t)(x) & 0x00ff) << 8)))
 
 #define bswap_32(x)                                                            \
-  ((int32_t)((((int32_t)(x)&0xff000000) >> 24) |                               \
-             (((int32_t)(x)&0x00ff0000) >> 8) |                                \
-             (((int32_t)(x)&0x0000ff00) << 8) |                                \
-             (((int32_t)(x)&0x000000ff) << 24)))
+  ((int32_t)((((int32_t)(x) & 0xff000000) >> 24) |                             \
+             (((int32_t)(x) & 0x00ff0000) >> 8) |                              \
+             (((int32_t)(x) & 0x0000ff00) << 8) |                              \
+             (((int32_t)(x) & 0x000000ff) << 24)))
 
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-
-#include "config.h"
 
 static inline double clip(double s) {
   if (s < -1) {

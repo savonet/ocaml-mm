@@ -102,12 +102,10 @@ let default_stride width y_stride uv_stride =
 
 let create ?(blank = false) ?y_stride ?uv_stride width height =
   let y_stride, uv_stride = default_stride width y_stride uv_stride in
-  ignore(align);
   let y = Data.alloc (height * y_stride) in
   let u, v =
     let height = Data.round 2 ((height + 1) / 2) in
-    ( Data.alloc (height * uv_stride),
-      Data.alloc (height * uv_stride) )
+    (Data.alloc (height * uv_stride), Data.alloc (height * uv_stride))
   in
   let img = make width height y y_stride u v uv_stride in
   if blank then blank_all img;

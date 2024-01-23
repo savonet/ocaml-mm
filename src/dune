@@ -17,7 +17,6 @@
  (libraries mm.base)
  (modules audio)
  (foreign_stubs
-  (extra_deps config.h)
   (language c)
   (names audio_c))
  (synopsis
@@ -37,7 +36,6 @@
   imageCanvas
   image)
  (foreign_stubs
-  (extra_deps config.h)
   (language c)
   (names image_data image_pixel image_rgb image_yuv420))
  (synopsis
@@ -65,11 +63,6 @@
  (libraries mm.audio mm.image mm.video mm.midi)
  (modules mm)
  (synopsis "High-level APIs to create and manipulate multimedia streams"))
-
-(rule
- (targets config.h)
- (action
-  (run ./config/discover.exe)))
 
 (rule
  (targets mm.ml)
