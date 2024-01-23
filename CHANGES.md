@@ -1,7 +1,7 @@
 0.8.5 (unreleased)
 =====
-
 - Fix note names (#18).
+- Fix GC pace when allocating bigarrays with custom memory.
 
 0.8.4 (2023-07-01)
 =====
