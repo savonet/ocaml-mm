@@ -2,6 +2,7 @@
 =====
 - Fix note names (#18).
 - Fix GC pace when allocating bigarrays with custom memory.
+- Fix UV height calculation in `caml_yuv420_fill`.
 
 0.8.4 (2023-07-01)
 =====

@@ -48,6 +48,7 @@ type t = {
 
 let width img = img.width
 let height img = img.height
+let uv_height height = Data.round 2 ((height + 1) / 2)
 let dimensions img = (width img, height img)
 let y img = img.y
 let y_stride img = img.y_stride
@@ -65,7 +66,9 @@ let ensure_alpha img =
     Data.fill a 0xff;
     img.alpha <- Some a)
 
-external fill : t -> Pixel.yuv -> unit = "caml_yuv420_fill"
+external fill : t -> Pixel.yuv -> int -> unit = "caml_yuv420_fill"
+
+let fill img pix = fill img pix (uv_height img.height)
 
 let fill_alpha img a =
   if a = 0xff then img.alpha <- None
@@ -104,7 +107,7 @@ let create ?(blank = false) ?y_stride ?uv_stride width height =
   let y_stride, uv_stride = default_stride width y_stride uv_stride in
   let y = Data.aligned align (height * y_stride) in
   let u, v =
-    let height = Data.round 2 ((height + 1) / 2) in
+    let height = uv_height height in
     ( Data.aligned align (height * uv_stride),
       Data.aligned align (height * uv_stride) )
   in
