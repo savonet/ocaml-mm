@@ -32,7 +32,7 @@ let bd freq _ =
   g
 
 let blen = sample_rate / 3
-let no = Audio.create channels blen
+let _no = Audio.create channels blen
 
 let gen i =
   let buf = Audio.create channels blen in

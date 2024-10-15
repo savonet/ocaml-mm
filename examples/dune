@@ -46,11 +46,11 @@
  (optional)
  (libraries mm.audio mm.ao))
 
-(executable
- (name gstreamer_test)
- (modules gstreamer_test)
- (optional)
- (libraries gstreamer mm.audio mm.video mm.sdl mm.oss))
+; (executable
+ ; (name gstreamer_test)
+ ; (modules gstreamer_test)
+ ; (optional)
+ ; (libraries gstreamer mm.audio mm.video mm.sdl mm.oss))
 
 (executable
  (name graphics_test)
