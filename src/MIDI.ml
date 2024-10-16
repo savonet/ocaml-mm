@@ -62,17 +62,17 @@ type event =
 (* Tempo is in microseconds per quarter. *)
 let samples_of_delta samplerate division tempo delta =
   match division with
-    | Ticks_per_quarter tpq ->
-        (* These computations sometimes overflow on 32 bits. *)
-        let tpq = Int64.of_int tpq in
-        let tempo = Int64.of_int tempo in
-        let tps = Int64.of_int samplerate in
-        let ten = Int64.of_int 1000000 in
-        let delta = Int64.of_int delta in
-        let ( * ) = Int64.mul in
-        let ( / ) = Int64.div in
-        Int64.to_int (delta * tempo / tpq * tps / ten)
-    | SMPTE (fps, res) -> samplerate * delta / (fps * res)
+  | Ticks_per_quarter tpq ->
+    (* These computations sometimes overflow on 32 bits. *)
+    let tpq = Int64.of_int tpq in
+    let tempo = Int64.of_int tempo in
+    let tps = Int64.of_int samplerate in
+    let ten = Int64.of_int 1000000 in
+    let delta = Int64.of_int delta in
+    let ( * ) = Int64.mul in
+    let ( / ) = Int64.div in
+    Int64.to_int (delta * tempo / tpq * tps / ten)
+  | SMPTE (fps, res) -> samplerate * delta / (fps * res)
 
 (*
 let delta_of_samples samplerate division tempo samples =
@@ -100,17 +100,17 @@ let encode_event chan e =
   let coi = char_of_int in
   let bof = byte_of_float in
   (match e with
-    | Note_off (n, v) ->
-        Bytes.set s 0 (coi ((0x8 lsl 4) + chan));
-        Bytes.set s 1 (coi n);
-        Bytes.set s 2 (bof v)
-    | Note_on (n, v) ->
-        Bytes.set s 0 (coi ((0x9 lsl 4) + chan));
-        Bytes.set s 1 (coi n);
-        Bytes.set s 2 (bof v)
-    | _ ->
-        (* TODO *)
-        assert false);
+   | Note_off (n, v) ->
+     Bytes.set s 0 (coi ((0x8 lsl 4) + chan));
+     Bytes.set s 1 (coi n);
+     Bytes.set s 2 (bof v)
+   | Note_on (n, v) ->
+     Bytes.set s 0 (coi ((0x9 lsl 4) + chan));
+     Bytes.set s 1 (coi n);
+     Bytes.set s 2 (bof v)
+   | _ ->
+     (* TODO *)
+     assert false);
   Bytes.to_string s
 
 type buffer = {

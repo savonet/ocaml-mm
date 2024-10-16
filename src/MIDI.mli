@@ -63,6 +63,8 @@ type event =
   | Key_signature of int * bool
   | Custom of string
 
+(** {2 Buffers} *)
+
 (** A MIDI buffer. *)
 type buffer
 
@@ -84,15 +86,19 @@ val add : buffer -> int -> buffer -> int -> int -> unit
 val clear_all : buffer -> unit
 val insert : buffer -> int * event -> unit
 
+(** Multitrack buffers. *)
 module Multitrack : sig
+  (** A multitrack buffer. *)
   type t = buffer array
   type buffer = t
 
+  (** Channels. *)
   val channels : buffer -> int
+
+  (** Duration. *)
   val duration : buffer -> int
 
-  (** Create a multitrack MIDI buffer with given number of channels and length
-      in samples. *)
+  (** Create a multitrack MIDI buffer with given number of channels and length in samples. *)
   val create : int -> int -> buffer
 
   val clear : ?channel:int -> buffer -> int -> int -> unit
@@ -102,8 +108,7 @@ module IO : sig
   module Reader : sig
     class type t =
       object
-        (** Read data at with given samplerate for events, in a given track, with a
-          given length in samples. *)
+        (** Read data at with given samplerate for events, in a given track, with a given length in samples. *)
         method read : int -> Multitrack.buffer -> int -> int -> int
 
         (** Close the stream. *)
