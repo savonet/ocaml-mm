@@ -216,10 +216,10 @@ module IO = struct
             else (
               let frames = (div lsr 8) land 0x7f in
               let ticks = div land 0xff in
-              SMPTE (frames, ticks))
+              SMPTE (frames, ticks)
+            )
           in
-          if id <> "MThd" || len <> 6 || (fmt <> 0 && fmt <> 1 && fmt <> 2) then
-            raise Invalid_header;
+          if id <> "MThd" || len <> 6 || (fmt <> 0 && fmt <> 1 && fmt <> 2) then raise Invalid_header;
           tracks <- track_nb;
           division <- div
 
