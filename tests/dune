@@ -1,0 +1,12 @@
+(executable
+ (name bug22)
+ (libraries mm)
+)
+
+(rule
+ (alias runtest)
+ (action
+  (run ./bug22.exe)
+ )
+)
+
