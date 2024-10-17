@@ -64,13 +64,13 @@ static inline int32_t int32_of_int24(int24_t x) {
 }
 
 #define bswap_16(x)                                                            \
-  ((int16_t)((((int16_t)(x)&0xff00) >> 8) | (((int16_t)(x)&0x00ff) << 8)))
+  ((int16_t)((((int16_t)(x) & 0xff00) >> 8) | (((int16_t)(x) & 0x00ff) << 8)))
 
 #define bswap_32(x)                                                            \
-  ((int32_t)((((int32_t)(x)&0xff000000) >> 24) |                               \
-             (((int32_t)(x)&0x00ff0000) >> 8) |                                \
-             (((int32_t)(x)&0x0000ff00) << 8) |                                \
-             (((int32_t)(x)&0x000000ff) << 24)))
+  ((int32_t)((((int32_t)(x) & 0xff000000) >> 24) |                             \
+             (((int32_t)(x) & 0x00ff0000) >> 8) |                              \
+             (((int32_t)(x) & 0x0000ff00) << 8) |                              \
+             (((int32_t)(x) & 0x000000ff) << 24)))
 
 #include <assert.h>
 #include <stdio.h>
@@ -206,6 +206,46 @@ CAMLprim value caml_mm_audio_to_s32le(value _src, value _src_offs, value _dst,
   }
 
   CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_mm_audio_to_fltp(value _src, value _src_offs, value _dst,
+                                     value _dst_offs, value _len,
+                                     value _stride) {
+  CAMLparam2(_src, _dst);
+  CAMLlocal1(src);
+  int c, i;
+  int dst_offs = Int_val(_dst_offs);
+  int src_offs = Int_val(_src_offs);
+  int nc = Wosize_val(_src);
+  if (nc == 0)
+    CAMLreturn(Val_unit);
+  int len = Int_val(_len);
+  int stride = Int_val(_stride);
+  float *dst = (float *)Caml_ba_data_val(_dst);
+
+  if (stride < len)
+    caml_invalid_argument("caml_mm_audio_to_fltp: invalid dst length/stride");
+
+  if (len < dst_offs)
+    caml_invalid_argument("caml_mm_audio_to_fltp: invalid dst_offset");
+
+  if (Caml_ba_array_val(_dst)->dim[0] < stride * nc)
+    caml_invalid_argument(
+        "caml_mm_audio_to_fltp: destination buffer too short");
+
+  for (c = 0; c < nc; c++) {
+    src = Field(_src, c);
+    for (i = 0; i < len; i++) {
+      dst[c * stride + i + dst_offs] = clip(Double_field(src, i + src_offs));
+    }
+  }
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_mm_audio_to_fltp_bytes(value *argv, value argn) {
+  return caml_mm_audio_to_fltp(argv[0], argv[1], argv[2], argv[3], argv[4],
+                               argv[5]);
 }
 
 CAMLprim value caml_mm_audio_to_s24le(value _src, value _src_offs, value _dst,
@@ -400,6 +440,47 @@ CAMLprim value caml_mm_audio_convert_s32le(value _src, value _src_offs,
   }
 
   CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_mm_audio_convert_fltp(value _src, value _src_offs,
+                                          value _dst, value _dst_offs,
+                                          value _len, value _stride) {
+  CAMLparam2(_src, _dst);
+  CAMLlocal1(dst);
+  const float *src = Caml_ba_data_val(_src);
+  int src_offs = Int_val(_src_offs);
+  int dst_offs = Int_val(_dst_offs);
+  int nc = Wosize_val(_dst);
+  if (nc == 0)
+    CAMLreturn(Val_unit);
+  int len = Int_val(_len);
+  int stride = Int_val(_stride);
+  int i, c;
+
+  if (stride < len)
+    caml_invalid_argument(
+        "caml_mm_audio_convert_fltp: invalid src length/stride");
+
+  if (len < src_offs)
+    caml_invalid_argument("caml_mm_audio_convert_fltp: invalid src_offset");
+
+  if (Caml_ba_array_val(_src)->dim[0] < stride * nc)
+    caml_invalid_argument(
+        "caml_mm_audio_convert_fltp: output buffer too small");
+
+  for (c = 0; c < nc; c++) {
+    dst = Field(_dst, c);
+    for (i = 0; i < len; i++)
+      Store_double_field(dst, i + dst_offs,
+                         clip(src[stride * c + src_offs + i]));
+  }
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_mm_audio_convert_fltp_bytes(value *argv, value argn) {
+  return caml_mm_audio_convert_fltp(argv[0], argv[1], argv[2], argv[3], argv[4],
+                                    argv[5]);
 }
 
 CAMLprim value caml_mm_audio_convert_s24le(value _src, value _src_offs,
