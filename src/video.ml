@@ -217,7 +217,7 @@ module AVI = struct
         let open Mm_image in
         let width = Image.YUV420.width img in
         let height = Image.YUV420.height img in
-        let y, u, v = Image.YUV420.data img in
+        let y, u, v = Image.YUV420.planes img in
         let y = Image.Data.to_string y in
         let u = Image.Data.to_string u in
         let v = Image.Data.to_string v in

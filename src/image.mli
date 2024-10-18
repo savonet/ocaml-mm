@@ -284,7 +284,7 @@ module YUV420 : sig
   val make :
     int -> int -> ?alpha:Data.t -> Data.t -> int -> Data.t -> Data.t -> int -> t
 
-  val make_data : int -> int -> Data.t -> int -> int -> t
+  val make_data : ?alpha:bool -> int -> int -> Data.t -> int -> int -> t
   val create : ?blank:bool -> ?y_stride:int -> ?uv_stride:int -> int -> int -> t
 
   (** Ensure that the image has an alpha channel. *)
@@ -313,7 +313,8 @@ module YUV420 : sig
   val u : t -> Data.t
   val v : t -> Data.t
   val uv_stride : t -> int
-  val data : t -> Data.t * Data.t * Data.t
+  val data : t -> Data.t
+  val planes : t -> Data.t * Data.t * Data.t
   val alpha : t -> Data.t option
   val set_alpha : t -> Data.t option -> unit
   val dimensions : t -> int * int

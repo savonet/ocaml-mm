@@ -36,14 +36,15 @@ module Bitmap = ImageBitmap
 module RGBA32 = ImageRGBA32
 
 type t = {
-  mutable y : Data.t;
+  mutable y : Data.t; (* This is a view over the whole data. *)
   mutable y_stride : int;
-  mutable u : Data.t;
-  mutable v : Data.t;
+  mutable u : Data.t; (* This is a view over the whole data. *)
+  mutable v : Data.t; (* This is a view over the whole data. *)
   mutable uv_stride : int;
   width : int;
   height : int;
-  mutable alpha : Data.t option; (* alpha stride is y_stride *)
+  mutable alpha : Data.t option; (* This is a view over the whole data. *)
+  mutable data : Data.t;
 }
 
 let width img = img.width
@@ -55,7 +56,8 @@ let y_stride img = img.y_stride
 let u img = img.u
 let v img = img.v
 let uv_stride img = img.uv_stride
-let data img = (img.y, img.u, img.v)
+let data img = img.data
+let planes img = (img.y, img.u, img.v)
 let alpha img = img.alpha
 let set_alpha img alpha = img.alpha <- alpha
 let size img = Data.size img.y + Data.size img.u + Data.size img.v
@@ -79,11 +81,7 @@ let fill_alpha img a =
 let blank img = fill img (Pixel.yuv_of_rgb (0, 0, 0))
 let blank_all = blank
 
-let make width height ?alpha y y_stride u v uv_stride =
-  { y; y_stride; u; v; uv_stride; width; height; alpha }
-
-let make_data width height data y_stride uv_stride =
-  assert (Data.length data = height * (y_stride + uv_stride));
+let sub_fields ~alpha ~height ~y_stride ~uv_stride data =
   let y = Data.sub data 0 (height * y_stride) in
   let u = Data.sub data (height * y_stride) (height / 2 * uv_stride) in
   let v =
@@ -91,7 +89,40 @@ let make_data width height data y_stride uv_stride =
       ((height * y_stride) + (height / 2 * uv_stride))
       (height / 2 * uv_stride)
   in
-  make width height y y_stride u v uv_stride
+  let alpha =
+    if alpha then
+      Some
+        (Data.sub data
+           ((height * y_stride) + (height * uv_stride))
+           (height * y_stride))
+    else None
+  in
+  (y, u, v, alpha)
+
+let data_len ~alpha ~y_stride ~uv_stride ~height () =
+  height * (y_stride + uv_stride + if alpha then y_stride else 0)
+
+let make_base ~alpha ~width ~height ~y_stride ~uv_stride () =
+  let data = Data.alloc (data_len ~alpha ~y_stride ~uv_stride ~height ()) in
+  let y, u, v, alpha = sub_fields ~alpha ~height ~y_stride ~uv_stride data in
+  { data; y; y_stride; u; v; uv_stride; width; height; alpha }
+
+let make width height ?alpha y y_stride u v uv_stride =
+  let img =
+    make_base ~alpha:(alpha <> None) ~width ~height ~y_stride ~uv_stride ()
+  in
+  Data.blit y 0 img.y 0 (height * y_stride);
+  Data.blit u 0 img.u 0 (height / 2 * uv_stride);
+  Data.blit v 0 img.v 0 (height / 2 * uv_stride);
+  (match alpha with
+    | None -> ()
+    | Some a -> Data.blit a 0 (Option.get img.alpha) 0 (height * y_stride));
+  img
+
+let make_data ?(alpha = false) width height data y_stride uv_stride =
+  assert (data_len ~alpha ~y_stride ~uv_stride ~height () <= Data.length data);
+  let y, u, v, alpha = sub_fields ~alpha ~height ~y_stride ~uv_stride data in
+  { data; y; y_stride; u; v; uv_stride; width; height; alpha }
 
 (* Default alignment. *)
 let align = Sys.word_size / 8
@@ -165,37 +196,25 @@ let copy img =
   let dst =
     create ~y_stride:img.y_stride ~uv_stride:img.uv_stride img.width img.height
   in
-  Bigarray.Array1.blit img.y dst.y;
-  Bigarray.Array1.blit img.u dst.u;
-  Bigarray.Array1.blit img.v dst.v;
-  let alpha =
-    match img.alpha with None -> None | Some alpha -> Some (Data.copy alpha)
-  in
-  dst.alpha <- alpha;
+  Data.blit_all img.data dst.data;
   dst
 
 let blit_all src dst =
   if src.width <> dst.width then raise Invalid_dimensions;
   if src.height <> dst.height then raise Invalid_dimensions;
-  if src.y_stride = dst.y_stride && src.uv_stride = dst.uv_stride then (
-    Data.blit src.y 0 dst.y 0 (dst.height * dst.y_stride);
-    Data.blit src.u 0 dst.u 0 (dst.height / 2 * dst.uv_stride);
-    Data.blit src.v 0 dst.v 0 (dst.height / 2 * dst.uv_stride);
-    match src.alpha with
-      | None -> dst.alpha <- None
-      | Some alpha -> (
-          match dst.alpha with
-            | None -> dst.alpha <- Some (Data.copy alpha)
-            | Some alpha' -> Bigarray.Array1.blit alpha alpha'))
-  else (
-    dst.y <- Data.copy src.y;
-    dst.u <- Data.copy src.u;
-    dst.v <- Data.copy src.v;
-    dst.y_stride <- src.y_stride;
-    dst.uv_stride <- src.uv_stride;
-    match src.alpha with
-      | None -> dst.alpha <- None
-      | Some alpha -> dst.alpha <- Some (Data.copy alpha))
+  if Data.length src.y <> Data.length dst.y then (
+    let tmp =
+      make_base ~alpha:(src.alpha <> None) ~width:src.width ~height:src.width
+        ~y_stride:src.y_stride ~uv_stride:src.uv_stride ()
+    in
+    dst.data <- tmp.data;
+    dst.y <- tmp.y;
+    dst.y_stride <- tmp.y_stride;
+    dst.u <- tmp.u;
+    dst.v <- tmp.v;
+    dst.uv_stride <- tmp.uv_stride;
+    dst.alpha <- tmp.alpha);
+  Data.blit_all src.data dst.data
 
 let blit src dst = blit_all src dst
 
