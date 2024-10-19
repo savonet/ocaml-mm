@@ -1,3 +1,11 @@
+0.9.0 (unreleased)
+=====
+- BREAKING: Make all YUV420 image planes views over
+  a main data array. Can be used to pass a single
+  pointer to the image for APIs requiring it.
+  Renamed `data` into `planes`, added new `data`
+  returning the main data array.
+
 0.8.5 (2024-02-05)
 =====
 - Fix note names (#18).
