@@ -153,3 +153,16 @@ CAMLprim value caml_data_blit_off(value _src, value _soff, value _dst,
   memcpy(dst + doff, src + soff, len);
   CAMLreturn(Val_unit);
 }
+
+CAMLprim value caml_data_realloc(value _src, value _len) {
+  CAMLparam1(_src);
+  struct caml_ba_array *src = Caml_ba_array_val(_src);
+  src->data = realloc(src->data, Long_val(_len));
+  src->dim[0] = Long_val(_len);
+
+  if (!src->data)
+    caml_raise_out_of_memory();
+
+  CAMLreturn(Val_unit);
+}
+

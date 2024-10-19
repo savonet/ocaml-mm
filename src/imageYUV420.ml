@@ -62,9 +62,18 @@ let alpha img = img.alpha
 let set_alpha img alpha = img.alpha <- alpha
 let size img = Data.size img.y + Data.size img.u + Data.size img.v
 
+let data_len ~alpha ~y_stride ~uv_stride ~height () =
+  height * (y_stride + uv_stride + if alpha then y_stride else 0)
+
 let ensure_alpha img =
   if img.alpha = None then (
-    let a = Data.alloc (img.height * img.y_stride) in
+    let len = img.height * img.y_stride in
+    Data.realloc img.data (Data.length img.data + len);
+    let offset =
+      data_len ~alpha:false ~y_stride:img.y_stride ~uv_stride:img.uv_stride
+        ~height:img.height ()
+    in
+    let a = Data.sub img.data offset len in
     Data.fill a 0xff;
     img.alpha <- Some a)
 
@@ -98,9 +107,6 @@ let sub_fields ~alpha ~height ~y_stride ~uv_stride data =
     else None
   in
   (y, u, v, alpha)
-
-let data_len ~alpha ~y_stride ~uv_stride ~height () =
-  height * (y_stride + uv_stride + if alpha then y_stride else 0)
 
 let make_base ~alpha ~width ~height ~y_stride ~uv_stride () =
   let data = Data.alloc (data_len ~alpha ~y_stride ~uv_stride ~height ()) in

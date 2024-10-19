@@ -54,6 +54,8 @@ module Data = struct
   let alloc n =
     Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.C_layout n
 
+  external realloc : t -> int -> unit = "caml_data_realloc"
+
   (** [round n k] rounds [n] to the nearest upper multiple of [k]. *)
   let round k n = (n + (k - 1)) / k * k
 
