@@ -68,11 +68,12 @@ let data_len ~alpha ~y_stride ~uv_stride ~height () =
 let ensure_alpha img =
   if img.alpha = None then (
     let len = img.height * img.y_stride in
-    Data.realloc img.data (Data.length img.data + len);
     let offset =
       data_len ~alpha:false ~y_stride:img.y_stride ~uv_stride:img.uv_stride
         ~height:img.height ()
     in
+    let data_len = Data.length img.data in
+    if data_len < offset + len then Data.realloc img.data (data_len + len);
     let a = Data.sub img.data offset len in
     Data.fill a 0xff;
     img.alpha <- Some a)
