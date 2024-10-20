@@ -1087,6 +1087,26 @@ module S32LE = struct
     = "caml_mm_audio_convert_s32le"
 end
 
+module FLTP = struct
+  external of_audio :
+    src:buffer ->
+    src_offset:int ->
+    dst:(float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+    dst_offset:int ->
+    len:int ->
+    stride:int ->
+    unit = "caml_mm_audio_to_fltp_bytes" "caml_mm_audio_to_fltp"
+
+  external to_audio :
+    src:(float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+    src_offset:int ->
+    dst:buffer ->
+    dst_offset:int ->
+    len:int ->
+    stride:int ->
+    unit = "caml_mm_audio_convert_fltp_bytes" "caml_mm_audio_convert_fltp"
+end
+
 let add b1 ofs1 b2 ofs2 len =
   Array.iteri (fun i b -> Mono.add b ofs1 b2.(i) ofs2 len) b1
 

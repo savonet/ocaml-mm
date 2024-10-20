@@ -399,6 +399,26 @@ module S32LE : sig
   val to_audio : string -> int -> t -> int -> int -> unit
 end
 
+module FLTP : sig
+  val of_audio :
+    src:t ->
+    src_offset:int ->
+    dst:(float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+    dst_offset:int ->
+    len:int ->
+    stride:int ->
+    unit
+
+  val to_audio :
+    src:(float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+    src_offset:int ->
+    dst:t ->
+    dst_offset:int ->
+    len:int ->
+    stride:int ->
+    unit
+end
+
 val resample : ?mode:[ `Nearest | `Linear ] -> float -> t -> int -> int -> t
 val blit : t -> int -> t -> int -> int -> unit
 val sub : t -> int -> int -> t

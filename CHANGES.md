@@ -1,3 +1,7 @@
+0.8.6 (unreleased)
+=====
+- Added FLTP module.
+
 0.8.5 (2024-02-05)
 =====
 - Fix note names (#18).
