@@ -90,6 +90,7 @@ val insert : buffer -> int * event -> unit
 module Multitrack : sig
   (** A multitrack buffer. *)
   type t = buffer array
+
   type buffer = t
 
   (** Channels. *)

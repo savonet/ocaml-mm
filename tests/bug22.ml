@@ -8,6 +8,6 @@ let () =
   writer#note_on 1 64 1.0;
   writer#advance 44100;
   writer#note_off 1 64 0.0;
-  writer#close;
-  (* let reader = new MIDI.IO.Reader.of_file fname in *)
-  (* reader#read 0 *)
+  writer#close
+(* let reader = new MIDI.IO.Reader.of_file fname in *)
+(* reader#read 0 *)
