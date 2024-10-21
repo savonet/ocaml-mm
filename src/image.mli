@@ -283,10 +283,27 @@ module YUV420 : sig
       stride) U and V (with given stride). The strides of U and V are the same,
       the stride of the alpha channel is the same as Y. *)
   val make :
-    int -> int -> ?alpha:Data.t -> Data.t -> int -> Data.t -> Data.t -> int -> t
+    int ->
+    int ->
+    ?packed_data:Data.t ->
+    ?alpha:Data.t ->
+    Data.t ->
+    int ->
+    Data.t ->
+    Data.t ->
+    int ->
+    t
 
-  val make_data : int -> int -> Data.t -> int -> int -> t
-  val create : ?blank:bool -> ?y_stride:int -> ?uv_stride:int -> int -> int -> t
+  val make_data : ?alpha:bool -> int -> int -> Data.t -> int -> int -> t
+
+  val create :
+    ?blank:bool ->
+    ?alpha:bool ->
+    ?y_stride:int ->
+    ?uv_stride:int ->
+    int ->
+    int ->
+    t
 
   (** Ensure that the image has an alpha channel. *)
   val ensure_alpha : t -> unit

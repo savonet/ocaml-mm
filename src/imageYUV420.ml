@@ -35,63 +35,83 @@ open ImageBase
 module Bitmap = ImageBitmap
 module RGBA32 = ImageRGBA32
 
-type t = {
-  mutable y : Data.t;
-  mutable y_stride : int;
-  mutable u : Data.t;
-  mutable v : Data.t;
-  mutable uv_stride : int;
-  width : int;
-  height : int;
-  mutable alpha : Data.t option; (* alpha stride is y_stride *)
+type planes = {
+  y : Data.t;
+  y_stride : int;
+  u : Data.t;
+  v : Data.t;
+  uv_stride : int;
+  alpha : Data.t option; (* alpha stride is y_stride *)
+  packed_data : Data.t option;
 }
+
+type t = { mutable planes : planes; width : int; height : int }
 
 let width img = img.width
 let height img = img.height
 let uv_height height = Data.round 2 ((height + 1) / 2)
 let dimensions img = (width img, height img)
-let y img = img.y
-let y_stride img = img.y_stride
-let u img = img.u
-let v img = img.v
-let uv_stride img = img.uv_stride
-let data img = (img.y, img.u, img.v)
-let alpha img = img.alpha
-let set_alpha img alpha = img.alpha <- alpha
-let size img = Data.size img.y + Data.size img.u + Data.size img.v
+let y img = img.planes.y
+let y_stride img = img.planes.y_stride
+let u img = img.planes.u
+let v img = img.planes.v
+let uv_stride img = img.planes.uv_stride
+let data img = (img.planes.y, img.planes.u, img.planes.v)
+let alpha img = img.planes.alpha
+
+let set_alpha img alpha =
+  img.planes <-
+    {
+      img.planes with
+      alpha;
+      packed_data = (if alpha = None then img.planes.packed_data else None);
+    }
+
+let size img =
+  Data.size img.planes.y + Data.size img.planes.u + Data.size img.planes.v
 
 let ensure_alpha img =
-  if img.alpha = None then (
-    let a = Data.alloc (img.height * img.y_stride) in
+  if img.planes.alpha = None then (
+    let a = Data.alloc (img.height * img.planes.y_stride) in
     Data.fill a 0xff;
-    img.alpha <- Some a)
+    set_alpha img (Some a))
 
 external fill : t -> Pixel.yuv -> int -> unit = "caml_yuv420_fill"
 
 let fill img pix = fill img pix (uv_height img.height)
 
 let fill_alpha img a =
-  if a = 0xff then img.alpha <- None
+  if a = 0xff then set_alpha img None
   else (
     ensure_alpha img;
-    Bigarray.Array1.fill (Option.get img.alpha) a)
+    Bigarray.Array1.fill (Option.get img.planes.alpha) a)
 
 let blank img = fill img (Pixel.yuv_of_rgb (0, 0, 0))
 let blank_all = blank
 
-let make width height ?alpha y y_stride u v uv_stride =
-  { y; y_stride; u; v; uv_stride; width; height; alpha }
+let make width height ?packed_data ?alpha y y_stride u v uv_stride =
+  {
+    planes = { y; y_stride; u; v; uv_stride; alpha; packed_data };
+    width;
+    height;
+  }
 
-let make_data width height data y_stride uv_stride =
-  assert (Data.length data = height * (y_stride + uv_stride));
-  let y = Data.sub data 0 (height * y_stride) in
-  let u = Data.sub data (height * y_stride) (height / 2 * uv_stride) in
-  let v =
-    Data.sub data
-      ((height * y_stride) + (height / 2 * uv_stride))
-      (height / 2 * uv_stride)
+let data_length ~alpha ~height ~y_stride ~uv_stride () =
+  height * (y_stride + uv_stride + if alpha then y_stride else 0)
+
+let make_data ?(alpha = false) width height data y_stride uv_stride =
+  assert (data_length ~alpha ~height ~y_stride ~uv_stride () <= Data.length data);
+  let y_plane_size = height * y_stride in
+  let uv_plane_size = uv_height height * uv_stride in
+  let y = Data.sub data 0 y_plane_size in
+  let u = Data.sub data y_plane_size uv_plane_size in
+  let v = Data.sub data (y_plane_size + uv_plane_size) uv_plane_size in
+  let alpha =
+    if alpha then
+      Some (Data.sub data (y_plane_size + (2 * uv_plane_size)) y_plane_size)
+    else None
   in
-  make width height y y_stride u v uv_stride
+  make ~packed_data:data ?alpha width height y y_stride u v uv_stride
 
 (* Default alignment. *)
 let align = Sys.word_size / 8
@@ -103,34 +123,17 @@ let default_stride width y_stride uv_stride =
   in
   (y_stride, uv_stride)
 
-let create ?(blank = false) ?y_stride ?uv_stride width height =
+let create ?(blank = false) ?(alpha = false) ?y_stride ?uv_stride width height =
   let y_stride, uv_stride = default_stride width y_stride uv_stride in
-  let y = Data.aligned align (height * y_stride) in
-  let u, v =
-    let height = uv_height height in
-    ( Data.aligned align (height * uv_stride),
-      Data.aligned align (height * uv_stride) )
+  let data =
+    Data.aligned align (data_length ~alpha ~height ~y_stride ~uv_stride ())
   in
-  let img = make width height y y_stride u v uv_stride in
+  let img = make_data ~alpha width height data y_stride uv_stride in
   if blank then blank_all img;
   img
 
-let packed_data img =
-  let y, u, v = data img in
-  let y_dim = Bigarray.Array1.dim y in
-  let u_dim = Bigarray.Array1.dim u in
-  let v_dim = Bigarray.Array1.dim v in
-  let data =
-    Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.c_layout
-      (y_dim + u_dim + v_dim)
-  in
-  Bigarray.Array1.blit y (Bigarray.Array1.sub data 0 y_dim);
-  Bigarray.Array1.blit u (Bigarray.Array1.sub data y_dim u_dim);
-  Bigarray.Array1.blit v (Bigarray.Array1.sub data (y_dim + u_dim) v_dim);
-  data
-
-let has_alpha img = img.alpha <> None
-let remove_alpha img = img.alpha <- None
+let has_alpha img = img.planes.alpha <> None
+let remove_alpha img = set_alpha img None
 
 let of_YUV420_string ?y_stride ?uv_stride s width height =
   (* let y_stride, uv_stride = default_stride width y_stride uv_stride in *)
@@ -177,41 +180,89 @@ let to_BMP img =
 
 let copy img =
   let dst =
-    create ~y_stride:img.y_stride ~uv_stride:img.uv_stride img.width img.height
+    create ~alpha:(img.planes.alpha <> None) ~y_stride:img.planes.y_stride
+      ~uv_stride:img.planes.uv_stride img.width img.height
   in
-  Bigarray.Array1.blit img.y dst.y;
-  Bigarray.Array1.blit img.u dst.u;
-  Bigarray.Array1.blit img.v dst.v;
-  let alpha =
-    match img.alpha with None -> None | Some alpha -> Some (Data.copy alpha)
-  in
-  dst.alpha <- alpha;
+  (match (img.planes.packed_data, dst.planes.packed_data) with
+    | Some p, Some p' -> Data.blit_all p p'
+    | _ -> (
+        Data.blit_all img.planes.y dst.planes.y;
+        Data.blit_all img.planes.u dst.planes.u;
+        Data.blit_all img.planes.v dst.planes.v;
+        match img.planes.alpha with
+          | None -> ()
+          | Some alpha -> Data.blit_all alpha (Option.get dst.planes.alpha)));
   dst
 
 let blit_all src dst =
   if src.width <> dst.width then raise Invalid_dimensions;
   if src.height <> dst.height then raise Invalid_dimensions;
-  if src.y_stride = dst.y_stride && src.uv_stride = dst.uv_stride then (
-    Data.blit src.y 0 dst.y 0 (dst.height * dst.y_stride);
-    Data.blit src.u 0 dst.u 0 (dst.height / 2 * dst.uv_stride);
-    Data.blit src.v 0 dst.v 0 (dst.height / 2 * dst.uv_stride);
-    match src.alpha with
-      | None -> dst.alpha <- None
-      | Some alpha -> (
-          match dst.alpha with
-            | None -> dst.alpha <- Some (Data.copy alpha)
-            | Some alpha' -> Bigarray.Array1.blit alpha alpha'))
+  let y_plane_size = src.height * src.planes.y_stride in
+  let uv_plane_size = uv_height src.height * src.planes.uv_stride in
+  if
+    src.planes.y_stride = dst.planes.y_stride
+    && src.planes.uv_stride = dst.planes.uv_stride
+  then (
+    match (src.planes.packed_data, dst.planes.packed_data) with
+      | Some p, Some p' ->
+          Data.blit p 0 p' 0 (min (Data.length p) (Data.length p'))
+      | _ -> (
+          Data.blit src.planes.y 0 dst.planes.y 0 y_plane_size;
+          Data.blit src.planes.u 0 dst.planes.u 0 uv_plane_size;
+          Data.blit src.planes.v 0 dst.planes.v 0 uv_plane_size;
+          match src.planes.alpha with
+            | None -> set_alpha dst None
+            | Some alpha -> (
+                match dst.planes.alpha with
+                  | None -> set_alpha dst (Some (Data.copy alpha))
+                  | Some alpha' -> Data.blit alpha 0 alpha' 0 y_plane_size)))
   else (
-    dst.y <- Data.copy src.y;
-    dst.u <- Data.copy src.u;
-    dst.v <- Data.copy src.v;
-    dst.y_stride <- src.y_stride;
-    dst.uv_stride <- src.uv_stride;
-    match src.alpha with
-      | None -> dst.alpha <- None
-      | Some alpha -> dst.alpha <- Some (Data.copy alpha))
+    let alpha = src.planes.alpha <> None in
+    let tmp =
+      match src.planes.packed_data with
+        | Some p ->
+            make_data ~alpha src.width src.height (Data.copy p)
+              dst.planes.y_stride dst.planes.uv_stride
+        | None ->
+            let data =
+              Data.aligned align
+                (data_length ~alpha ~height:src.height
+                   ~y_stride:src.planes.y_stride ~uv_stride:src.planes.uv_stride
+                   ())
+            in
+            let tmp =
+              make_data ~alpha src.width src.height data src.planes.y_stride
+                src.planes.uv_stride
+            in
+            Data.blit src.planes.y 0 tmp.planes.y 0 y_plane_size;
+            Data.blit src.planes.u 0 tmp.planes.u 0 uv_plane_size;
+            Data.blit src.planes.v 0 tmp.planes.v 0 uv_plane_size;
+            (match src.planes.alpha with
+              | None -> ()
+              | Some p ->
+                  Data.blit p 0 (Option.get tmp.planes.alpha) 0 y_plane_size);
+            tmp
+    in
+    dst.planes <- tmp.planes)
 
 let blit src dst = blit_all src dst
+
+let packed_data = function
+  | { planes = { packed_data = Some p; _ }; _ } -> p
+  | src ->
+      let alpha = src.planes.alpha <> None in
+      let data =
+        Data.aligned align
+          (data_length ~alpha ~height:src.height ~y_stride:src.planes.y_stride
+             ~uv_stride:src.planes.uv_stride ())
+      in
+      let dst =
+        make_data ~alpha src.width src.height data src.planes.y_stride
+          src.planes.uv_stride
+      in
+      blit_all src dst;
+      src.planes <- dst.planes;
+      data
 
 external randomize : t -> unit = "caml_yuv_randomize"
 external add : t -> int -> int -> t -> unit = "caml_yuv420_add"
@@ -246,13 +297,17 @@ let set_pixel_rgba img i j ((_, _, _, a) as p) =
     Bigarray.Array1.set data (height * width * 5 / 4 + (j / 2) * (width / 2) + i / 2) v
    *)
 
-let get_pixel_y img i j = Data.get img.y ((j * img.y_stride) + i)
-let get_pixel_u img i j = Data.get img.u ((j / 2 * img.uv_stride) + (i / 2))
-let get_pixel_v img i j = Data.get img.v ((j / 2 * img.uv_stride) + (i / 2))
+let get_pixel_y img i j = Data.get img.planes.y ((j * img.planes.y_stride) + i)
+
+let get_pixel_u img i j =
+  Data.get img.planes.u ((j / 2 * img.planes.uv_stride) + (i / 2))
+
+let get_pixel_v img i j =
+  Data.get img.planes.v ((j / 2 * img.planes.uv_stride) + (i / 2))
 
 let get_pixel_a img i j =
-  match img.alpha with
-    | Some alpha -> Data.get alpha ((j * img.y_stride) + i)
+  match img.planes.alpha with
+    | Some alpha -> Data.get alpha ((j * img.planes.y_stride) + i)
     | None -> 0xff
 
 external get_pixel_rgba : t -> int -> int -> Pixel.rgba
@@ -301,13 +356,18 @@ let rotate src x y a dst =
 
 external is_opaque : t -> bool = "caml_yuv_is_opaque"
 
-let is_opaque img = if img.alpha = None then true else is_opaque img
-let optimize_alpha img = if is_opaque img then img.alpha <- None
+let is_opaque img = if img.planes.alpha = None then true else is_opaque img
+let optimize_alpha img = if is_opaque img then set_alpha img None
 
 let alpha_to_y img =
   ensure_alpha img;
-  img.y <- Option.get img.alpha;
-  img.alpha <- None
+  img.planes <-
+    {
+      img.planes with
+      y = Option.get img.planes.alpha;
+      alpha = None;
+      packed_data = None;
+    }
 
 external scale_alpha : t -> float -> unit = "caml_yuv_scale_alpha"
 
