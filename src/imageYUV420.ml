@@ -115,6 +115,20 @@ let create ?(blank = false) ?y_stride ?uv_stride width height =
   if blank then blank_all img;
   img
 
+let packed_data img =
+  let y, u, v = data img in
+  let y_dim = Bigarray.Array1.dim y in
+  let u_dim = Bigarray.Array1.dim u in
+  let v_dim = Bigarray.Array1.dim v in
+  let data =
+    Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.c_layout
+      (y_dim + u_dim + v_dim)
+  in
+  Bigarray.Array1.blit y (Bigarray.Array1.sub data 0 y_dim);
+  Bigarray.Array1.blit u (Bigarray.Array1.sub data y_dim u_dim);
+  Bigarray.Array1.blit v (Bigarray.Array1.sub data (y_dim + u_dim) v_dim);
+  data
+
 let has_alpha img = img.alpha <> None
 let remove_alpha img = img.alpha <- None
 

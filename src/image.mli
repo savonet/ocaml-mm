@@ -314,6 +314,7 @@ module YUV420 : sig
   val v : t -> Data.t
   val uv_stride : t -> int
   val data : t -> Data.t * Data.t * Data.t
+  val packed_data : t -> Data.t
   val alpha : t -> Data.t option
   val set_alpha : t -> Data.t option -> unit
   val dimensions : t -> int * int
