@@ -97,7 +97,9 @@ let make width height ?packed_data ?alpha y y_stride u v uv_stride =
   }
 
 let data_length ~alpha ~height ~y_stride ~uv_stride () =
-  height * (y_stride + uv_stride + if alpha then y_stride else 0)
+  (height * y_stride)
+  + (2 * (uv_height height * uv_stride))
+  + if alpha then height * y_stride else 0
 
 let make_data ?(alpha = false) width height data y_stride uv_stride =
   assert (data_length ~alpha ~height ~y_stride ~uv_stride () <= Data.length data);
