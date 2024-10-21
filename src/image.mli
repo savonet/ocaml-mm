@@ -54,6 +54,7 @@ module Data : sig
   val blit_all : t -> t -> unit
   val copy : t -> t
   val round : int -> int -> int
+  val sub : t -> int -> int -> t
 end
 
 module Pixel : sig
