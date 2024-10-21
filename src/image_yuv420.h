@@ -1,12 +1,16 @@
-#define YUV420_y(v) (Caml_ba_data_val(Field(v, 0)))
-#define YUV420_y_stride(v) (Int_val(Field(v, 1)))
-#define YUV420_u(v) (Caml_ba_data_val(Field(v, 2)))
-#define YUV420_v(v) (Caml_ba_data_val(Field(v, 3)))
-#define YUV420_uv_stride(v) (Int_val(Field(v, 4)))
-#define YUV420_width(v) (Int_val(Field(v, 5)))
-#define YUV420_height(v) (Int_val(Field(v, 6)))
+#define Planes(v) Field(v, 0)
+#define Plane(v, i) Field(Planes(v), i)
+#define Plane_data(v, i) Caml_ba_data_val(Plane(v, i))
+#define YUV420_y(v) Plane_data(v, 0)
+#define YUV420_y_stride(v) Int_val(Plane(v, 1))
+#define YUV420_u(v) Plane_data(v, 2)
+#define YUV420_v(v) Plane_data(v, 3)
+#define YUV420_uv_stride(v) Int_val(Plane(v, 4))
 #define YUV420_alpha(v)                                                        \
-  (Is_block(Field(v, 7)) ? Caml_ba_data_val(Field(Field(v, 7), 0)) : NULL)
+  (Is_block(Plane(v, 5)) ? Caml_ba_data_val(Field(Plane(v, 5), 0)) : NULL)
+
+#define YUV420_width(v) Int_val(Field(v, 1))
+#define YUV420_height(v) Int_val(Field(v, 2))
 
 typedef struct {
   int width;
@@ -33,6 +37,6 @@ static void yuv420_of_value(yuv420 *yuv, value v) {
 #define Y(yuv, i, j) yuv.y[j * yuv.y_stride + i]
 #define U2(yuv, i, j) yuv.u[j * yuv.uv_stride + i]
 #define V2(yuv, i, j) yuv.v[j * yuv.uv_stride + i]
-#define U(yuv, i, j) U2(yuv, i / 2, j / 2) 
-#define V(yuv, i, j) V2(yuv, i / 2, j / 2) 
+#define U(yuv, i, j) U2(yuv, i / 2, j / 2)
+#define V(yuv, i, j) V2(yuv, i / 2, j / 2)
 #define A(yuv, i, j) yuv.alpha[j * yuv.y_stride + i]
