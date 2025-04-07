@@ -6,16 +6,20 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        ocaml-compiler: ['5.3']
         include:
           - os: macos-latest
             extra-packages: ao mad pulseaudio theora
           - os: ubuntu-latest
             extra-packages: alsa ao mad pulseaudio ocamlsdl theora
     steps:
-    - name: Build and test module
-      uses: savonet/build-and-test-ocaml-module@main
+    - uses: actions/checkout@v4
+    - uses: ocaml/setup-ocaml@v3
       with:
-        extra-packages: ${{ matrix.extra-packages }}
+        ocaml-compiler: ${{ matrix.ocaml-compiler }}
+    - run: opam pin add -n .
+    - run: opam install ${{ matrix.extra-packages }}
+    - run: opam depext -yt mm
+    - run: opam install -t .
