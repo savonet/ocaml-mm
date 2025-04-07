@@ -28,7 +28,7 @@ jobs:
 
   deploy:
     if: github.ref == 'refs/heads/main'
-    needs: build
+    needs: build_doc
     permissions:
       pages: write
       id-token: write
