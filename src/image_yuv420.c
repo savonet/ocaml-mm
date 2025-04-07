@@ -533,7 +533,7 @@ CAMLprim value caml_yuv_rotate(value _src, value _ox, value _oy, value _angle,
       if (0 <= i2 && i2 < src.width && 0 <= j2 && j2 < src.height) {
         Y(dst, i, j) = Y(src, i2, j2);
         U(dst, i, j) = U(src, i2, j2);
-        V(dst, i, j) = V(dst, i2, j2);
+        V(dst, i, j) = V(src, i2, j2);
         A(dst, i, j) = src.alpha ? A(src, i2, j2) : 0xff;
       } else
         A(dst, i, j) = 0;
