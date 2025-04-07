@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Setup OCaml
-      uses: avsm/setup-ocaml@v2
+      uses: ocaml/setup-ocaml@v3
       with:
-        ocaml-compiler: 4.14.0
+        ocaml-compiler: 5.3.0
     - name: Pin locally
       run: opam pin -y add -n .
     - name: Install locally
@@ -22,7 +22,21 @@ jobs:
     - name: Build doc
       run: opam exec dune build @doc
     - name: Deploy doc
-      uses: JamesIves/github-pages-deploy-action@4.1.6
+      uses: actions/upload-pages-artifact@v3
       with:
-        branch: gh-pages
-        folder: _build/default/_doc/_html
+        path: _build/default/_doc/_html
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@v4
