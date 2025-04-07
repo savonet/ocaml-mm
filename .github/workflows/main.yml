@@ -13,7 +13,7 @@ jobs:
           - os: macos-latest
             extra-packages: ao mad pulseaudio theora
           - os: ubuntu-latest
-            extra-packages: alsa ao mad pulseaudio ocamlsdl theora
+            extra-packages: alsa ao mad pulseaudio theora
     steps:
     - uses: actions/checkout@v4
     - uses: ocaml/setup-ocaml@v3
