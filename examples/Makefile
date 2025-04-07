@@ -30,6 +30,9 @@ sine_wav:
 graphics:
 	@dune exec ./graphics_test.exe
 
+rotate:
+	@dune exec ./rotate.exe
+
 test:
 	@dune exec ./test.exe
 
