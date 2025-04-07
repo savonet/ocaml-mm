@@ -17,6 +17,12 @@
  (libraries graphics mm.image))
 
 (executable
+ (name rotate)
+ (modules rotate)
+ (optional)
+ (libraries graphics mm.image))
+
+(executable
  (name drums)
  (modules drums)
  (optional)

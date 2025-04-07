@@ -1,3 +1,7 @@
+0.8.7 (unreleased)
+=====
+- Fix color bug in YUV rotation (#27).
+
 0.8.6 (2024-10-29)
 =====
 - Added FLTP module.
