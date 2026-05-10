@@ -9,8 +9,7 @@ license: "LGPL-2.1-or-later"
 homepage: "https://github.com/savonet/ocaml-mm"
 bug-reports: "https://github.com/savonet/ocaml-mm/issues"
 depends: [
-  "ocaml" {>= "4.08"}
-  "ocaml" {with-test & >= "4.12"}
+  "ocaml" {>= "4.12"}
   "dune" {>= "3.7"}
   "dune-configurator"
   "odoc" {with-doc}
