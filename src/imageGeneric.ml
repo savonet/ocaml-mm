@@ -156,11 +156,11 @@ let of_YUV420 img =
   let yuv_data =
     {
       yuv_pixel = Pixel.YUVJ420;
-      y = img.YUV420.y;
-      y_stride = img.YUV420.y_stride;
-      u = img.YUV420.u;
-      v = img.YUV420.v;
-      uv_stride = img.YUV420.uv_stride;
+      y = img.YUV420.planes.y;
+      y_stride = img.YUV420.planes.y_stride;
+      u = img.YUV420.planes.u;
+      v = img.YUV420.planes.v;
+      uv_stride = img.YUV420.planes.uv_stride;
     }
   in
   { data = YUV yuv_data; width = img.YUV420.width; height = img.YUV420.height }
