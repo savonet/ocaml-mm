@@ -574,6 +574,10 @@ module Canvas (I : CanvasImage) : sig
       imprecise: it might have false negatives). *)
   val covering : t -> bool
 
+  (** Whether the canvas has an alpha channel (i.e. it does not fully cover
+      its viewport, or any of its elements has alpha). *)
+  val has_alpha : t -> bool
+
   (** Render the canvas as an image. If [fresh] is set to true, the resulting
       can be modified in place. If [transparent] is set to true, the non-covered
       portions are made transparent. *)

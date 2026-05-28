@@ -116,6 +116,10 @@ module Canvas (I : CanvasImage) = struct
           List.iter_right add elements;
           r
 
+  let has_alpha c =
+    not (covering c)
+    || List.exists (function E.Image (_, img) -> I.has_alpha img) c.elements
+
   let rendered ?transparent c = make (render ?transparent c)
   let map f c = make (f (render c))
 
