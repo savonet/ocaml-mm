@@ -10,7 +10,7 @@ homepage: "https://github.com/savonet/ocaml-mm"
 bug-reports: "https://github.com/savonet/ocaml-mm/issues"
 depends: [
   "ocaml" {>= "4.12"}
-  "dune" {>= "3.7"}
+  "dune" {>= "3.23"}
   "dune-configurator"
   "odoc" {with-doc}
 ]
@@ -34,6 +34,7 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/savonet/ocaml-mm.git"
+x-maintenance-intent: ["(latest)"]
 depexts: [
   ["linux-headers"] {os-family = "alpine"}
 ]
