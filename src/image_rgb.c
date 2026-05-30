@@ -1015,6 +1015,7 @@ CAMLprim value caml_rgb_color_to_alpha_simple(value _rgb, value color,
   CAMLreturn(Val_unit);
 }
 
+#ifdef OCAML_MM_TODO
 CAMLprim value caml_rgb_color_to_alpha(value _rgb, value color, value _prec,
                                        value _sharp) {
   CAMLparam2(_rgb, color);
@@ -1051,6 +1052,7 @@ CAMLprim value caml_rgb_color_to_alpha(value _rgb, value color, value _prec,
 
   CAMLreturn(Val_unit);
 }
+#endif
 
 CAMLprim value caml_rgb_blur_alpha(value _rgb) {
   CAMLparam1(_rgb);
