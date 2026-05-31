@@ -391,7 +391,8 @@ module Mono = struct
             for i = 0 to h - 1 do
               t.(s + i) <- d.(s + (2 * i));
               (* even *)
-              t.(s + h + i) <- d.(s + (2 * i) + 1) (* odd  *)
+              t.(s + h + i) <- d.(s + (2 * i) + 1)
+              (* odd  *)
             done;
             fft d t s h;
             fft d t (s + h) h;
@@ -537,10 +538,9 @@ module Mono = struct
           sign *. log (1. +. (mu *. abs_float bufi)) /. log (1. +. mu)
       done
 
-    class type t =
-      object
-        method process : buffer -> int -> int -> unit
-      end
+    class type t = object
+      method process : buffer -> int -> int -> unit
+    end
 
     class amplify k : t =
       object
@@ -664,7 +664,7 @@ module Mono = struct
           s,
           samples_of_seconds sr r )
 
-      (** State in the ADSR enveloppe (A/D/S/R/dead + position in the state). *)
+      (** State in the ADSR envelope (A/D/S/R/dead + position in the state). *)
       type state = int * int
 
       let init () = (0, 0)
@@ -693,8 +693,9 @@ module Mono = struct
                   *. buf.(i + ofs)
               done;
               if len < d - state_pos then (1, state_pos + len)
-              else if (* Negative sustain means release immediately. *)
-                      s >= 0.
+              else if
+                (* Negative sustain means release immediately. *)
+                s >= 0.
               then
                 process adsr (2, 0) buf
                   (ofs + d - state_pos)
@@ -727,15 +728,14 @@ module Mono = struct
   module Generator = struct
     let white_noise buf = noise buf
 
-    class type t =
-      object
-        method set_volume : float -> unit
-        method set_frequency : float -> unit
-        method fill : buffer -> int -> int -> unit
-        method fill_add : buffer -> int -> int -> unit
-        method release : unit
-        method dead : bool
-      end
+    class type t = object
+      method set_volume : float -> unit
+      method set_frequency : float -> unit
+      method fill : buffer -> int -> int -> unit
+      method fill_add : buffer -> int -> int -> unit
+      method release : unit
+      method dead : bool
+    end
 
     class virtual base sample_rate ?(volume = 1.) freq =
       object (self)
@@ -1456,10 +1456,9 @@ module Analyze = struct
 end
 
 module Effect = struct
-  class type t =
-    object
-      method process : buffer -> int -> int -> unit
-    end
+  class type t = object
+    method process : buffer -> int -> int -> unit
+  end
 
   class chain (e1 : t) (e2 : t) =
     object
@@ -1485,12 +1484,11 @@ module Effect = struct
         (new Mono.Effect.biquad_filter samplerate kind ?gain freq q
           :> Mono.Effect.t))
 
-  class type delay_t =
-    object
-      inherit t
-      method set_delay : float -> unit
-      method set_feedback : float -> unit
-    end
+  class type delay_t = object
+    inherit t
+    method set_delay : float -> unit
+    method set_feedback : float -> unit
+  end
 
   class delay_only chans sample_rate delay =
     let delay = int_of_float (float sample_rate *. delay) in
@@ -1763,15 +1761,14 @@ module Generator = struct
       Mono.Generator.white_noise buf.(c) ofs len
     done
 
-  class type t =
-    object
-      method set_volume : float -> unit
-      method set_frequency : float -> unit
-      method release : unit
-      method dead : bool
-      method fill : buffer -> int -> int -> unit
-      method fill_add : buffer -> int -> int -> unit
-    end
+  class type t = object
+    method set_volume : float -> unit
+    method set_frequency : float -> unit
+    method release : unit
+    method dead : bool
+    method fill : buffer -> int -> int -> unit
+    method fill_add : buffer -> int -> int -> unit
+  end
 
   class of_mono (g : Mono.Generator.t) =
     object
@@ -1822,16 +1819,15 @@ module IO = struct
   exception End_of_stream
 
   module Reader = struct
-    class type t =
-      object
-        method channels : int
-        method sample_rate : int
-        method length : int
-        method duration : float
-        method seek : int -> unit
-        method close : unit
-        method read : buffer -> int -> int -> int
-      end
+    class type t = object
+      method channels : int
+      method sample_rate : int
+      method length : int
+      method duration : float
+      method seek : int -> unit
+      method close : unit
+      method read : buffer -> int -> int -> int
+    end
 
     class virtual base =
       object (self)
@@ -1905,11 +1901,10 @@ module IO = struct
           let sbuf = self#input sbuflen in
           let sbuflen = String.length sbuf in
           let len = sbuflen / (channels * 2) in
-          begin
-            match sample_size with
-              | 16 -> S16LE.to_audio sbuf 0 buf ofs len
-              | 8 -> U8.to_audio sbuf 0 buf ofs len
-              | _ -> assert false
+          begin match sample_size with
+            | 16 -> S16LE.to_audio sbuf 0 buf ofs len
+            | 8 -> U8.to_audio sbuf 0 buf ofs len
+            | _ -> assert false
           end;
           len
 
@@ -1929,11 +1924,10 @@ module IO = struct
   end
 
   module Writer = struct
-    class type t =
-      object
-        method write : buffer -> int -> int -> unit
-        method close : unit
-      end
+    class type t = object
+      method write : buffer -> int -> int -> unit
+      method close : unit
+    end
 
     class virtual base chans sr =
       object
@@ -1998,12 +1992,11 @@ module IO = struct
   end
 
   module RW = struct
-    class type t =
-      object
-        method read : buffer -> int -> int -> unit
-        method write : buffer -> int -> int -> unit
-        method close : unit
-      end
+    class type t = object
+      method read : buffer -> int -> int -> unit
+      method write : buffer -> int -> int -> unit
+      method close : unit
+    end
 
     class virtual bufferized channels ~min_duration ~fill_duration ~max_duration
       ~drop_duration =

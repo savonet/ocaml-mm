@@ -95,23 +95,14 @@ let from_24 surface =
 (** 32bits surfaces are standard RGBA However, the RGB components are (at least
     sometimes) packed in a different order as in liquidsoap: 0xAARRGGBB.
 
-    An alternative implementation, which is surprisingly not sensibly
-    faster, uses SDL blitting directly by casting a char* into an int*.
-    The alpha is masked out because we don't want
-    to see video frames on top of each other on screen.
-    This hack might not work the same on different platforms.
-    let s =
-    Sdlvideo.create_RGB_surface_from_32
-    (Obj.magic rgb.RGB.data)
-    ~w:rgb.RGB.width
-    ~h:rgb.RGB.height
-    ~pitch:rgb.RGB.stride
-(* The masks might be endianness dependent *)
-        ~rmask:0xffl ~gmask:0xff00l ~bmask:0xff0000l
-        ~amask:0l
-      in
-        Sdlvideo.blit_surface ~src:s ~dst:surface ()
-  *)
+    An alternative implementation, which is surprisingly not sensibly faster,
+    uses SDL blitting directly by casting a char* into an int*. The alpha is
+    masked out because we don't want to see video frames on top of each other on
+    screen. This hack might not work the same on different platforms. let s =
+    Sdlvideo.create_RGB_surface_from_32 (Obj.magic rgb.RGB.data)
+    ~w:rgb.RGB.width ~h:rgb.RGB.height ~pitch:rgb.RGB.stride (* The masks might
+    be endianness dependent *) ~rmask:0xffl ~gmask:0xff00l ~bmask:0xff0000l
+    ~amask:0l in Sdlvideo.blit_surface ~src:s ~dst:surface () *)
 
 (*
 let to_32 rgb surface =
@@ -190,11 +181,10 @@ class writer_to_screen w h =
         let surface = Sdlvideo.get_video_surface () in
         (* We only display the last image of each frame *)
         let rgb = buf.(ofs + len - 1) in
-        begin
-          match Sdlvideo.surface_bpp surface with
-            (* | 16 -> to_16 rgb surface *)
-            | 32 -> to_32 rgb surface
-            | i -> failwith (Printf.sprintf "Unsupported format %dbpp" i)
+        begin match Sdlvideo.surface_bpp surface with
+          (* | 16 -> to_16 rgb surface *)
+          | 32 -> to_32 rgb surface
+          | i -> failwith (Printf.sprintf "Unsupported format %dbpp" i)
         end;
         Sdlvideo.flip surface)
 

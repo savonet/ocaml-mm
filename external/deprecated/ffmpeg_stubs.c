@@ -308,7 +308,7 @@ CAMLprim value caml_ffmpeg_enc_openfile(value _fname, value _fr, value _width,
      the chroma plane doesn't match the luma plane */
   if (c->codec_id == CODEC_ID_MPEG1VIDEO)
     c->mb_decision = 2;
-  /* some formats want stream headers to be seperate */
+  /* some formats want stream headers to be separate */
   if (!strcmp(ffe->format_ctx->oformat->name, "mp4") ||
       !strcmp(ffe->format_ctx->oformat->name, "mov") ||
       !strcmp(ffe->format_ctx->oformat->name, "3gp"))
@@ -496,7 +496,7 @@ CAMLprim caml_sws_scale_to(value _swsc, value _src, value _dst)
   frame_of_val(_tgt, &tgt);
 
   caml_enter_blocking_section();
-  // The coding of images is weired
+  // The coding of images is weird
   sws_scale(swsc, (const uint8_t * const*)src.data, src.width*4, 0, src.height,
 dst.data, dst.width*4); caml_leave_blocking_section();
 

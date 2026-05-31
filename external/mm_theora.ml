@@ -45,11 +45,11 @@ class reader_of_file fname =
     with Ogg.Bad_data -> fill os
     (* Do not care about page that are not for us.. *)
   in
-  (* Test wether the stream is theora *)
+  (* Test whether the stream is theora *)
   let test_theora () =
     (* Get First page *)
     let page = Ogg.Sync.read sync in
-    (* Check wether this is a b_o_s *)
+    (* Check whether this is a b_o_s *)
     if not (Ogg.Page.bos page) then raise Video.IO.Invalid_file;
     (* Create a stream with this ID *)
     let serial = Ogg.Page.serialno page in
@@ -117,7 +117,7 @@ class reader_of_file fname =
             self#get_yuv
         | Theora.Duplicate_frame -> (
             (* Got a duplicate frame, sending previous one ! *)
-            match latest_yuv with
+              match latest_yuv with
               | Some x -> x
               | None -> raise Video.IO.Invalid_file)
 

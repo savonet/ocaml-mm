@@ -155,12 +155,11 @@ module Mono : sig
   val noise : t -> int -> int -> unit
   val squares : t -> int -> int -> float
 
-  (** Samplewise add two buffers, storing the result in the
-      first one. *)
+  (** Samplewise add two buffers, storing the result in the first one. *)
   val add : t -> int -> t -> int -> int -> unit
 
-  (** Samplewise multiply two buffers of the same length, storing the result in the
-      first one. *)
+  (** Samplewise multiply two buffers of the same length, storing the result in
+      the first one. *)
   val mult : t -> int -> t -> int -> int -> unit
 
   module Ringbuffer_ext : Ringbuffer.R with type buffer = t
@@ -182,7 +181,7 @@ module Mono : sig
     val rms : t -> int -> int -> float
 
     (** Simple implementation of the FFT algorithm. For fastest implementations
-	optimized libraries such as fftw are recommended. *)
+        optimized libraries such as fftw are recommended. *)
     module FFT : sig
       (** Internal data for computing FFT. *)
       type t
@@ -203,9 +202,9 @@ module Mono : sig
       (** Frequency associated to the [k]-th coefficient of an FFT. *)
       val band_freq : int -> t -> int -> float
 
-      (** Windowing functions. Thses can be used to on complex buffers in order
-	  to improve the quality of the FFT, see
-	  http://en.wikipedia.org/wiki/Windowing_functions. *)
+      (** Windowing functions. These can be used to on complex buffers in order
+          to improve the quality of the FFT, see
+          http://en.wikipedia.org/wiki/Windowing_functions. *)
       module Window : sig
         val cosine : Complex.t array -> unit
         val hann : Complex.t array -> unit
@@ -235,35 +234,34 @@ module Mono : sig
 
   module Effect : sig
     (** A compander following the mu-law (see
-	http://en.wikipedia.org/wiki/Mu-law).*)
+        http://en.wikipedia.org/wiki/Mu-law).*)
     val compand_mu_law : float -> t -> int -> int -> unit
 
-    class type t =
-      object
-        method process : buffer -> int -> int -> unit
-      end
+    class type t = object
+      method process : buffer -> int -> int -> unit
+    end
 
     class amplify : float -> t
     class clip : float -> t
 
     class biquad_filter :
-      int
-      -> [ `Band_pass
-         | `High_pass
-         | `Low_pass
-         | `Notch
-         | `All_pass
-         | `Peaking
-         | `Low_shelf
-         | `High_shelf ]
-      -> ?gain:float
-      -> float
-      -> float
-      -> t
+      int ->
+      [ `Band_pass
+      | `High_pass
+      | `Low_pass
+      | `Notch
+      | `All_pass
+      | `Peaking
+      | `Low_shelf
+      | `High_shelf ] ->
+      ?gain:float ->
+      float ->
+      float ->
+      t
 
     (** ADSR (Attack/Decay/Sustain/Release) envelopes. *)
     module ADSR : sig
-      (** An ADSR enveloppe. *)
+      (** An ADSR envelope. *)
       type t
 
       (** Create an envelope with specified Attack/Decay/Sustain/Release times
@@ -287,24 +285,23 @@ module Mono : sig
   (** Sound generators. *)
   module Generator : sig
     (** A sound generator. *)
-    class type t =
-      object
-        method set_volume : float -> unit
-        method set_frequency : float -> unit
+    class type t = object
+      method set_volume : float -> unit
+      method set_frequency : float -> unit
 
-        (** Fill a buffer with generated sound. *)
-        method fill : buffer -> int -> int -> unit
+      (** Fill a buffer with generated sound. *)
+      method fill : buffer -> int -> int -> unit
 
-        (** Same as [fill] but adds the sound to the buffer. *)
-        method fill_add : buffer -> int -> int -> unit
+      (** Same as [fill] but adds the sound to the buffer. *)
+      method fill_add : buffer -> int -> int -> unit
 
-        (** Release the generator (used for generator with envelopes). *)
-        method release : unit
+      (** Release the generator (used for generator with envelopes). *)
+      method release : unit
 
-        (** Is the generator still producing sound? This should become false soon
-	  after release has been triggered. *)
-        method dead : bool
-      end
+      (** Is the generator still producing sound? This should become false soon
+          after release has been triggered. *)
+      method dead : bool
+    end
 
     (** Generate a sine waveform. *)
     class sine : int -> ?volume:float -> ?phase:float -> float -> t
@@ -491,8 +488,8 @@ val add_coeff : t -> int -> float -> t -> int -> int -> unit
 module Buffer_ext : sig
   type t
 
-  (** Create an extensible buffer of given channels and initial size in
-      samples. *)
+  (** Create an extensible buffer of given channels and initial size in samples.
+  *)
   val create : int -> int -> t
 
   (** Make sure that the buffer can hold at least a given number of samples. *)
@@ -576,21 +573,19 @@ end
 (** Audio effects. *)
 module Effect : sig
   (** A possibly stateful audio effect. *)
-  class type t =
-    object
-      (** Apply the effect on a buffer. *)
-      method process : buffer -> int -> int -> unit
-    end
+  class type t = object
+    (** Apply the effect on a buffer. *)
+    method process : buffer -> int -> int -> unit
+  end
 
   class chain : t -> t -> t
   class of_mono : int -> (unit -> Mono.Effect.t) -> t
 
-  class type delay_t =
-    object
-      inherit t
-      method set_delay : float -> unit
-      method set_feedback : float -> unit
-    end
+  class type delay_t = object
+    inherit t
+    method set_delay : float -> unit
+    method set_feedback : float -> unit
+  end
 
   (** [delay chans samplerate d once feedback] creates a delay operator for
       buffer with [chans] channels at [samplerate] samplerate with [d] as delay
@@ -605,42 +600,43 @@ module Effect : sig
       and [rms_window] in second is the duration for RMS acquisition. [gain] is
       an additional pre-gain. *)
   class compress :
-    ?attack:float
-    -> ?release:float
-    -> ?threshold:float
-    -> ?ratio:float
-    -> ?knee:float
-    -> ?rms_window:float
-    -> ?gain:float
-    -> int
-    -> int
-    -> object
-         inherit t
-         method set_attack : float -> unit
-         method set_gain : float -> unit
-         method set_knee : float -> unit
-         method set_ratio : float -> unit
-         method set_release : float -> unit
-         method set_threshold : float -> unit
-         method reset : unit
-       end
+    ?attack:float ->
+    ?release:float ->
+    ?threshold:float ->
+    ?ratio:float ->
+    ?knee:float ->
+    ?rms_window:float ->
+    ?gain:float ->
+    int ->
+    int ->
+  object
+    inherit t
+    method set_attack : float -> unit
+    method set_gain : float -> unit
+    method set_knee : float -> unit
+    method set_ratio : float -> unit
+    method set_release : float -> unit
+    method set_threshold : float -> unit
+    method reset : unit
+  end
 
-  (** A biquadratic filter. [gain] in dB is only used by peaking, low and high shelves. *)
+  (** A biquadratic filter. [gain] in dB is only used by peaking, low and high
+      shelves. *)
   class biquad_filter :
-    int
-    -> int
-    -> [ `Band_pass
-       | `High_pass
-       | `Low_pass
-       | `Notch
-       | `All_pass
-       | `Peaking
-       | `Low_shelf
-       | `High_shelf ]
-    -> ?gain:float
-    -> float
-    -> float
-    -> t
+    int ->
+    int ->
+    [ `Band_pass
+    | `High_pass
+    | `Low_pass
+    | `Notch
+    | `All_pass
+    | `Peaking
+    | `Low_shelf
+    | `High_shelf ] ->
+    ?gain:float ->
+    float ->
+    float ->
+    t
 
   val auto_gain_control :
     int ->
@@ -661,22 +657,21 @@ end
 module Generator : sig
   val white_noise : t -> int -> int -> unit
 
-  class type t =
-    object
-      method set_volume : float -> unit
-      method set_frequency : float -> unit
-      method fill : buffer -> int -> int -> unit
-      method fill_add : buffer -> int -> int -> unit
-      method release : unit
-      method dead : bool
-    end
+  class type t = object
+    method set_volume : float -> unit
+    method set_frequency : float -> unit
+    method fill : buffer -> int -> int -> unit
+    method fill_add : buffer -> int -> int -> unit
+    method release : unit
+    method dead : bool
+  end
 
   class of_mono : Mono.Generator.t -> t
   class chain : t -> Effect.t -> t
 end
 
-(** Operation for reading and writing audio data from files, streams or
-    devices. *)
+(** Operation for reading and writing audio data from files, streams or devices.
+*)
 module IO : sig
   (** The file is not valid. *)
   exception Invalid_file
@@ -688,41 +683,39 @@ module IO : sig
   exception End_of_stream
 
   module Reader : sig
-    class type t =
-      object
-        (** Number of channels. *)
-        method channels : int
+    class type t = object
+      (** Number of channels. *)
+      method channels : int
 
-        (** Sample rate in samples per second. *)
-        method sample_rate : int
+      (** Sample rate in samples per second. *)
+      method sample_rate : int
 
-        (** Length in samples. *)
-        method length : int
+      (** Length in samples. *)
+      method length : int
 
-        (** Duration in seconds. *)
-        method duration : float
+      (** Duration in seconds. *)
+      method duration : float
 
-        (** Seek to a given sample. *)
-        method seek : int -> unit
+      (** Seek to a given sample. *)
+      method seek : int -> unit
 
-        (** Close the file. This method should only be called once. The members of
-	the object should not be accessed anymore after this method has been
-	called. *)
-        method close : unit
+      (** Close the file. This method should only be called once. The members of
+          the object should not be accessed anymore after this method has been
+          called. *)
+      method close : unit
 
-        method read : buffer -> int -> int -> int
-      end
+      method read : buffer -> int -> int -> int
+    end
 
     (** Create a reader object from a wav file. *)
     class of_wav_file : string -> t
   end
 
   module Writer : sig
-    class type t =
-      object
-        method write : buffer -> int -> int -> unit
-        method close : unit
-      end
+    class type t = object
+      method write : buffer -> int -> int -> unit
+      method close : unit
+    end
 
     (** Create a writer to a file in WAV format with given number of channels,
         sample rate and file name.*)
@@ -730,24 +723,23 @@ module IO : sig
   end
 
   module RW : sig
-    class type t =
-      object
-        method read : buffer -> int -> int -> unit
-        method write : buffer -> int -> int -> unit
-        method close : unit
-      end
+    class type t = object
+      method read : buffer -> int -> int -> unit
+      method write : buffer -> int -> int -> unit
+      method close : unit
+    end
 
     class virtual bufferized :
-      int
-      -> min_duration:int
-      -> fill_duration:int
-      -> max_duration:int
-      -> drop_duration:int
-      -> object
-           method virtual io_read : buffer -> unit
-           method virtual io_write : buffer -> unit
-           method read : buffer -> unit
-           method write : buffer -> unit
-         end
+      int ->
+      min_duration:int ->
+      fill_duration:int ->
+      max_duration:int ->
+      drop_duration:int ->
+    object
+      method virtual io_read : buffer -> unit
+      method virtual io_write : buffer -> unit
+      method read : buffer -> unit
+      method write : buffer -> unit
+    end
   end
 end

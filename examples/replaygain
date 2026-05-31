@@ -1,2 +1,2 @@
 #!/bin/sh
-dune exec ./replaygain.exe $*
+dune exec ./replaygain.exe "$@"

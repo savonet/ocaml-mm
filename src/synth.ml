@@ -33,16 +33,15 @@
 
 open Mm_audio
 
-class type t =
-  object
-    method set_volume : float -> unit
-    method note_on : int -> float -> unit
-    method note_off : int -> float -> unit
-    method fill_add : Audio.buffer -> int -> int -> unit
-    method play_add : MIDI.buffer -> int -> Audio.buffer -> int -> int -> unit
-    method play : MIDI.buffer -> int -> Audio.buffer -> int -> int -> unit
-    method reset : unit
-  end
+class type t = object
+  method set_volume : float -> unit
+  method note_on : int -> float -> unit
+  method note_off : int -> float -> unit
+  method fill_add : Audio.buffer -> int -> int -> unit
+  method play_add : MIDI.buffer -> int -> Audio.buffer -> int -> int -> unit
+  method play : MIDI.buffer -> int -> Audio.buffer -> int -> int -> unit
+  method reset : unit
+end
 
 type synth = t
 type note = { note : int; volume : float; generator : Audio.Generator.t }
@@ -157,14 +156,13 @@ class monophonic (g : Audio.Generator.t) =
   end
 
 module Multitrack = struct
-  class type t =
-    object
-      method play_add :
-        MIDI.Multitrack.buffer -> int -> Audio.buffer -> int -> int -> unit
+  class type t = object
+    method play_add :
+      MIDI.Multitrack.buffer -> int -> Audio.buffer -> int -> int -> unit
 
-      method play :
-        MIDI.Multitrack.buffer -> int -> Audio.buffer -> int -> int -> unit
-    end
+    method play :
+      MIDI.Multitrack.buffer -> int -> Audio.buffer -> int -> int -> unit
+  end
 
   class create n (f : int -> synth) =
     object (self)

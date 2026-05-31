@@ -89,7 +89,7 @@ module Font = struct
     width : int;  (** width of a char in pixels *)
     height : int;  (** height of a char in pixels *)
     default : t;  (** default displayed character when not supported *)
-    uppercase : bool;  (** whether only uppercase caracters are supported *)
+    uppercase : bool;  (** whether only uppercase characters are supported *)
     char_space : int;
     line_space : int;
   }

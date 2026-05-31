@@ -4,8 +4,7 @@ let executable name libraries =
     (String.concat " " libraries)
 
 let () =
-  if Has_alsa.available then
-    executable "autotune" ["mm.audio"; "mm.alsa"];
+  if Has_alsa.available then executable "autotune" ["mm.audio"; "mm.alsa"];
   if Has_mad.available && Has_oss.available then
     executable "dictee" ["mm.audio"; "mm.midi"; "mm.mad"; "mm.oss"];
   if Has_graphics.available then begin
@@ -20,8 +19,7 @@ let () =
     executable "midiplayer" ["mm.audio"; "mm.oss"]
   end;
   executable "id" ["mm.audio"];
-  if Has_ao.available then
-    executable "sine_wav" ["mm.audio"; "mm.ao"];
+  if Has_ao.available then executable "sine_wav" ["mm.audio"; "mm.ao"];
   executable "replaygain" ["mm.audio"];
   executable "test" ["mm"];
   print_string "(rule\n (alias runtest)\n (action\n  (run ./test.exe)))\n"

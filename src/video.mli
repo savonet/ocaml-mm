@@ -44,7 +44,7 @@ module Image : sig
   val create : int -> int -> t
   val of_RGB24_string : string -> int -> t
 
-  (** Convert to format useable by [Graphics.make_image]. *)
+  (** Convert to format usable by [Graphics.make_image]. *)
   val to_int_image : t -> int array array
 
   val copy : t -> t
@@ -105,7 +105,7 @@ val length : t -> int
 (** Size in bytes. *)
 val size : t -> int
 
-(** Obtaine the i-th image of a video. *)
+(** Obtain the i-th image of a video. *)
 val get : t -> int -> Image.t
 
 val set : t -> int -> Image.t -> unit
@@ -214,28 +214,26 @@ module IO : sig
   exception Invalid_file
 
   module Reader : sig
-    class type t =
-      object
-        method width : int
-        method height : int
+    class type t = object
+      method width : int
+      method height : int
 
-        (** Number of frames per second. *)
-        method frame_rate : FPS.t
-        (* method set_target_size : int -> int -> unit *)
+      (** Number of frames per second. *)
+      method frame_rate : FPS.t
+      (* method set_target_size : int -> int -> unit *)
 
-        (** Read a given number of frames. *)
-        method read : buffer -> int -> int -> int
+      (** Read a given number of frames. *)
+      method read : buffer -> int -> int -> int
 
-        method close : unit
-      end
+      method close : unit
+    end
   end
 
   module Writer : sig
-    class type t =
-      object
-        method write : buffer -> int -> int -> unit
-        method close : unit
-      end
+    class type t = object
+      method write : buffer -> int -> int -> unit
+      method close : unit
+    end
 
     class to_avi_file : string -> FPS.t -> int -> int -> t
   end

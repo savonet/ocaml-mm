@@ -118,7 +118,8 @@ module Bitmap : sig
   end
 end
 
-(** Operations on images stored in RGB8 format, ie RGB channels, one byte each. *)
+(** Operations on images stored in RGB8 format, ie RGB channels, one byte each.
+*)
 module RGB8 : sig
   (** Operations on colors. *)
   module Color : sig
@@ -232,7 +233,8 @@ module RGBA32 : sig
     (** Convert to sepia colors. *)
     val sepia : t -> unit
 
-    (** Lomo effect on colors (see http://en.wikipedia.org/wiki/Lomo_effect ). *)
+    (** Lomo effect on colors (see http://en.wikipedia.org/wiki/Lomo_effect ).
+    *)
     val lomo : t -> unit
 
     (** Invert colors. *)
@@ -274,7 +276,8 @@ module RGBA32 : sig
   end
 end
 
-(** Operations on images stored in YUV420 format, ie one luma (Y) and two chrominance (U and V) channels. *)
+(** Operations on images stored in YUV420 format, ie one luma (Y) and two
+    chrominance (U and V) channels. *)
 module YUV420 : sig
   (** An image in YUV420 format. *)
   type t = ImageYUV420.t
@@ -326,7 +329,7 @@ module YUV420 : sig
   (** Whether the image has an alpha channel. *)
   val has_alpha : t -> bool
 
-  (* (\** Obtaine data with given stride. No copy is made when possible. *\) *)
+  (* (\** Obtain data with given stride. No copy is made when possible. *\) *)
   (* val data_stride : t -> int -> int -> Data.t * Data.t * Data.t *)
 
   val copy : t -> t
@@ -360,14 +363,14 @@ module YUV420 : sig
   val alpha_of_color : t -> Pixel.yuv -> int -> unit
 
   (** Takes a reference image and an image, and make similar portions
-      transparent on the second (the last parameter controls the tolerance). This
-      is useful to make bluescreens withtout bluescreens. *)
+      transparent on the second (the last parameter controls the tolerance).
+      This is useful to make bluescreens without bluescreens. *)
   val alpha_of_sameness : t -> t -> int -> unit
 
   (** [alpha_of_diff prev curr level speed] takes a previous image and a current
-      image and make parts of the current image more transparent if they were the
-      same. [level] is the distance at which we consider two colors to be the
-      same and [speed] is the inverse of the convergence speed. *)
+      image and make parts of the current image more transparent if they were
+      the same. [level] is the distance at which we consider two colors to be
+      the same and [speed] is the inverse of the convergence speed. *)
   val alpha_of_diff : t -> t -> int -> int -> unit
 
   (** [box_alpha img x y width height alpha] sets alpha value on a given image
@@ -382,7 +385,7 @@ module YUV420 : sig
   val rotate : t -> int -> int -> float -> t -> unit
 
   (** Fill the image with a gradient. It takes as argument the (U,V) at pixel
-     (0,0), at pixel (xmax,0) and at pixel (0,ymax). *)
+      (0,0), at pixel (xmax,0) and at pixel (0,ymax). *)
   val gradient_uv : t -> int * int -> int * int -> int * int -> unit
 
   val get_pixel_y : t -> int -> int -> int
@@ -392,7 +395,7 @@ module YUV420 : sig
   val get_pixel_rgba : t -> int -> int -> Pixel.rgba
   val set_pixel_rgba : t -> int -> int -> Pixel.rgba -> unit
 
-  (** Convert to format useable by [Graphics.make_image]. *)
+  (** Convert to format usable by [Graphics.make_image]. *)
   val to_int_image : t -> int array array
 
   module Effect : sig
@@ -427,9 +430,11 @@ module Generic : sig
       | BGR24
           (** 24 bit BGR. Each color is an uint8_t. Color order is BGRBGR *)
       | RGB32
-          (** 32 bit RGB. Each color is an uint8_t. Color order is RGBXRGBX, where X is unused *)
+          (** 32 bit RGB. Each color is an uint8_t. Color order is RGBXRGBX,
+              where X is unused *)
       | BGR32
-          (** 32 bit BGR. Each color is an uint8_t. Color order is BGRXBGRX, where X is unused *)
+          (** 32 bit BGR. Each color is an uint8_t. Color order is BGRXBGRX,
+              where X is unused *)
       | RGBA32
           (** 32 bit RGBA. Each color is an uint8_t. Color order is RGBARGBA *)
 
@@ -440,14 +445,14 @@ module Generic : sig
       | YUV411  (** Planar YCbCr 4:1:1. Each component is an uint8_t *)
       | YUV410  (** Planar YCbCr 4:1:0. Each component is an uint8_t *)
       | YUVJ420
-          (** Planar YCbCr 4:2:0. Each component is an uint8_t, luma
-                      and chroma values are full range (0x00 .. 0xff) *)
+          (** Planar YCbCr 4:2:0. Each component is an uint8_t, luma and chroma
+              values are full range (0x00 .. 0xff) *)
       | YUVJ422
-          (** Planar YCbCr 4:2:2. Each component is an uint8_t, luma and
-                      chroma values are full range (0x00 .. 0xff) *)
+          (** Planar YCbCr 4:2:2. Each component is an uint8_t, luma and chroma
+              values are full range (0x00 .. 0xff) *)
       | YUVJ444
-          (** Planar YCbCr 4:4:4. Each component is an uint8_t, luma and
-                      chroma values are full range (0x00 .. 0xff) *)
+          (** Planar YCbCr 4:4:4. Each component is an uint8_t, luma and chroma
+              values are full range (0x00 .. 0xff) *)
 
     (** Format of a pixel. *)
     type format = RGB of rgb_format | YUV of yuv_format
@@ -548,8 +553,8 @@ module Canvas (I : CanvasImage) : sig
   (** Create an empty canvas. *)
   val create : int -> int -> t
 
-  (** Create a canvas containing a given image. Negative dimensions are
-      ignored, default ones are those of the image. *)
+  (** Create a canvas containing a given image. Negative dimensions are ignored,
+      default ones are those of the image. *)
   val make : ?width:int -> ?height:int -> ?x:int -> ?y:int -> I.t -> t
 
   (** Width of the image. *)
@@ -574,8 +579,8 @@ module Canvas (I : CanvasImage) : sig
       imprecise: it might have false negatives). *)
   val covering : t -> bool
 
-  (** Whether the canvas has an alpha channel (i.e. it does not fully cover
-      its viewport, or any of its elements has alpha). *)
+  (** Whether the canvas has an alpha channel (i.e. it does not fully cover its
+      viewport, or any of its elements has alpha). *)
   val has_alpha : t -> bool
 
   (** Render the canvas as an image. If [fresh] is set to true, the resulting
@@ -596,7 +601,7 @@ module Canvas (I : CanvasImage) : sig
   (** Translate the image. *)
   val translate : int -> int -> t -> t
 
-  (** Bouding box (smallest box enclosing all images contained in the canavs):
+  (** Bounding box (smallest box enclosing all images contained in the canavs):
       returns the lower-left corner and the dimensions. *)
   val bounding_box : t -> (int * int) * (int * int)
 

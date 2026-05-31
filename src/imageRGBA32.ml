@@ -186,7 +186,7 @@ exception Invalid_format of string
 let of_PPM ?alpha data =
   let w, h, d, o =
     try
-      (* TODO: make it useable without bound checks *)
+      (* TODO: make it usable without bound checks *)
       assert (data.[0] = 'P');
       assert (data.[1] = '6');
       assert (data.[2] = '\n');

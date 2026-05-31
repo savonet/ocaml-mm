@@ -359,28 +359,26 @@ module IO = struct
   exception Invalid_file
 
   module Reader = struct
-    class type t =
-      object
-        method width : int
-        method height : int
-        method frame_rate : float
+    class type t = object
+      method width : int
+      method height : int
+      method frame_rate : float
 
-        (* method set_target_size : int -> int -> unit *)
-        method read : buffer -> int -> int -> int
+      (* method set_target_size : int -> int -> unit *)
+      method read : buffer -> int -> int -> int
 
-        (* method read_audio : Audio.buffer -> int -> int -> int *)
-        method close : unit
-      end
+      (* method read_audio : Audio.buffer -> int -> int -> int *)
+      method close : unit
+    end
   end
 
   module Writer = struct
-    class type t =
-      object
-        method write : buffer -> int -> int -> unit
+    class type t = object
+      method write : buffer -> int -> int -> unit
 
-        (* method write_audio : Audio.buffer -> int -> int -> unit *)
-        method close : unit
-      end
+      (* method write_audio : Audio.buffer -> int -> int -> unit *)
+      method close : unit
+    end
 
     class virtual avi frame_rate w h =
       (* let has_audio = audio_rate <> None in *)
