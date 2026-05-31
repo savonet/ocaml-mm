@@ -189,11 +189,10 @@ module IO = struct
   exception Invalid_data
 
   module Reader = struct
-    class type t =
-      object
-        method read : int -> Multitrack.buffer -> int -> int -> int
-        method close : unit
-      end
+    class type t = object
+      method read : int -> Multitrack.buffer -> int -> int -> int
+      method close : unit
+    end
 
     class virtual base =
       object (self)
@@ -463,7 +462,7 @@ module IO = struct
               match c with
                 | Some c -> (
                     (* Filter out relevant events. *)
-                    match e with
+                      match e with
                       | Note_on _ | Note_off _ | Control_change _ ->
                           if c < Array.length buf then
                             insert buf.(c) (!offset_in_buf + ofs, e)
@@ -485,14 +484,13 @@ module IO = struct
   end
 
   module Writer = struct
-    class type t =
-      object
-        method put : int -> event -> unit
-        method note_off : int -> int -> float -> unit
-        method note_on : int -> int -> float -> unit
-        method advance : int -> unit
-        method close : unit
-      end
+    class type t = object
+      method put : int -> event -> unit
+      method note_off : int -> int -> float -> unit
+      method note_on : int -> int -> float -> unit
+      method advance : int -> unit
+      method close : unit
+    end
 
     class to_file samplerate fname =
       (* frames per second *)

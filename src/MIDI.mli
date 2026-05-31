@@ -99,7 +99,8 @@ module Multitrack : sig
   (** Duration. *)
   val duration : buffer -> int
 
-  (** Create a multitrack MIDI buffer with given number of channels and length in samples. *)
+  (** Create a multitrack MIDI buffer with given number of channels and length
+      in samples. *)
   val create : int -> int -> buffer
 
   val clear : ?channel:int -> buffer -> int -> int -> unit
@@ -107,27 +108,26 @@ end
 
 module IO : sig
   module Reader : sig
-    class type t =
-      object
-        (** Read data at with given samplerate for events, in a given track, with a given length in samples. *)
-        method read : int -> Multitrack.buffer -> int -> int -> int
+    class type t = object
+      (** Read data at with given samplerate for events, in a given track, with
+          a given length in samples. *)
+      method read : int -> Multitrack.buffer -> int -> int -> int
 
-        (** Close the stream. *)
-        method close : unit
-      end
+      (** Close the stream. *)
+      method close : unit
+    end
 
     class of_file : string -> t
   end
 
   module Writer : sig
-    class type t =
-      object
-        method put : int -> event -> unit
-        method note_off : int -> int -> float -> unit
-        method note_on : int -> int -> float -> unit
-        method advance : int -> unit
-        method close : unit
-      end
+    class type t = object
+      method put : int -> event -> unit
+      method note_off : int -> int -> float -> unit
+      method note_on : int -> int -> float -> unit
+      method advance : int -> unit
+      method close : unit
+    end
 
     class to_file : int -> string -> t
   end
